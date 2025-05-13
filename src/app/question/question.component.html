@@ -1,13 +1,38 @@
-<div style="width: 95%; justify-self: center;">
+<div>
     <mat-accordion hideToggle="true" >
         <mat-expansion-panel>
             <mat-expansion-panel-header>
                 <mat-panel-title>
+                <span *ngIf="currentAnswer == null" class="dot"></span>
+                <span *ngIf="currentAnswer != null" class="dot space"></span>
                 <span style="font-weight:bold;">{{ num }}. </span>
                 {{ title }}
                 </mat-panel-title>
             </mat-expansion-panel-header>
-            {{ answer }}
+            <div class="answerSection">
+                <div class="answerText">
+                    {{ answer }}
+                </div>
+                <div class="answer-buttons">
+                    <button
+                        mat-raised-button
+                        color="primary"
+                        [class.selected]="currentAnswer === true"
+                        (click)="selectAnswer(true)"
+                    >
+                        Correct
+                    </button>
+
+                    <button
+                        mat-raised-button
+                        color="warn"
+                        [class.selected]="currentAnswer === false"
+                        (click)="selectAnswer(false)"
+                    >
+                        Incorrect
+                    </button>
+                </div>
+            </div>
         </mat-expansion-panel>
     </mat-accordion>
 </div>

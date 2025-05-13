@@ -1,0 +1,32 @@
+.answerSection{
+    justify-self: center;
+}
+
+.answerText{
+    font-size: 1.2em;
+    font-weight: 900;
+    justify-self: center;
+    margin: 10px 10px;
+}
+/* question.component.css */
+.answer-buttons button {
+  margin-right: 8px;
+}
+
+button.selected {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2) inset;
+  font-weight: bold;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background-color: #4cfbab;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 12px;
+}
+
+.dot.space {
+    background-color: inherit;
+}
