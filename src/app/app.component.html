@@ -1,4 +1,18 @@
+<mat-sidenav-container class="sidenav-container">
+<mat-sidenav #drawer mode="side" [opened]="opened" class="sidenav" [fixedInViewport]="true">
+  <mat-toolbar>Menu</mat-toolbar>
+  <side-menu (linkClick)="closeIfOver()"></side-menu>
+</mat-sidenav>
 
-<sidebar></sidebar>
-<quiz></quiz>
-<router-outlet />
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button mat-icon-button (click)="toggleSidebar()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span>Fifty Admin</span>
+    </mat-toolbar>
+    <div class="content" [@routeAnimations]="prepareRoute(outlet)">
+      <router-outlet #outlet="outlet"></router-outlet>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

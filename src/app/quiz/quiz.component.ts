@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, NgFor} from '@angular/common';
+import { CommonModule} from '@angular/common';
 import { QuestionComponent } from '../question/question.component';
 import {MatCardModule} from '@angular/material/card';
 
 @Component({
   selector: 'quiz',
-  imports: [NgFor, QuestionComponent, MatCardModule],
+  standalone: true,
+  imports: [CommonModule, QuestionComponent, MatCardModule],
   templateUrl: './quiz.component.html',
-  styleUrl: './quiz.component.css'
+  styleUrls: ['./quiz.component.css']
 })
 export class QuizComponent implements OnInit {
   questions = [

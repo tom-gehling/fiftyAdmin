@@ -1,13 +1,14 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { CommonModule, NgIf } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatButtonModule} from '@angular/material/button';
 
 @Component({
   selector: 'question',
-  imports: [MatExpansionModule, MatButtonModule, NgIf],
+  standalone: true,
+  imports: [MatExpansionModule, MatButtonModule, CommonModule],
   templateUrl: './question.component.html',
-  styleUrl: './question.component.css'
+  styleUrls: ['./question.component.css']
 })
 export class QuestionComponent implements OnInit{
   @Input() num: number;
