@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { HomeComponent } from '../../home/home.component';
 import { QuizComponent } from '../../quiz/quiz.component';
-import { QuizListComponent } from '../../quiz-list/quiz-list.component';
+import { QuizTemplateComponent } from '../../quiz-template/quiz-template.component';
 
 export interface AppMenuItem {
   path: string;
@@ -10,6 +10,7 @@ export interface AppMenuItem {
   component: Type<any>;
   animation: string;
   children?: AppMenuItem[];
+  shownInMenu: boolean;
 }
 
 export const MENU_ITEMS: AppMenuItem[] = [
@@ -18,20 +19,23 @@ export const MENU_ITEMS: AppMenuItem[] = [
     label: 'Home',
     icon: 'home',
     component: HomeComponent,
-    animation: 'HomePage'
+    animation: 'HomePage',
+    shownInMenu: true,
   },
   {
-    path: 'quiz',
-    label: 'Quiz',
+    path: 'quizzes',
+    label: 'Quizzes',
     icon: 'quiz',
     component: QuizComponent,
-    animation: 'QuizPage'
+    animation: 'QuizPage',
+    shownInMenu: true,
   },
   {
-    path: 'quiz-list',
-    label: 'Quiz List',
-    icon: 'list',
-    component: QuizListComponent,
-    animation: 'QuizListPage'
+    path: 'quizzes/:id',
+    label: 'Quizzes',
+    icon: 'quiz',
+    component: QuizTemplateComponent,
+    animation: 'QuizTemplatePage',
+    shownInMenu: false,
   }
 ];

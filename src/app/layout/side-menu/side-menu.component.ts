@@ -25,7 +25,7 @@ import { slideFromLeft } from '../../shared/animations/routerTransition';
   styleUrls: ['./side-menu.component.css']
 })
 export class SideMenuComponent {
-  menuItems = MENU_ITEMS;
+  menuItems = MENU_ITEMS.filter(item => item.shownInMenu);
 
   @Output() linkClick = new EventEmitter<void>();
 

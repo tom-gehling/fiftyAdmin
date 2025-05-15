@@ -1,47 +1,43 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule} from '@angular/common';
-import { QuestionComponent } from '../question/question.component';
-import {MatCardModule} from '@angular/material/card';
+import { RouterModule, Router } from '@angular/router';
+import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
+
 
 @Component({
   selector: 'quiz',
   standalone: true,
-  imports: [CommonModule, QuestionComponent, MatCardModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    MatTableModule,
+    MatCardModule,],
   templateUrl: './quiz.component.html',
   styleUrls: ['./quiz.component.css']
 })
-export class QuizComponent implements OnInit {
-  questions = [
-    {num: 1, title: 'Test', answer: 'Answer'},
-    {num: 2, title: 'Test2', answer: 'Answer'},
-    {num: 3, title: 'Test3', answer: 'Answer'}
-  ]
+export class QuizComponent implements OnInit{
 
-  score = 0;
-  totalQuestions = 0;
-  answers: { [id: number]: boolean } = {}; // stores questionId → answer
+  quizzes: any = [
+    { id: '1', title: 'General Knowledge', createdDate: new Date(), questionCount: 50 },
+    { id: '2', title: 'Science Round', createdDate: new Date(), questionCount: 40 },
+    // add more
+  ];
+
+  displayedColumns = ['title', 'createdDate', 'questionCount'];
+  selectedRow: any = null;
 
   ngOnInit(): void {
-    this.score = 0;
-    this.totalQuestions = 0;
+      
+  }
+  constructor(private router: Router) {}
+
+  selectRow(row: any) {
+    this.selectedRow = this.selectedRow === row ? null : row;
   }
 
-  handleAnswer({ id, current }: { id: number; current: boolean }) {
-    const prev = this.answers[id];
-
-    if (prev === current) 
-      return; // no change
-
-    // Adjust score if changing answer
-    if (prev === true) 
-      this.score--;       // undo previous correct
-    if (current === true) 
-      this.score++;    // apply new correct
-
-    // Set the answer and update tally if first time
-    if (prev === undefined) 
-      this.totalQuestions++;
-
-    this.answers[id] = current;
+  goToDetails(row: any) {
+    this.router.navigate(['/quizzes', row.id]);
   }
+  
 }

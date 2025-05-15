@@ -1,13 +1,35 @@
-<mat-card style="width: 90%;">
-    <mat-card-header>
-        Quiz 1
-    </mat-card-header>
-    <mat-card-content>
-        <div class="dot"></div>
-        <question [num]="question.num" [title]="question.title" [answer]="question.answer" *ngFor="let question of questions" (answered)="handleAnswer($event)"></question>
-        <div class="score">
-            Score: {{score}} / {{totalQuestions}}
-        </div>
-    </mat-card-content>
-</mat-card>
+<mat-card>
+  <h2>All Quizzes</h2>
 
+  <table mat-table [dataSource]="quizzes" class="mat-elevation-z8" style="width: 100%;" matSort>
+
+    <!-- Title Column -->
+    <ng-container matColumnDef="title">
+      <th mat-header-cell *matHeaderCellDef> Title </th>
+      <td mat-cell *matCellDef="let row"> {{row.title}} </td>
+    </ng-container>
+
+    <!-- Created Date Column -->
+    <ng-container matColumnDef="createdDate">
+      <th mat-header-cell *matHeaderCellDef> Created </th>
+      <td mat-cell *matCellDef="let row"> {{row.createdDate | date}} </td>
+    </ng-container>
+
+    <!-- Question Count Column -->
+    <ng-container matColumnDef="questionCount">
+      <th mat-header-cell *matHeaderCellDef> Questions </th>
+      <td mat-cell *matCellDef="let row"> {{row.questionCount}} </td>
+    </ng-container>
+
+    <!-- Header and Rows -->
+    <tr mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        (click)="selectRow(row)"
+        (dblclick)="goToDetails(row)"
+        [class.selected]="selectedRow === row"
+        style="cursor: pointer;">
+    </tr>
+
+
+  </table>
+</mat-card>
