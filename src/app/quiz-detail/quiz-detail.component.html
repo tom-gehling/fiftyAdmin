@@ -1,1 +1,144 @@
-<p>quiz-detail works!</p>
+<mat-card>
+    <form [formGroup]="form" (ngSubmit)="saveQuiz()">
+        <mat-card-title>Quiz Details</mat-card-title>
+        <mat-card-content>
+            <div class="form-grid">
+                <mat-form-field appearance="fill">
+                    <mat-label>Quiz Number</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        formControlName="number"
+                        required
+                    />
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Deployment Date</mat-label>
+                    <input
+                        matInput
+                        [matDatepicker]="picker"
+                        formControlName="deploymentDate"
+                    />
+                    <mat-datepicker-toggle
+                        matSuffix
+                        [for]="picker"
+                    ></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Deployment Time</mat-label>
+                    <input matInput [matTimepicker]="timepicker" />
+                    <mat-timepicker #timepicker />
+                    <mat-timepicker-toggle [for]="timepicker" matSuffix />
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Question Count</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        formControlName="questionCount"
+                        required
+                    />
+                </mat-form-field>
+
+                <mat-checkbox formControlName="isPremium">Premium</mat-checkbox>
+                <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+            </div>
+
+            <h3>Color Theme</h3>
+            <div class="form-grid" formGroupName="theme">
+                <mat-form-field appearance="fill">
+                    <mat-label>Font Color</mat-label>
+                    <input matInput type="color" formControlName="fontColor" />
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Background Color</mat-label>
+                    <input
+                        matInput
+                        type="color"
+                        formControlName="backgroundColor"
+                    />
+                </mat-form-field>
+
+                <mat-form-field appearance="fill">
+                    <mat-label>Tertiary Color</mat-label>
+                    <input
+                        matInput
+                        type="color"
+                        formControlName="tertiaryColor"
+                    />
+                </mat-form-field>
+            </div>
+
+            <div>
+                <label for="imageUpload">Upload Image:</label>
+                <input
+                    id="imageUpload"
+                    type="file"
+                    (change)="onImageSelected($event)"
+                />
+                <div *ngIf="imagePreview">
+                    <img [src]="imagePreview" alt="Preview" width="150" />
+                </div>
+            </div>
+
+            <h3>Questions</h3>
+            <div formArrayName="questions">
+                <div
+                    *ngFor="let q of questions.controls; let i = index"
+                    [formGroupName]="i"
+                    class="question-row"
+                >
+                    <mat-card style="width: 100%">
+                        <span class="question-number">{{ i + 1 }}.</span>
+
+                        <div class="qa-field">
+                            <span>
+                                <label>Question</label>
+                            </span>
+                            <quill-editor
+                                formControlName="question"
+                                [modules]="quillModules"
+                            ></quill-editor>
+                        </div>
+
+                        <div class="qa-field">
+                            <label>Answer</label>
+                            <quill-editor
+                                formControlName="question"
+                                [modules]="quillModules"
+                            ></quill-editor>
+                        </div>
+
+                        <button
+                            mat-icon-button
+                            color="warn"
+                            type="button"
+                            (click)="removeQuestion(i)"
+                        >
+                            <mat-icon>delete</mat-icon>
+                        </button>
+                    </mat-card>
+                </div>
+            </div>
+        </mat-card-content>
+
+        <!-- add a above quiz notes -->
+        <!-- add a below quiz notes -->
+
+        <mat-card-actions>
+            <button
+                mat-raised-button
+                type="submit"
+                color="primary"
+                [disabled]="form.invalid"
+            >
+                Save Quiz
+            </button>
+        </mat-card-actions>
+    </form>
+</mat-card>

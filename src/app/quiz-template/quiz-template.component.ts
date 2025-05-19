@@ -1,26 +1,35 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule} from '@angular/common';
+// quiz-template.component.ts
+import { Component, OnInit, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
 import { QuestionComponent } from '../question/question.component';
-import {MatCardModule} from '@angular/material/card';
+import { PreviewService } from '../shared/services/preview.service';
 
 @Component({
   selector: 'quiz-template',
+  standalone: true,
   imports: [CommonModule, QuestionComponent, MatCardModule],
   templateUrl: './quiz-template.component.html',
   styleUrl: './quiz-template.component.css'
 })
-export class QuizTemplateComponent {
-questions = [
-    {num: 1, title: 'Test', answer: 'Answer'},
-    {num: 2, title: 'Test2', answer: 'Answer'},
-    {num: 3, title: 'Test3', answer: 'Answer'}
-  ]
-
+export class QuizTemplateComponent implements OnInit {
+  @Input() questions: any[] = [];
   score = 0;
   totalQuestions = 0;
-  answers: { [id: number]: boolean } = {}; // stores questionId → answer
+  answers: { [id: number]: boolean } = {};
+
+  constructor(private previewService: PreviewService) {}
 
   ngOnInit(): void {
+    const fromService = this.previewService.getQuizData();
+    if (fromService?.questions) {
+      this.questions = fromService.questions.map((q: any, i: number) => ({
+        num: i + 1,
+        title: q.question,
+        answer: q.answer
+      }));
+    }
+
     this.score = 0;
     this.totalQuestions = 0;
   }
@@ -28,18 +37,12 @@ questions = [
   handleAnswer({ id, current }: { id: number; current: boolean }) {
     const prev = this.answers[id];
 
-    if (prev === current) 
-      return; // no change
+    if (prev === current) return;
 
-    // Adjust score if changing answer
-    if (prev === true) 
-      this.score--;       // undo previous correct
-    if (current === true) 
-      this.score++;    // apply new correct
+    if (prev === true) this.score--;
+    if (current === true) this.score++;
 
-    // Set the answer and update tally if first time
-    if (prev === undefined) 
-      this.totalQuestions++;
+    if (prev === undefined) this.totalQuestions++;
 
     this.answers[id] = current;
   }
