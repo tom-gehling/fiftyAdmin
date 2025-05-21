@@ -1,56 +1,166 @@
+/* General Layout */
+.form {
+    margin: 16px 0;
+    padding: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .form-grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 16px;
     margin-bottom: 20px;
     width: 100%;
 }
 
+/* Header section */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.title {
+    padding: 16px;
+    font-weight: 600;
+    font-size: 2em;
+}
+
+/* Action buttons */
+.action-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px;
+}
+
+/* Image preview section */
+.image-section {
+    padding: 0 16px 16px;
+}
+
+/* Tab group styling */
+.tabGroup {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 16px;
+}
+
+mat-tab-group {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+mat-tab-body,
+mat-tab-body-content {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure no horizontal overflow in tabs */
+mat-tab-group ::ng-deep .mat-tab-body-wrapper {
+    overflow-x: hidden;
+}
+
+/* Question rows */
 .question-row {
     display: flex;
-    margin: 10px 0px 10px 0px;
+    flex-wrap: wrap;
+    margin: 16px 0;
 }
 
+.question-row mat-card {
+    box-sizing: border-box;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-direction: row;
+}
+
+/* Question number */
 .question-number {
-    width: 24px;
     font-weight: bold;
-    margin-top: 6px;
+    font-size: 1.2rem;
 }
 
+/* Question and Answer fields */
 .qa-field {
     flex: 1 1 45%;
     min-width: 250px;
+    margin-bottom: 8px;
 }
 
 .qa-field quill-editor {
     width: 100% !important;
 }
 
-.mat-mdc-card {
-    padding: 10px 10px 10px 10px;
-    gap: 20px;
-    align-items: center;
-    width: auto;
+/* ============================ */
+/* Added layout + scroll styles */
+/* ============================ */
+
+:host {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Let mat-card fill height and manage internal overflow */
+mat-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Let form grow and manage scroll inside tab content */
+form.form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+/* Make tabGroup fill available space */
+.tabGroup {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Make the tab body content scrollable */
+.tabGroup ::ng-deep .mat-tab-body-wrapper {
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.question-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.questionAndAnswer {
     display: flex;
     flex-direction: row;
-    box-sizing: border-box;
-    position: relative;
-    border-style: solid;
-    border-width: 0;
-    background-color: var(
-        --mdc-elevated-card-container-color,
-        var(--mat-sys-surface-container-low)
-    );
-    border-color: var(
-        --mdc-elevated-card-container-color,
-        var(--mat-sys-surface-container-low)
-    );
-    border-radius: var(
-        --mdc-elevated-card-container-shape,
-        var(--mat-sys-corner-medium)
-    );
-    box-shadow: var(
-        --mdc-elevated-card-container-elevation,
-        var(--mat-sys-level1)
-    );
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    cursor: move;
+}
+.drag-handle:hover {
+    color: #000;
 }

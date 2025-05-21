@@ -1,5 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -11,14 +12,20 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatTimepickerModule } from '@angular/material/timepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatSelectModule } from '@angular/material/select';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { DragDropModule } from '@angular/cdk/drag-drop'; // Import this
 import { QuillModule } from 'ngx-quill';
-// This is a placeholder for actual quiz fetching/updating logic
+
 interface Quiz {
     id?: string;
     number: number;
+    deploymentDate: string | null;
     deploymentTime: string;
     isPremium: boolean;
     isActive: boolean;
+    quizType: number;
     questionCount: number;
     theme: {
         fontColor: string;
@@ -44,7 +51,10 @@ interface Quiz {
         MatDatepickerModule,
         MatNativeDateModule,
         MatTimepickerModule,
+        MatTabsModule,
+        MatSelectModule,
         QuillModule,
+        DragDropModule,
     ],
     templateUrl: './quiz-detail.component.html',
     styleUrl: './quiz-detail.component.css',
@@ -52,15 +62,23 @@ interface Quiz {
 export class QuizDetailComponent implements OnInit {
     @Input() id!: string;
     form!: FormGroup;
+    submissionSetupForm: FormGroup;
     imagePreview: string | null = null;
+    selectedQuizType: number | null = null;
+    quizType = [
+        { value: 0, viewValue: 'Weekly' },
+        { value: 1, viewValue: 'Fifty+' },
+        { value: 2, viewValue: 'Collaboration' },
+    ];
+
     quillModules = {
         toolbar: [
-            ['bold', 'italic', 'underline'], // toggled buttons
-            [{ list: 'ordered' }, { list: 'bullet' }], // ordered and bullet lists
+            ['bold', 'italic', 'underline'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
         ],
     };
 
-    constructor(private fb: FormBuilder) {}
+    constructor(private fb: FormBuilder, private router: Router) {}
 
     ngOnInit(): void {
         this.form = this.fb.group({
@@ -69,7 +87,8 @@ export class QuizDetailComponent implements OnInit {
             deploymentTime: [null],
             isPremium: [false],
             isActive: [true],
-            questionCount: [0, Validators.required],
+            quizType: [0],
+            questionCount: [0, [Validators.required, Validators.min(0)]],
             theme: this.fb.group({
                 fontColor: ['#000000'],
                 backgroundColor: ['#ffffff'],
@@ -78,13 +97,13 @@ export class QuizDetailComponent implements OnInit {
             questions: this.fb.array([]),
         });
 
-        if (this.id) {
-            this.loadQuiz(this.id);
-        }
-
         this.form.get('questionCount')?.valueChanges.subscribe((count) => {
             this.setQuestionCount(count);
         });
+
+        if (this.id) {
+            this.loadQuiz(this.id);
+        }
     }
 
     get questions(): FormArray {
@@ -92,28 +111,24 @@ export class QuizDetailComponent implements OnInit {
     }
 
     setQuestionCount(count: number): void {
+        if (count == null || isNaN(count)) return;
+
         const current = this.questions.length;
 
         if (count > current) {
-            for (let i = current; i < count; i++) this.addQuestion();
-        } else {
-            for (let i = current - 1; i >= count; i--) this.removeQuestion(i);
+            for (let i = current; i < count; i++) {
+                this.questions.push(
+                    this.fb.group({
+                        question: ['', Validators.required],
+                        answer: ['', Validators.required],
+                    })
+                );
+            }
+        } else if (count < current) {
+            for (let i = current - 1; i >= count; i--) {
+                this.questions.removeAt(i);
+            }
         }
-    }
-
-    addQuestion(): void {
-        const questionGroup = this.fb.group({
-            question: ['', Validators.required],
-            answer: ['', Validators.required],
-        });
-        this.questions.push(questionGroup);
-    }
-
-    removeQuestion(index: number): void {
-        this.questions.removeAt(index);
-        this.form.patchValue({
-            questionCount: this.questions.length,
-        });
     }
 
     onImageSelected(event: Event): void {
@@ -135,20 +150,29 @@ export class QuizDetailComponent implements OnInit {
 
         if (this.id) {
             console.log('Updating quiz:', quizData);
-            // Call update logic here
+            // Call update service
         } else {
             console.log('Creating quiz:', quizData);
-            // Call create logic here
+            // Call create service
         }
+
+        this.router.navigate(['/quizzes']);
+    }
+
+    cancel(): void {
+        this.router.navigate(['/quizzes']);
     }
 
     private loadQuiz(id: string): void {
+        // Replace with real loading logic
         const existingQuiz: Quiz = {
             id,
             number: 1,
-            deploymentTime: '2025-05-20T19:00',
+            deploymentDate: '2025-05-20',
+            deploymentTime: '19:00',
             isPremium: true,
             isActive: true,
+            quizType: 1,
             questionCount: 2,
             theme: {
                 fontColor: '#ff0000',
@@ -163,16 +187,31 @@ export class QuizDetailComponent implements OnInit {
         };
 
         this.form.patchValue(existingQuiz);
-        existingQuiz.questions.forEach((q) => {
-            const qGroup = this.fb.group({
-                question: [q.question, Validators.required],
-                answer: [q.answer, Validators.required],
-            });
-            this.questions.push(qGroup);
+        this.setQuestionCount(existingQuiz.questionCount);
+
+        // Fill in existing questions
+        this.questions.controls.forEach((ctrl, index) => {
+            if (existingQuiz.questions[index]) {
+                ctrl.patchValue(existingQuiz.questions[index]);
+            }
         });
 
         if (existingQuiz.imageUrl) {
             this.imagePreview = existingQuiz.imageUrl;
         }
+    }
+
+    removeQuestion(index: number): void {
+        this.questions.removeAt(index);
+        this.form.patchValue({
+            questionCount: this.questions.length,
+        });
+    }
+
+    drop(event: CdkDragDrop<FormGroup[]>) {
+        const questions = this.questions;
+        const questionArray = questions.controls as FormGroup[];
+        moveItemInArray(questionArray, event.previousIndex, event.currentIndex);
+        questions.setValue(questionArray.map((group) => group.value));
     }
 }
