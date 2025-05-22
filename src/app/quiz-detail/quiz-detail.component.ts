@@ -17,6 +17,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { DragDropModule } from '@angular/cdk/drag-drop'; // Import this
 import { QuillModule } from 'ngx-quill';
+import { MatDialog } from '@angular/material/dialog';
+import { QuizTemplateComponent } from '../quiz-template/quiz-template.component'; // adjust path if needed
+import { PreviewService } from '../shared/services/preview.service'; // already used
 
 interface Quiz {
     id?: string;
@@ -64,7 +67,6 @@ export class QuizDetailComponent implements OnInit {
     form!: FormGroup;
     submissionSetupForm: FormGroup;
     imagePreview: string | null = null;
-    selectedQuizType: number | null = null;
     quizType = [
         { value: 0, viewValue: 'Weekly' },
         { value: 1, viewValue: 'Fifty+' },
@@ -77,8 +79,14 @@ export class QuizDetailComponent implements OnInit {
             [{ list: 'ordered' }, { list: 'bullet' }],
         ],
     };
+    activeToolbar: string | null = null;
 
-    constructor(private fb: FormBuilder, private router: Router) {}
+    constructor(
+        private fb: FormBuilder,
+        private router: Router,
+        private dialog: MatDialog,
+        private previewService: PreviewService
+    ) {}
 
     ngOnInit(): void {
         this.form = this.fb.group({
@@ -95,6 +103,9 @@ export class QuizDetailComponent implements OnInit {
                 tertiaryColor: ['#cccccc'],
             }),
             questions: this.fb.array([]),
+            notesAbove: '',
+            notesBelow: '',
+            sponsor: '',
         });
 
         this.form.get('questionCount')?.valueChanges.subscribe((count) => {
@@ -110,6 +121,10 @@ export class QuizDetailComponent implements OnInit {
         return this.form.get('questions') as FormArray;
     }
 
+    get selectedQuizType() {
+        return this.form.get('quizType')?.value;
+    }
+
     setQuestionCount(count: number): void {
         if (count == null || isNaN(count)) return;
 
@@ -119,8 +134,8 @@ export class QuizDetailComponent implements OnInit {
             for (let i = current; i < count; i++) {
                 this.questions.push(
                     this.fb.group({
-                        question: ['', Validators.required],
-                        answer: ['', Validators.required],
+                        question: [''],
+                        answer: [''],
                     })
                 );
             }
@@ -173,11 +188,11 @@ export class QuizDetailComponent implements OnInit {
             isPremium: true,
             isActive: true,
             quizType: 1,
-            questionCount: 2,
+            questionCount: 50,
             theme: {
-                fontColor: '#ff0000',
-                backgroundColor: '#f0f0f0',
-                tertiaryColor: '#00ff00',
+                fontColor: '#fbe2df',
+                backgroundColor: '#677c73',
+                tertiaryColor: '#4cfbab',
             },
             imageUrl: '',
             questions: [
@@ -213,5 +228,32 @@ export class QuizDetailComponent implements OnInit {
         const questionArray = questions.controls as FormGroup[];
         moveItemInArray(questionArray, event.previousIndex, event.currentIndex);
         questions.setValue(questionArray.map((group) => group.value));
+    }
+
+    toggleToolbar(index: number, type: 'question' | 'answer') {
+        const key = `${index}-${type}`;
+        // If clicked again on the same key, close it
+        console.log('Toggle clicked for:', key);
+        this.activeToolbar = this.activeToolbar === key ? null : key;
+    }
+
+    isToolbarVisible(index: number, type: 'question' | 'answer'): boolean {
+        return this.activeToolbar === `${index}-${type}`;
+    }
+
+    openPreview() {
+        // Save current form state
+        const questions = this.form.get('questions')?.value || [];
+
+        // Store it in preview service
+        this.previewService.setQuizData({ questions });
+
+        // Open modal with quiz-template
+        this.dialog.open(QuizTemplateComponent, {
+            width: '90vw',
+            maxHeight: '90vh',
+            panelClass: 'preview-dialog',
+            backdropClass: 'preview-backdrop',
+        });
     }
 }

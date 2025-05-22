@@ -15,6 +15,14 @@
                 Save
             </button>
             <button
+                mat-raised-button
+                color="accent"
+                type="button"
+                (click)="openPreview()"
+            >
+                Preview
+            </button>
+            <button
                 mat-stroked-button
                 color="warn"
                 type="button"
@@ -131,30 +139,62 @@
                             [formGroupName]="i"
                             class="question-row col-12"
                         >
-                            <mat-card class="p-3 d-flex align-items-start">
+                            <mat-card class="d-flex align-items-center">
                                 <!-- Drag handle icon -->
-                                <div cdkDragHandle class="drag-handle me-3">
+                                <div cdkDragHandle class="drag-handle">
                                     <mat-icon>drag_indicator</mat-icon>
                                 </div>
 
                                 <!-- Question and Answer editor -->
                                 <div class="questionAndAnswer flex-grow-1">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <span
-                                            class="question-number fw-bold me-2"
+                                    <div class="d-flex align-items-center">
+                                        <span class="question-number fw-bold"
                                             >{{ i + 1 }}.</span
                                         >
                                     </div>
-                                    <div class="qa-field mb-3">
+                                    <!-- Question field -->
+                                    <div class="qa-field">
+                                        <!-- <button
+                                            mat-icon-button
+                                            type="button"
+                                            (click)="
+                                                toggleToolbar(i, 'question')
+                                            "
+                                            aria-label="Toggle question toolbar"
+                                        >
+                                            <mat-icon>edit</mat-icon>
+                                        </button> -->
+
                                         <quill-editor
+                                            *ngIf="true"
                                             formControlName="question"
-                                            [modules]="quillModules"
+                                            [modules]="
+                                                isToolbarVisible(i, 'question')
+                                                    ? quillModules
+                                                    : { toolbar: false }
+                                            "
                                         ></quill-editor>
                                     </div>
+
+                                    <!-- Answer field -->
                                     <div class="qa-field">
+                                        <!-- <button
+                                            mat-icon-button
+                                            type="button"
+                                            (click)="toggleToolbar(i, 'answer')"
+                                            aria-label="Toggle answer toolbar"
+                                        >
+                                            <mat-icon>edit</mat-icon>
+                                        </button> -->
+
                                         <quill-editor
+                                            *ngIf="true"
                                             formControlName="answer"
-                                            [modules]="quillModules"
+                                            [modules]="
+                                                isToolbarVisible(i, 'answer')
+                                                    ? quillModules
+                                                    : { toolbar: false }
+                                            "
                                         ></quill-editor>
                                     </div>
                                 </div>
@@ -165,7 +205,7 @@
                                     color="warn"
                                     type="button"
                                     (click)="removeQuestion(i)"
-                                    class="ms-3 align-self-start"
+                                    class="align-self-center"
                                 >
                                     <mat-icon>delete</mat-icon>
                                 </button>
@@ -176,38 +216,68 @@
             </mat-tab>
 
             <!-- Color Scheme Tab -->
-            <mat-tab label="Color Scheme">
+            <mat-tab label="Color Scheme" *ngIf="selectedQuizType == 2">
                 <div class="container py-3" formGroupName="theme">
-                    <div class="row g-3">
-                        <div class="col-12 col-md-4">
-                            <mat-form-field appearance="outline" class="w-100">
-                                <mat-label>Font Color</mat-label>
-                                <input
-                                    matInput
-                                    type="color"
-                                    formControlName="fontColor"
-                                />
-                            </mat-form-field>
+                    <div class="d-flex flex-row align-items-start gap-5">
+                        <!-- Font Color -->
+                        <div
+                            class="d-flex flex-column align-items-center gap-2 w-100"
+                        >
+                            <label
+                                for="fontColor"
+                                class="form-label fw-semibold"
+                                >Font Color:</label
+                            >
+                            <input
+                                id="fontColor"
+                                type="color"
+                                formControlName="fontColor"
+                                class="form-control form-control-color"
+                            />
+                            <span class="ms-2">{{
+                                form.get("theme.fontColor")?.value
+                            }}</span>
                         </div>
-                        <div class="col-12 col-md-4">
-                            <mat-form-field appearance="outline" class="w-100">
-                                <mat-label>Background Color</mat-label>
-                                <input
-                                    matInput
-                                    type="color"
-                                    formControlName="backgroundColor"
-                                />
-                            </mat-form-field>
+
+                        <!-- Background Color -->
+                        <div
+                            class="d-flex flex-column align-items-center gap-2 w-100"
+                        >
+                            <label
+                                for="backgroundColor"
+                                class="form-label fw-semibold"
+                                >Background Color:</label
+                            >
+                            <input
+                                matInput
+                                id="backgroundColor"
+                                type="color"
+                                formControlName="backgroundColor"
+                                class="form-control form-control-color"
+                            />
+                            <span class="ms-2">{{
+                                form.get("theme.backgroundColor")?.value
+                            }}</span>
                         </div>
-                        <div class="col-12 col-md-4">
-                            <mat-form-field appearance="outline" class="w-100">
-                                <mat-label>Tertiary Color</mat-label>
-                                <input
-                                    matInput
-                                    type="color"
-                                    formControlName="tertiaryColor"
-                                />
-                            </mat-form-field>
+
+                        <!-- Tertiary Color -->
+                        <div
+                            class="d-flex flex-column align-items-center gap-2 w-100"
+                        >
+                            <label
+                                for="tertiaryColor"
+                                class="form-label fw-semibold"
+                                >Tertiary Color:</label
+                            >
+                            <input
+                                id="tertiaryColor"
+                                type="color"
+                                formControlName="tertiaryColor"
+                                class="form-control form-control-color"
+                            />
+                            <span class="ms-2">{{
+                                form.get("theme.tertiaryColor")?.value
+                            }}</span>
                         </div>
                     </div>
                 </div>
@@ -216,8 +286,14 @@
             <!-- Other Tab -->
             <mat-tab label="Other">
                 <div class="container py-3">
-                    <div class="row justify-content-start g-3">
-                        <div class="col-12 col-md-12 col-lg-12">
+                    <div class="row mb-2">
+                        <div class="col">
+                            <h5 class="fw-bold">Notes</h5>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
                             <mat-form-field appearance="outline" class="w-100">
                                 <mat-label>Text Above Quiz</mat-label>
                                 <input
@@ -227,17 +303,26 @@
                                 />
                             </mat-form-field>
                         </div>
-                        <div class="col-12 col-md-12 col-lg-12">
+                        <div class="col-12">
                             <mat-form-field appearance="outline" class="w-100">
                                 <mat-label>Text Below Quiz</mat-label>
                                 <input
                                     matInput
                                     type="text"
-                                    formControlName="notesAbove"
+                                    formControlName="notesBelow"
                                 />
                             </mat-form-field>
                         </div>
-                        <div class="col-12 col-md-12 col-lg-12">
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col">
+                            <h5 class="fw-bold">Sponsor</h5>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
                             <mat-form-field appearance="outline" class="w-100">
                                 <mat-label>Sponsor</mat-label>
                                 <input
@@ -248,14 +333,17 @@
                             </mat-form-field>
                         </div>
 
-                        <div class="col-12 col-md-12 col-lg-12">
-                            <label for="imageUpload">Upload Image:</label>
+                        <div class="col-12">
+                            <label for="imageUpload" class="form-label"
+                                >Upload Image:</label
+                            >
                             <input
                                 id="imageUpload"
                                 type="file"
+                                class="form-control"
                                 (change)="onImageSelected($event)"
                             />
-                            <div *ngIf="imagePreview">
+                            <div *ngIf="imagePreview" class="mt-2">
                                 <img
                                     [src]="imagePreview"
                                     alt="Preview"
