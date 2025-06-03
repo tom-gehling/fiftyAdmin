@@ -3,11 +3,12 @@ import { Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { AgCharts } from 'ag-charts-angular';
 import { AgChartOptions } from 'ag-charts-community';
+import { DashboardComponent } from '../dashboard/dashboard.component';
 
 @Component({
     selector: 'app-home',
     standalone: true,
-    imports: [CommonModule, MatCardModule],
+    imports: [CommonModule, MatCardModule, DashboardComponent],
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.css'],
 })
