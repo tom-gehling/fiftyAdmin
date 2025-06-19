@@ -3,7 +3,7 @@
     "version": 1,
     "newProjectRoot": "projects",
     "projects": {
-        "fiftyAdmin": {
+        "weeklyfifty-7617b": {
             "projectType": "application",
             "schematics": {},
             "root": "",
@@ -13,7 +13,7 @@
                 "build": {
                     "builder": "@angular-devkit/build-angular:application",
                     "options": {
-                        "outputPath": "dist/fifty-admin",
+                        "outputPath": "dist/weeklyfifty-7617b",
                         "index": "src/index.html",
                         "browser": "src/main.ts",
                         "polyfills": ["zone.js"],
@@ -60,10 +60,10 @@
                     "builder": "@angular-devkit/build-angular:dev-server",
                     "configurations": {
                         "production": {
-                            "buildTarget": "fiftyAdmin:build:production"
+                            "buildTarget": "weeklyfifty-7617b:build:production"
                         },
                         "development": {
-                            "buildTarget": "fiftyAdmin:build:development"
+                            "buildTarget": "weeklyfifty-7617b:build:development"
                         }
                     },
                     "defaultConfiguration": "development"

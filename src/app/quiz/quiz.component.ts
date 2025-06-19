@@ -1,4 +1,10 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import {
+    Component,
+    OnInit,
+    ViewChild,
+    AfterViewInit,
+    inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 
@@ -10,6 +16,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
 import { MatTableDataSource } from '@angular/material/table';
+import { QuizzesService } from '../shared/services/quizzes.service';
+import { Quiz } from '../models/quiz.model';
 
 @Component({
     selector: 'quiz',
@@ -28,8 +36,11 @@ import { MatTableDataSource } from '@angular/material/table';
     styleUrls: ['./quiz.component.css'],
 })
 export class QuizComponent implements OnInit, AfterViewInit {
+    private quizzesService = inject(QuizzesService);
     displayedColumns = ['title', 'createdDate', 'questionCount'];
     dataSource = new MatTableDataSource<any>();
+
+    quiz: Quiz;
 
     selectedRow: any = null;
     columnFilters: { [key: string]: string } = {};
@@ -136,6 +147,26 @@ export class QuizComponent implements OnInit, AfterViewInit {
 
     goToDetails(row: any) {
         this.router.navigate(['/quizzes', row.id]);
+    }
+
+    create() {
+        let dateTime = new Date();
+        this.quiz = {
+            id: 1, // or any number you prefer, but Firestore usually auto-generates this
+            creationTime: dateTime,
+            deploymentTime: dateTime,
+            quizType: 1,
+            questions: [],
+        };
+        this.quizzesService.createQuiz(this.quiz).then((data) => {
+            console.log('data saved');
+        });
+    }
+
+    get() {
+        this.quizzesService.getAllQuiz().subscribe((data) => {
+            console.log(data);
+        });
     }
 
     constructor(private router: Router) {}
