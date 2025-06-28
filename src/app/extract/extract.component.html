@@ -1,0 +1,26 @@
+<div class="overlay"></div>
+
+<mat-card class="scrollable-card">
+    <h1>Jizzy's Quiz Extractor 3000</h1>
+
+    <label for="quizNum">Quiz Number:</label>
+    <input type="text" id="quizNum" [(ngModel)]="quizNum" />
+
+    <label for="inputText">Paste Questions and Answers:</label>
+    <textarea id="inputText" rows="20" [(ngModel)]="inputText"></textarea>
+
+    <button (click)="generateJSON()">Get JSON</button>
+
+    <label *ngIf="showOutput">Copy This Into WordPress</label>
+    <textarea
+        id="outputTextarea"
+        rows="10"
+        *ngIf="showOutput"
+        [value]="outputText"
+        readonly
+    ></textarea>
+
+    <a *ngIf="showOutput" [href]="downloadUrl" download="quiz.json">
+        Download JSON
+    </a>
+</mat-card>

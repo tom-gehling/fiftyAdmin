@@ -63,4 +63,10 @@ export const MENU_ITEMS: AppMenuItem[] = [
         icon: 'star',
         shownInMenu: true,
     },
+    {
+        path: 'extract',
+        label: 'Extract',
+        icon: 'star',
+        shownInMenu: true,
+    },
 ];
