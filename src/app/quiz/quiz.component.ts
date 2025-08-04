@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-
+import { MatIcon } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from '@angular/material/card';
 import { MatSortModule, MatSort } from '@angular/material/sort';
@@ -25,6 +25,7 @@ import { Quiz } from '../models/quiz.model';
     imports: [
         CommonModule,
         RouterModule,
+        MatIcon,
         MatTableModule,
         MatCardModule,
         MatSortModule,
@@ -37,71 +38,19 @@ import { Quiz } from '../models/quiz.model';
 })
 export class QuizComponent implements OnInit, AfterViewInit {
     private quizzesService = inject(QuizzesService);
-    displayedColumns = ['title', 'createdDate', 'questionCount'];
-    dataSource = new MatTableDataSource<any>();
-
-    quiz: Quiz;
-
-    selectedRow: any = null;
+    displayedColumns: string[] = ['number', 'quizType', 'creationTime'];
+    quizTypeLabels = ['Weekly', 'Fifty+', 'Collaboration'];
+    dataSource = new MatTableDataSource<Quiz>();
+    selectedRow: Quiz | null = null;
     columnFilters: { [key: string]: string } = {};
 
     @ViewChild(MatSort) sort!: MatSort;
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-    quizzes = [
-        {
-            id: '1',
-            title: 'Quiz 1',
-            createdDate: new Date(),
-            questionCount: 50,
-        },
-        {
-            id: '2',
-            title: 'Quiz 2',
-            createdDate: new Date(),
-            questionCount: 40,
-        },
-        {
-            id: '3',
-            title: 'Quiz 3',
-            createdDate: new Date(),
-            questionCount: 40,
-        },
-        {
-            id: '4',
-            title: 'Quiz 4',
-            createdDate: new Date(),
-            questionCount: 40,
-        },
-        {
-            id: '5',
-            title: 'Quiz 5',
-            createdDate: new Date(),
-            questionCount: 40,
-        },
-        {
-            id: '6',
-            title: 'Quiz 6',
-            createdDate: new Date(),
-            questionCount: 40,
-        },
-        {
-            id: '7',
-            title: 'Quiz 7',
-            createdDate: new Date(),
-            questionCount: 40,
-        },
-        {
-            id: '8',
-            title: 'Quiz 8',
-            createdDate: new Date(),
-            questionCount: 40,
-        },
-        // add more
-    ];
+    constructor(private router: Router) {}
 
     ngOnInit(): void {
-        this.dataSource.data = this.quizzes;
+        this.fetchQuizzes();
     }
 
     ngAfterViewInit() {
@@ -109,7 +58,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
         this.dataSource.paginator = this.paginator;
 
         this.dataSource.filterPredicate = (data, filter) => {
-            let searchTerms = {};
+            let searchTerms: { [key: string]: string } = {};
             try {
                 searchTerms = JSON.parse(filter);
             } catch {
@@ -118,18 +67,25 @@ export class QuizComponent implements OnInit, AfterViewInit {
                     String(value).toLowerCase().includes(filterValue)
                 );
             }
+
             return Object.keys(searchTerms).every((key) => {
-                const val = String(data[key] || '').toLowerCase();
-                return val.includes((searchTerms as any)[key]);
+                const val = String((data as any)[key] || '').toLowerCase();
+                return val.includes(searchTerms[key]);
             });
         };
+    }
+
+    fetchQuizzes() {
+        this.quizzesService.getAllQuizzes().subscribe((quizzes: Quiz[]) => {
+            this.dataSource.data = quizzes;
+        });
     }
 
     applyFilter(event: Event) {
         const filterValue = (event.target as HTMLInputElement).value
             .trim()
             .toLowerCase();
-        this.columnFilters = {}; // clear column filters when using global filter
+        this.columnFilters = {};
         this.dataSource.filter = filterValue;
     }
 
@@ -141,33 +97,19 @@ export class QuizComponent implements OnInit, AfterViewInit {
         this.dataSource.filter = JSON.stringify(this.columnFilters);
     }
 
-    selectRow(row: any) {
+    selectRow(row: Quiz) {
         this.selectedRow = this.selectedRow === row ? null : row;
     }
 
-    goToDetails(row: any) {
+    goToDetails(row: Quiz) {
         this.router.navigate(['/quizzes', row.id]);
     }
 
     create() {
-        let dateTime = new Date();
-        this.quiz = {
-            id: 1, // or any number you prefer, but Firestore usually auto-generates this
-            creationTime: dateTime,
-            deploymentTime: dateTime,
-            quizType: 1,
-            questions: [],
-        };
-        this.quizzesService.createQuiz(this.quiz).then((data) => {
-            console.log('data saved');
-        });
+        this.router.navigate(['/quizzes/0']);
     }
 
-    get() {
-        this.quizzesService.getAllQuiz().subscribe((data) => {
-            console.log(data);
-        });
+    getQuizTypeLabel(type: number): string {
+        return this.quizTypeLabels[type] || 'Unknown';
     }
-
-    constructor(private router: Router) {}
 }

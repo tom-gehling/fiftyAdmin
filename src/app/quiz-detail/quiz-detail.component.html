@@ -1,14 +1,14 @@
 <mat-card>
     <!-- Top action buttons -->
     <div class="top-bar d-flex justify-content-between align-items-center">
-        <div class="title h5 mb-0">Quiz {{ id }}</div>
+        <div class="title h5 mb-0">Quiz {{ id == "0" ? "" : id }}</div>
 
         <div class="action-bar">
             <button
                 mat-raised-button
                 color="primary"
                 type="submit"
-                [disabled]="form.invalid"
+                [disabled]="!canWrite()"
                 (click)="saveQuiz()"
                 class="me-2"
             >
@@ -49,19 +49,6 @@
                         />
                     </mat-form-field>
                 </div>
-                <!-- Number of Questions -->
-                <!-- <div class="col-12 col-md-6 col-lg-3">
-                    <mat-form-field appearance="outline" class="w-100">
-                        <mat-label>Number of Questions</mat-label>
-                        <input
-                            matInput
-                            type="number"
-                            formControlName="questionCount"
-                            required
-                            min="0"
-                        />
-                    </mat-form-field>
-                </div> -->
                 <!-- Quiz Type -->
                 <div class="col-6 col-md-6 col-lg-3">
                     <mat-form-field appearance="outline" class="w-100">
@@ -199,7 +186,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Delete button -->
+                                <!-- Delete button
                                 <button
                                     mat-icon-button
                                     color="warn"
@@ -208,7 +195,7 @@
                                     class="align-self-center"
                                 >
                                     <mat-icon>delete</mat-icon>
-                                </button>
+                                </button> -->
                             </mat-card>
                         </div>
                     </div>
@@ -333,7 +320,7 @@
                             </mat-form-field>
                         </div>
 
-                        <div class="col-12">
+                        <!-- <div class="col-12">
                             <label for="imageUpload" class="form-label"
                                 >Upload Image:</label
                             >
@@ -350,7 +337,7 @@
                                     width="150"
                                 />
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </mat-tab>

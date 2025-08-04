@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import {
     Auth,
     signInAnonymously,
+    signInWithEmailAndPassword,
+    signOut,
     onAuthStateChanged,
     User,
 } from '@angular/fire/auth';
@@ -23,7 +25,20 @@ export class AuthService {
         }
     }
 
+    async loginEmailPassword(email: string, password: string) {
+        return signInWithEmailAndPassword(this.auth, email, password);
+    }
+
+    async logout() {
+        await signOut(this.auth);
+        await this.ensureAnonymousLogin(); // fallback to anonymous after logout
+    }
+
     get currentUserId(): string | null {
         return this.auth.currentUser?.uid ?? null;
+    }
+
+    get isAnonymous(): boolean {
+        return this.auth.currentUser?.isAnonymous ?? true;
     }
 }

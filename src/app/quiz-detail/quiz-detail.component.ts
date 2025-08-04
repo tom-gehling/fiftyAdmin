@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, NgZone } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -15,29 +15,14 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSelectModule } from '@angular/material/select';
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
-import { DragDropModule } from '@angular/cdk/drag-drop'; // Import this
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { QuillModule } from 'ngx-quill';
 import { MatDialog } from '@angular/material/dialog';
-import { QuizTemplateComponent } from '../quiz-template/quiz-template.component'; // adjust path if needed
-import { PreviewService } from '../shared/services/preview.service'; // already used
-
-interface Quiz {
-    id?: string;
-    number: number;
-    deploymentDate: string | null;
-    deploymentTime: string;
-    isPremium: boolean;
-    isActive: boolean;
-    quizType: number;
-    questionCount: number;
-    theme: {
-        fontColor: string;
-        backgroundColor: string;
-        tertiaryColor: string;
-    };
-    imageUrl?: string;
-    questions: { question: string; answer: string }[];
-}
+import { QuizTemplateComponent } from '../quiz-template/quiz-template.component';
+import { PreviewService } from '../shared/services/preview.service';
+import { QuizzesService } from '../shared/services/quizzes.service'; // <-- Import your Firestore service
+import { Quiz, QuizQuestion } from '../models/quiz.model'; // Make sure this path is correct
+import { AuthService } from '../shared/services/auth.service';
 
 @Component({
     selector: 'quiz-detail',
@@ -52,21 +37,21 @@ interface Quiz {
         MatButtonModule,
         MatIconModule,
         MatDatepickerModule,
-        MatNativeDateModule,
         MatTimepickerModule,
+        MatNativeDateModule,
         MatTabsModule,
         MatSelectModule,
-        QuillModule,
+        QuillModule, // <-- Required for <quill-editor>
         DragDropModule,
     ],
     templateUrl: './quiz-detail.component.html',
-    styleUrl: './quiz-detail.component.css',
+    styleUrls: ['./quiz-detail.component.css'],
 })
 export class QuizDetailComponent implements OnInit {
     @Input() id!: string;
     form!: FormGroup;
-    submissionSetupForm: FormGroup;
     imagePreview: string | null = null;
+
     quizType = [
         { value: 0, viewValue: 'Weekly' },
         { value: 1, viewValue: 'Fifty+' },
@@ -85,7 +70,10 @@ export class QuizDetailComponent implements OnInit {
         private fb: FormBuilder,
         private router: Router,
         private dialog: MatDialog,
-        private previewService: PreviewService
+        private previewService: PreviewService,
+        private quizzesService: QuizzesService, // Inject service
+        private authService: AuthService,
+        private ngZone: NgZone
     ) {}
 
     ngOnInit(): void {
@@ -103,9 +91,9 @@ export class QuizDetailComponent implements OnInit {
                 tertiaryColor: ['#cccccc'],
             }),
             questions: this.fb.array([]),
-            notesAbove: '',
-            notesBelow: '',
-            sponsor: '',
+            notesAbove: [''],
+            notesBelow: [''],
+            sponsor: [''],
         });
 
         this.form.get('questionCount')?.valueChanges.subscribe((count) => {
@@ -157,21 +145,24 @@ export class QuizDetailComponent implements OnInit {
         }
     }
 
-    saveQuiz(): void {
+    async saveQuiz(): Promise<void> {
         if (this.form.invalid) return;
 
         const quizData: Quiz = this.form.value;
-        quizData.imageUrl = this.imagePreview || undefined;
 
-        if (this.id) {
-            console.log('Updating quiz:', quizData);
-            // Call update service
-        } else {
-            console.log('Creating quiz:', quizData);
-            // Call create service
+        try {
+            if (this.id && this.id != '0') {
+                await this.quizzesService.updateQuiz(this.id, quizData);
+                console.log('Quiz updated');
+            } else {
+                const newId = await this.quizzesService.createQuiz(quizData);
+                console.log('Quiz created with ID:', newId);
+                this.id = newId; // Assign new id after create
+            }
+            this.router.navigate(['/quizzes']);
+        } catch (error) {
+            console.error('Error saving quiz:', error);
         }
-
-        this.router.navigate(['/quizzes']);
     }
 
     cancel(): void {
@@ -179,41 +170,40 @@ export class QuizDetailComponent implements OnInit {
     }
 
     private loadQuiz(id: string): void {
-        // Replace with real loading logic
-        const existingQuiz: Quiz = {
-            id,
-            number: 1,
-            deploymentDate: '2025-05-20',
-            deploymentTime: '19:00',
-            isPremium: true,
-            isActive: true,
-            quizType: 1,
-            questionCount: 50,
-            theme: {
-                fontColor: '#fbe2df',
-                backgroundColor: '#677c73',
-                tertiaryColor: '#4cfbab',
-            },
-            imageUrl: '',
-            questions: [
-                { question: 'What is 2 + 2?', answer: '4' },
-                { question: 'Capital of France?', answer: 'Paris' },
-            ],
-        };
+        this.quizzesService.getQuizById(id).subscribe((quiz) => {
+            this.ngZone.run(() => {
+                if (!quiz) {
+                    console.warn('Quiz not found. Initializing blank quiz.');
+                    this.form.reset({
+                        number: 0,
+                        deploymentDate: null,
+                        deploymentTime: null,
+                        isPremium: false,
+                        isActive: true,
+                        quizType: 0,
+                        questionCount: 0,
+                        theme: {
+                            fontColor: '#000000',
+                            backgroundColor: '#ffffff',
+                            tertiaryColor: '#cccccc',
+                        },
+                        questions: [],
+                        notesAbove: '',
+                        notesBelow: '',
+                        sponsor: '',
+                    });
+                    this.setQuestionCount(50); // Clears question form array
+                    this.imagePreview = null;
+                    return;
+                }
 
-        this.form.patchValue(existingQuiz);
-        this.setQuestionCount(existingQuiz.questionCount);
-
-        // Fill in existing questions
-        this.questions.controls.forEach((ctrl, index) => {
-            if (existingQuiz.questions[index]) {
-                ctrl.patchValue(existingQuiz.questions[index]);
-            }
+                this.form.patchValue(quiz);
+                this.setQuestionCount(quiz.questions.length);
+                this.questions.controls.forEach((ctrl, idx) => {
+                    ctrl.patchValue(quiz.questions[idx]);
+                });
+            });
         });
-
-        if (existingQuiz.imageUrl) {
-            this.imagePreview = existingQuiz.imageUrl;
-        }
     }
 
     removeQuestion(index: number): void {
@@ -223,17 +213,15 @@ export class QuizDetailComponent implements OnInit {
         });
     }
 
-    drop(event: CdkDragDrop<FormGroup[]>) {
+    drop(event: CdkDragDrop<FormGroup[]>): void {
         const questions = this.questions;
         const questionArray = questions.controls as FormGroup[];
         moveItemInArray(questionArray, event.previousIndex, event.currentIndex);
         questions.setValue(questionArray.map((group) => group.value));
     }
 
-    toggleToolbar(index: number, type: 'question' | 'answer') {
+    toggleToolbar(index: number, type: 'question' | 'answer'): void {
         const key = `${index}-${type}`;
-        // If clicked again on the same key, close it
-        console.log('Toggle clicked for:', key);
         this.activeToolbar = this.activeToolbar === key ? null : key;
     }
 
@@ -241,19 +229,19 @@ export class QuizDetailComponent implements OnInit {
         return this.activeToolbar === `${index}-${type}`;
     }
 
-    openPreview() {
-        // Save current form state
+    openPreview(): void {
         const questions = this.form.get('questions')?.value || [];
-
-        // Store it in preview service
         this.previewService.setQuizData({ questions });
 
-        // Open modal with quiz-template
         this.dialog.open(QuizTemplateComponent, {
             width: '90vw',
             maxHeight: '90vh',
             panelClass: 'preview-dialog',
             backdropClass: 'preview-backdrop',
         });
+    }
+
+    canWrite() {
+        return this.authService.user$.value && !this.authService.isAnonymous;
     }
 }
