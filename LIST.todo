@@ -1,0 +1,22 @@
+#Quiz Grid
+[] add deploy time
+[] Move add button to top right
+[]
+
+#Quiz Detail
+[] Add import functionality from xls and google sheets
+[] Clean up top of quiz page
+[] Use quizId at top of page
+[] Clean up quiz detail form
+
+#Logon/Account
+[] Login / signup page UI
+[] Handle anon auth quiz/question interaction
+[] User activity colllection (clicks etc)
+[] Set up account page
+[] Set up roles?  (Simple, admin or user)
+
+#Style
+[] Overhaul background colour to deep green
+[] Work out component inheritance of colour
+[] Logic for custome theme palette
