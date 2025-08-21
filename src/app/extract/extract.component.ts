@@ -1,70 +1,99 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { FormBuilder, FormsModule } from '@angular/forms';
+import * as XLSX from 'xlsx';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
+import { MatTabsModule } from '@angular/material/tabs';
 
 @Component({
     selector: 'app-extract',
     standalone: true,
-    imports: [CommonModule, FormsModule, MatCardModule], // <- Required for ngModel
+    imports: [CommonModule, FormsModule, MatCardModule, MatTabsModule],
     templateUrl: './extract.component.html',
-    styleUrls: ['./extract.component.css'], // <- Use styleUrls (plural)
+    styleUrl: './extract.component.css',
 })
 export class ExtractComponent {
     quizNum: string = '';
     inputText: string = '';
-    outputText: string = '';
-    showOutput: boolean = false;
-    downloadUrl: string = '';
+    questions: { question: string; answer: string }[] = [];
 
-    escapeHTML(html: string): string {
-        return html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    constructor(
+        public dialogRef: MatDialogRef<ExtractComponent>,
+        @Inject(MAT_DIALOG_DATA) public data: any,
+        private fb: FormBuilder
+    ) {
+        // Initialize with existing quiz questions
+        if (data?.questions) {
+            this.questions = [...data.questions];
+        }
+        if (data?.quizNum) {
+            this.quizNum = data.quizNum;
+        }
     }
 
-    removeEmpty(array: string[], char: string): string[] {
-        return array.filter(
-            (elem, i) =>
-                !(elem === '' || (elem === char && array[i - 1] === ''))
-        );
-    }
+    // Text import
+    importTextQuestions(inputText: string): void {
+        if (!inputText) return;
 
-    generateJSON(): void {
-        // 👇 Remove this line — no need to escape real HTML
-        // const correctedText = this.escapeHTML(this.inputText);
-        const lines = this.inputText.split('\n');
-
-        let questions: string[] = [];
-        let answers: string[] = [];
-
-        lines.forEach((line) => {
-            const parts = line.split('\t');
-            questions.push(parts[0]);
-            answers.push(parts[1]);
+        const lines = inputText.split('\n');
+        this.questions = lines.map((line) => {
+            const [question, answer] = line.split('\t');
+            return { question: question || '', answer: answer || '' };
         });
+    }
 
-        questions = this.removeEmpty(questions, 'Q').map((q) =>
-            q.replace('&#8216', "'")
-        );
-        answers = this.removeEmpty(answers, 'A').map((a) =>
-            a.replace('&#8216', "'")
-        );
+    // Excel import
+    onExcelSelected(event: Event): void {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
 
-        const qCount = 50;
-        const quizQuestions = questions.map((question, i) => ({
-            qNum: (i % qCount) + 1,
-            qTitle: question,
-            qAnswer: answers[i],
+        const reader = new FileReader();
+        reader.onload = () => {
+            const data = new Uint8Array(reader.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData: { question?: string; answer?: string }[] =
+                XLSX.utils.sheet_to_json(worksheet);
+
+            this.questions = jsonData.map((row) => ({
+                question: row.question || '',
+                answer: row.answer || '',
+            }));
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // Close and return updated questions
+    saveAndClose(): void {
+        this.dialogRef.close({
+            questions: this.questions,
+            quizNum: this.quizNum,
+        });
+    }
+
+    cancel(): void {
+        this.dialogRef.close(null);
+    }
+
+    get outputText(): string {
+        if (!this.questions || !this.questions.length) return '';
+
+        const quizQuestions = this.questions.map((q, i) => ({
+            qNum: i + 1,
+            qTitle: q.question,
+            qAnswer: q.answer,
         }));
 
-        const quizObject = {
-            quiz_id: this.quizNum,
-            questions: quizQuestions,
-        };
+        return JSON.stringify(
+            { quiz_id: this.quizNum, questions: quizQuestions },
+            null,
+            4
+        );
+    }
 
-        this.outputText = JSON.stringify(quizObject, null, 4);
-        this.showOutput = true;
-
-        const blob = new Blob([this.outputText], { type: 'application/json' });
-        this.downloadUrl = URL.createObjectURL(blob);
+    get showOutput(): boolean {
+        return this.questions && this.questions.length > 0;
     }
 }

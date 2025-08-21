@@ -7,13 +7,13 @@ body {
 
 body {
     font-family: Helvetica, "Courier New", Courier, monospace;
-    color: #4cfbab;
+    /* color: #4cfbab; */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     min-height: 100vh;
-    background-color: black;
+    /* background-color: black; */
 }
 
 mat-card.scrollable-card {
@@ -23,20 +23,20 @@ mat-card.scrollable-card {
     padding: 20px;
     overflow-y: auto;
     max-height: 90vh;
-    background-color: rgba(11, 12, 16, 0.9);
-    color: #4cfbab;
+    /* background-color: rgba(11, 12, 16, 0.9); */
+    /* color: #4cfbab; */
     border-radius: 20px;
 }
 
-label {
+/* label {
     color: #4cfbab;
-}
+} */
 
 input,
 textarea {
-    background-color: rgba(11, 12, 16, 0.8);
-    border: 1px solid #4cfbab;
-    color: #4cfbab;
+    /* background-color: rgba(11, 12, 16, 0.8); */
+    /* border: 1px solid #4cfbab; */
+    /* color: #4cfbab; */
     padding: 10px;
     margin: 10px 0;
     width: 100%;
@@ -49,10 +49,10 @@ textarea {
 }
 
 button {
-    background-color: #4cfbab;
+    /* background-color: #4cfbab; */
     border: none;
     border-radius: 20px;
-    color: #1e1e1e;
+    /* color: #1e1e1e; */
     padding: 10px 20px;
     font-size: 16px;
     margin: 20px 0;
@@ -65,11 +65,18 @@ button {
 }
 
 a {
-    color: #4cfbab;
+    /* color: #4cfbab; */
     text-decoration: none;
     margin-top: 20px;
 }
 
 a:hover {
     text-decoration: underline;
+}
+
+.tab-content {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }

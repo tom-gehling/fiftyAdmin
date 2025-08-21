@@ -6,6 +6,13 @@
         <div class="action-bar">
             <button
                 mat-raised-button
+                color="accent"
+                (click)="openImportDialog()"
+            >
+                Import
+            </button>
+            <button
+                mat-raised-button
                 color="primary"
                 type="submit"
                 [disabled]="!canWrite()"
@@ -38,7 +45,7 @@
         <div class="container">
             <div class="row justify-content-start g-3">
                 <!-- Quiz Number -->
-                <div class="col-6 col-md-6 col-lg-3">
+                <div class="col-6 col-md-6 col-lg-2">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Quiz Number</mat-label>
                         <input
@@ -50,7 +57,7 @@
                     </mat-form-field>
                 </div>
                 <!-- Quiz Type -->
-                <div class="col-6 col-md-6 col-lg-3">
+                <div class="col-6 col-md-6 col-lg-2">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Quiz Type</mat-label>
                         <mat-select formControlName="quizType">
@@ -96,13 +103,13 @@
                     </mat-form-field>
                 </div>
                 <!-- Premium Checkbox -->
-                <div class="col-6 col-md-3 col-lg-2 d-flex align-items-center">
+                <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
                     <mat-checkbox formControlName="isPremium"
                         >Premium</mat-checkbox
                     >
                 </div>
                 <!-- Active Checkbox -->
-                <div class="col-6 col-md-3 col-lg-2 d-flex align-items-center">
+                <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
                     <mat-checkbox formControlName="isActive"
                         >Active</mat-checkbox
                     >

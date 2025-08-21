@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { QuizComponent } from './quiz/quiz.component';
 import { QuizDetailComponent } from './quiz-detail/quiz-detail.component';
-import { QuizTemplateComponent } from './quiz-template/quiz-template.component';
+import { QuizTemplateComponent } from './common/quiz-template/quiz-template.component';
 import { ExtractComponent } from './extract/extract.component';
 // import { SubmissionsComponent } from './submissions/submissions.component';
 // import { FormsComponent } from './forms/forms.component';

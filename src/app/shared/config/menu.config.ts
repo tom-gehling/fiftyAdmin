@@ -1,7 +1,7 @@
 import { Type } from '@angular/core';
 import { HomeComponent } from '../../home/home.component';
 import { QuizComponent } from '../../quiz/quiz.component';
-import { QuizTemplateComponent } from '../../quiz-template/quiz-template.component';
+import { QuizTemplateComponent } from '../../common/quiz-template/quiz-template.component';
 import { QuizDetailComponent } from '../../quiz-detail/quiz-detail.component';
 
 export interface AppMenuItem {

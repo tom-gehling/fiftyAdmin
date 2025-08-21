@@ -18,11 +18,12 @@ import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { QuillModule } from 'ngx-quill';
 import { MatDialog } from '@angular/material/dialog';
-import { QuizTemplateComponent } from '../quiz-template/quiz-template.component';
+import { QuizTemplateComponent } from '../common/quiz-template/quiz-template.component';
 import { PreviewService } from '../shared/services/preview.service';
 import { QuizzesService } from '../shared/services/quizzes.service'; // <-- Import your Firestore service
 import { Quiz, QuizQuestion } from '../models/quiz.model'; // Make sure this path is correct
 import { AuthService } from '../shared/services/auth.service';
+import { ExtractComponent } from '../extract/extract.component';
 
 @Component({
     selector: 'quiz-detail',
@@ -243,5 +244,33 @@ export class QuizDetailComponent implements OnInit {
 
     canWrite() {
         return this.authService.user$.value && !this.authService.isAnonymous;
+    }
+
+    openImportDialog(): void {
+        const dialogRef = this.dialog.open(ExtractComponent, {
+            width: '80vw',
+            data: {
+                quizNum: this.form.get('number')?.value,
+                questions: this.questions.value, // pass current FormArray
+            },
+        });
+
+        dialogRef.afterClosed().subscribe((result) => {
+            if (result?.questions) {
+                // Clear and repopulate FormArray
+                this.questions.clear();
+                result.questions.forEach((q: any) => {
+                    this.questions.push(
+                        this.fb.group({
+                            question: q.question,
+                            answer: q.answer,
+                        })
+                    );
+                });
+
+                // Update questionCount
+                this.form.patchValue({ questionCount: this.questions.length });
+            }
+        });
     }
 }
