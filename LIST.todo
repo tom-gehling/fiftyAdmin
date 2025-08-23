@@ -5,7 +5,7 @@
 
 #Quiz Detail
 [] Add import functionality from xls and google sheets
-[] Clean up top of quiz page
+[x] Clean up top of quiz page
 [] Use quizId at top of page
 [] Clean up quiz detail form
 
