@@ -20,23 +20,16 @@ export interface Quiz {
 
     // Domain ID of the quiz (number)
     quizNumber: number;
-
     creationTime?: Date; // optional for new docs
-
     deploymentDate?: Date;
     deploymentTime?: string; // e.g., "14:30"
-
     quizType?: number;
     isPremium?: boolean;
     isActive?: boolean;
-
     questions: QuizQuestion[];
-
     theme?: QuizTheme;
-
     notesAbove?: string;
     notesBelow?: string;
-
     sponsor?: string;
     sponsorImageUrl?: string;
 }

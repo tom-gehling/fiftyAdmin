@@ -5,13 +5,13 @@
     >
         <ng-container *ngIf="user$ | async as user; else noUser">
             <div *ngIf="!user.isAnonymous; else anonUser">
-                <p>Logged in as: {{ user.uid }}</p>
+                <p>Logged in as: {{ user.email }}</p>
                 <button mat-button color="warn" (click)="logout()">
                     Logout
                 </button>
             </div>
             <ng-template #anonUser>
-                <p>Anonymous user</p>
+                <p>Anon User</p>
                 <button mat-button color="primary" (click)="login()">
                     Login
                 </button>

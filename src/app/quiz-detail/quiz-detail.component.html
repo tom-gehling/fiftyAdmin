@@ -1,12 +1,16 @@
 <mat-card>
     <!-- Top action buttons -->
     <div class="top-bar d-flex justify-content-between align-items-center">
-        <div class="title h5 mb-0">Quiz {{ id == "0" ? "" : id }}</div>
+        <div class="title h5 mb-0">
+            Quiz
+            {{ form.get("quizNumber")?.value || (id === "0" ? "New" : id) }}
+        </div>
 
         <div class="action-bar">
             <button
                 mat-raised-button
                 color="accent"
+                [disabled]="canWrite()"
                 (click)="openImportDialog()"
             >
                 Import
@@ -15,7 +19,7 @@
                 mat-raised-button
                 color="primary"
                 type="submit"
-                [disabled]="!canWrite()"
+                [disabled]="canWrite() || form.invalid"
                 (click)="saveQuiz()"
                 class="me-2"
             >
@@ -51,11 +55,12 @@
                         <input
                             matInput
                             type="number"
-                            formControlName="number"
+                            formControlName="quizNumber"
                             required
                         />
                     </mat-form-field>
                 </div>
+
                 <!-- Quiz Type -->
                 <div class="col-6 col-md-6 col-lg-2">
                     <mat-form-field appearance="outline" class="w-100">
@@ -70,6 +75,7 @@
                         </mat-select>
                     </mat-form-field>
                 </div>
+
                 <!-- Deployment Date -->
                 <div class="col-12 col-sm-12 col-md-6 col-lg-3">
                     <mat-form-field appearance="outline" class="w-100">
@@ -86,7 +92,8 @@
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
                 </div>
-                <!-- Deployment Time -->
+
+                <!-- Deployment Time (native input) -->
                 <div class="col-12 col-sm-12 col-md-6 col-lg-3">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Deployment Time</mat-label>
@@ -102,12 +109,14 @@
                         <mat-timepicker #timepicker></mat-timepicker>
                     </mat-form-field>
                 </div>
+
                 <!-- Premium Checkbox -->
                 <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
                     <mat-checkbox formControlName="isPremium"
                         >Premium</mat-checkbox
                     >
                 </div>
+
                 <!-- Active Checkbox -->
                 <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
                     <mat-checkbox formControlName="isActive"
@@ -142,25 +151,14 @@
                                 <!-- Question and Answer editor -->
                                 <div class="questionAndAnswer flex-grow-1">
                                     <div class="d-flex align-items-center">
-                                        <span class="question-number fw-bold"
-                                            >{{ i + 1 }}.</span
-                                        >
+                                        <span class="question-number fw-bold">
+                                            {{ i + 1 }}.
+                                        </span>
                                     </div>
+
                                     <!-- Question field -->
                                     <div class="qa-field">
-                                        <!-- <button
-                                            mat-icon-button
-                                            type="button"
-                                            (click)="
-                                                toggleToolbar(i, 'question')
-                                            "
-                                            aria-label="Toggle question toolbar"
-                                        >
-                                            <mat-icon>edit</mat-icon>
-                                        </button> -->
-
                                         <quill-editor
-                                            *ngIf="true"
                                             formControlName="question"
                                             [modules]="
                                                 isToolbarVisible(i, 'question')
@@ -172,17 +170,7 @@
 
                                     <!-- Answer field -->
                                     <div class="qa-field">
-                                        <!-- <button
-                                            mat-icon-button
-                                            type="button"
-                                            (click)="toggleToolbar(i, 'answer')"
-                                            aria-label="Toggle answer toolbar"
-                                        >
-                                            <mat-icon>edit</mat-icon>
-                                        </button> -->
-
                                         <quill-editor
-                                            *ngIf="true"
                                             formControlName="answer"
                                             [modules]="
                                                 isToolbarVisible(i, 'answer')
@@ -209,8 +197,8 @@
                 </div>
             </mat-tab>
 
-            <!-- Color Scheme Tab -->
-            <mat-tab label="Color Scheme" *ngIf="selectedQuizType == 2">
+            <!-- Color Scheme Tab (always visible) -->
+            <mat-tab label="Color Scheme" *ngIf="quiz.quizType == 2">
                 <div class="container py-3" formGroupName="theme">
                     <div class="d-flex flex-row align-items-start gap-5">
                         <!-- Font Color -->
@@ -326,25 +314,6 @@
                                 />
                             </mat-form-field>
                         </div>
-
-                        <!-- <div class="col-12">
-                            <label for="imageUpload" class="form-label"
-                                >Upload Image:</label
-                            >
-                            <input
-                                id="imageUpload"
-                                type="file"
-                                class="form-control"
-                                (change)="onImageSelected($event)"
-                            />
-                            <div *ngIf="imagePreview" class="mt-2">
-                                <img
-                                    [src]="imagePreview"
-                                    alt="Preview"
-                                    width="150"
-                                />
-                            </div>
-                        </div> -->
                     </div>
                 </div>
             </mat-tab>

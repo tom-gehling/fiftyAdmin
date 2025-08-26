@@ -35,12 +35,34 @@ export class ExtractComponent {
     // Text import
     importTextQuestions(inputText: string): void {
         if (!inputText) return;
-
+        
         const lines = inputText.split('\n');
         this.questions = lines.map((line) => {
             const [question, answer] = line.split('\t');
             return { question: question || '', answer: answer || '' };
         });
+        this.dialogRef.close({
+            questions: this.questions,
+            quizNum: this.quizNum,
+        });
+    }
+
+    importFromGoogleSheets(sheetId: string): void {
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+        fetch(url)
+            .then((res) => res.text())
+            .then((text) => {
+                // The response is not pure JSON, need to strip wrapping
+                const json = JSON.parse(text.substr(47).slice(0, -2));
+                const rows = json.table.rows;
+
+                this.questions = rows.map((r: any) => ({
+                    question: r.c[0]?.v || '',
+                    answer: r.c[1]?.v || '',
+                }));
+            })
+            .catch((err) => console.error('Error loading Google Sheet:', err));
     }
 
     // Excel import

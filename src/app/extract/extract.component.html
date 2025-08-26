@@ -27,13 +27,25 @@
         <!-- --- Excel Tab --- -->
         <mat-tab label="Excel">
             <div class="tab-content">
-                <h2>Import from Excel</h2>
+                <h4>Import from Excel</h4>
                 <input
                     type="file"
                     id="excelInput"
                     accept=".xlsx,.xls"
                     (change)="onExcelSelected($event)"
                 />
+            </div>
+        </mat-tab>
+        <mat-tab label="Google Sheets">
+            <div class="tab-content">
+                <h4>Extract from Google Sheets</h4>
+                <button
+                    mat-raised-button
+                    color="primary"
+                    (click)="importFromGoogleSheets('YOUR_SHEET_ID')"
+                >
+                    Import from Google Sheets
+                </button>
             </div>
         </mat-tab>
     </mat-tab-group>

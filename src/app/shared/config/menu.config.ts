@@ -22,51 +22,57 @@ export const MENU_ITEMS: AppMenuItem[] = [
     {
         path: 'quizzes',
         label: 'Quizzes',
-        icon: 'quiz',
-        shownInMenu: true,
-        children: [
-            {
-                path: 'quizzes',
-                label: 'Quizzes',
-                icon: 'quiz', // choose icon as needed
-                shownInMenu: true,
-            },
-            {
-                path: 'submissions',
-                label: 'Submissions',
-                icon: 'upload', // choose icon as needed
-                shownInMenu: true,
-            },
-            {
-                path: 'forms',
-                label: 'Forms',
-                icon: 'description',
-                shownInMenu: true,
-            },
-            {
-                path: 'quiz-night-questions',
-                label: 'Quiz Night Questions',
-                icon: 'question_answer',
-                shownInMenu: true,
-            },
-        ],
-    },
-    {
-        path: 'venues',
-        label: 'Venues',
-        icon: 'location_on',
+        icon: 'quiz', // choose icon as needed
         shownInMenu: true,
     },
-    {
-        path: 'sponsors',
-        label: 'Sponsors',
-        icon: 'star',
-        shownInMenu: true,
-    },
-    {
-        path: 'extract',
-        label: 'Extract',
-        icon: 'star',
-        shownInMenu: true,
-    },
+    // {
+    //     path: 'quizzes',
+    //     label: 'Quizzes',
+    //     icon: 'quiz',
+    //     shownInMenu: true,
+    //     children: [
+    //         {
+    //             path: 'quizzes',
+    //             label: 'Quizzes',
+    //             icon: 'quiz', // choose icon as needed
+    //             shownInMenu: true,
+    //         },
+    //         {
+    //             path: 'submissions',
+    //             label: 'Submissions',
+    //             icon: 'upload', // choose icon as needed
+    //             shownInMenu: true,
+    //         },
+    //         {
+    //             path: 'forms',
+    //             label: 'Forms',
+    //             icon: 'description',
+    //             shownInMenu: true,
+    //         },
+    //         {
+    //             path: 'quiz-night-questions',
+    //             label: 'Quiz Night Questions',
+    //             icon: 'question_answer',
+    //             shownInMenu: true,
+    //         },
+    //     ],
+    // },
+    // {
+    //     path: 'venues',
+    //     label: 'Venues',
+    //     icon: 'location_on',
+    //     shownInMenu: true,
+    // },
+    // {
+    //     path: 'sponsors',
+    //     label: 'Sponsors',
+    //     icon: 'star',
+    //     shownInMenu: true,
+    // },
+    // {
+    //     path: 'extract',
+    //     label: 'Extract',
+    //     icon: 'star',
+    //     shownInMenu: true,
+    // },
 ];
