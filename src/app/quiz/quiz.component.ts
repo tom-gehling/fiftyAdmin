@@ -18,6 +18,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTableDataSource } from '@angular/material/table';
 import { QuizzesService } from '../shared/services/quizzes.service';
 import { Quiz } from '../models/quiz.model';
+import { AuthService } from '../shared/services/auth.service';
 
 @Component({
     selector: 'quiz',
@@ -47,7 +48,7 @@ export class QuizComponent implements OnInit, AfterViewInit {
     @ViewChild(MatSort) sort!: MatSort;
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-    constructor(private router: Router) {}
+    constructor(private router: Router, private authService: AuthService) {}
 
     ngOnInit(): void {
         this.fetchQuizzes();
@@ -102,7 +103,9 @@ export class QuizComponent implements OnInit, AfterViewInit {
     }
 
     goToDetails(row: Quiz) {
-        this.router.navigate(['/quizzes', row.id]);
+        if (this.canWrite()) {
+            this.router.navigate(['/quizzes', row.id]);
+        }
     }
 
     create() {
@@ -111,5 +114,9 @@ export class QuizComponent implements OnInit, AfterViewInit {
 
     getQuizTypeLabel(type: number): string {
         return this.quizTypeLabels[type] || 'Unknown';
+    }
+
+    canWrite() {
+        return this.authService.user$.value && !this.authService.isAnonymous;
     }
 }

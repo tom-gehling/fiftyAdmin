@@ -1,6 +1,11 @@
 <mat-card>
     <h2>All Quizzes</h2>
-    <button mat-raised-button color="primary" (click)="create()">
+    <button
+        mat-raised-button
+        color="primary"
+        (click)="create()"
+        *ngIf="canWrite()"
+    >
         <mat-icon>add</mat-icon>
         Create Quiz
     </button>
