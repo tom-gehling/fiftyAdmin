@@ -1,0 +1,48 @@
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+    <mat-card class="w-100" style="max-width: 400px; padding: 1.5rem">
+        <h1 class="h4 mb-4 text-center">Login</h1>
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            <mat-form-field appearance="outline" class="w-100 mb-3">
+                <mat-label>Email</mat-label>
+                <input matInput formControlName="email" type="email" />
+                <mat-error *ngIf="loginForm.get('email')?.invalid">
+                    Email is required
+                </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-100 mb-3">
+                <mat-label>Password</mat-label>
+                <input matInput formControlName="password" type="password" />
+                <mat-error *ngIf="loginForm.get('password')?.invalid">
+                    Password is required
+                </mat-error>
+            </mat-form-field>
+
+            <div class="form-check mb-3">
+                <input
+                    class="form-check-input"
+                    type="checkbox"
+                    formControlName="rememberMe"
+                    id="rememberMe"
+                />
+                <label class="form-check-label" for="rememberMe">
+                    Remember me
+                </label>
+            </div>
+
+            <button
+                mat-raised-button
+                color="primary"
+                class="w-100"
+                [disabled]="loading"
+            >
+                {{ loading ? "Logging in..." : "Login" }}
+            </button>
+        </form>
+
+        <div *ngIf="error" class="text-danger mt-3 text-center">
+            {{ error }}
+        </div>
+    </mat-card>
+</div>
