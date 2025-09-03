@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { buildForm } from '../utils/formBuilder';
@@ -25,6 +25,8 @@ import { CommonModule } from '@angular/common';
     ReactiveFormsModule]
 })
 export class LoginComponent {
+  @Input() accountEditMode:boolean = false;
+
   loading = false;
   error: string | null = null;
   loginForm!: FormGroup;
@@ -43,19 +45,33 @@ export class LoginComponent {
 
   ngOnInit() {
     this.loginForm = buildForm<LoginFormModel>(this.fb, this.defaultModel);
+    if (this.accountEditMode) {
+      this.loginForm.addControl('displayName', this.fb.control(''));
+      this.loginForm.removeControl('rememberMe');
+    }
   }
 
   async onSubmit() {
     if (this.loginForm.invalid) return;
     this.loading = true;
     this.error = null;
+    try{
+      if (this.accountEditMode) {
+        const { displayName, password } = this.loginForm.getRawValue();
+        if (displayName) {
+          await this.auth.updateDisplayName(displayName);
+        }
+      } else {
+        const { email, password, rememberMe } = this.loginForm.getRawValue();
+        await this.auth.loginEmailPassword(email!, password!, rememberMe);
+        this.router.navigate(['/home']);
+      }
+    }
 
-    const { email, password } = this.loginForm.getRawValue();
+    
 
-    try {
-      await this.auth.loginEmailPassword(email!, password!);
-      this.router.navigate(['/home']); // go to main app
-    } catch (err: any) {
+
+    catch (err: any) {
       this.error = err.message;
     } finally {
       this.loading = false;

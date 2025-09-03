@@ -7,6 +7,7 @@ import {
     onAuthStateChanged,
     User,
 } from '@angular/fire/auth';
+import { browserLocalPersistence, browserSessionPersistence, setPersistence, updateProfile } from 'firebase/auth';
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -16,7 +17,7 @@ export class AuthService {
 
     constructor() {
         onAuthStateChanged(this.auth, (user) => this.user$.next(user));
-        this.ensureAnonymousLogin();
+        // this.ensureAnonymousLogin();
     }
 
     async ensureAnonymousLogin() {
@@ -25,13 +26,26 @@ export class AuthService {
         }
     }
 
-    async loginEmailPassword(email: string, password: string) {
-        return signInWithEmailAndPassword(this.auth, email, password);
+    async loginEmailPassword(email: string, password: string, rememberMe: boolean = false) {
+        await setPersistence(this.auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+        const cred = await signInWithEmailAndPassword(this.auth, email, password);
+        if (!cred.user.displayName) {
+            const fallbackName = email.split('@')[0];
+            await updateProfile(cred.user, { displayName: fallbackName });
+        }
+        return cred.user;
+    }
+
+    async updateDisplayName(displayName: string) {
+        if (this.auth.currentUser) {
+        await updateProfile(this.auth.currentUser, { displayName });
+        this.user$.next({ ...this.auth.currentUser });
+        }
     }
 
     async logout() {
         await signOut(this.auth);
-        await this.ensureAnonymousLogin(); // fallback to anonymous after logout
+        // await this.ensureAnonymousLogin(); // fallback to anonymous after logout
     }
 
     get currentUserId(): string | null {
