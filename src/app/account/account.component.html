@@ -1,0 +1,29 @@
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+    <mat-card class="w-100" style="max-width: 500px; padding: 1.5rem">
+        <h1 class="h5 mb-4 text-center">
+            {{ accountForm?.get("email")?.value }}
+        </h1>
+        <mat-divider class="mb-3"></mat-divider>
+
+        <div>
+            <mat-form-field appearance="outline" class="w-100">
+                <mat-label>Display Name</mat-label>
+                <input matInput [(ngModel)]="displayName" />
+            </mat-form-field>
+        </div>
+
+        <!-- Save Changes Button -->
+        <div class="text-center mt-4">
+            <button
+                mat-raised-button
+                color="primary"
+                (click)="saveDisplayName()"
+            >
+                Save Changes
+            </button>
+            <button mat-stroked-button class="ms-2" (click)="goBack()">
+                Back
+            </button>
+        </div>
+    </mat-card>
+</div>

@@ -12,10 +12,36 @@
 
     <mat-sidenav-content>
         <mat-toolbar class="fiftyGreen">
+            <!-- Left side: menu toggle -->
             <button mat-icon-button (click)="toggleSidebar()">
                 <mat-icon>menu</mat-icon>
             </button>
+
+            <span class="flex-spacer"></span>
+
+            <!-- Profile icon + name -->
+            <div class="profile-container" [matMenuTriggerFor]="profileMenu">
+                <button mat-icon-button aria-label="Account">
+                    <mat-icon>account_circle</mat-icon>
+                </button>
+                <div class="profile-name">
+                    {{ displayName || email }}
+                </div>
+            </div>
+
+            <!-- Profile menu -->
+            <mat-menu #profileMenu="matMenu">
+                <button mat-menu-item (click)="goToAccount()">
+                    <mat-icon>edit</mat-icon>
+                    <span>Update Profile</span>
+                </button>
+                <button mat-menu-item (click)="logout()">
+                    <mat-icon>logout</mat-icon>
+                    <span>Logout</span>
+                </button>
+            </mat-menu>
         </mat-toolbar>
+
         <div class="content" [@routeAnimations]="prepareRoute(outlet)">
             <router-outlet #outlet="outlet"></router-outlet>
         </div>

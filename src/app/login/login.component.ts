@@ -22,7 +22,8 @@ import { CommonModule } from '@angular/common';
     MatInputModule,
     MatCheckboxModule,
     MatButtonModule,
-    ReactiveFormsModule]
+    ReactiveFormsModule
+  ]
 })
 export class LoginComponent {
   @Input() accountEditMode:boolean = false;

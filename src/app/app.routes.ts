@@ -7,9 +7,11 @@ import { ExtractComponent } from './extract/extract.component';
 import { LoginComponent } from './login/login.component';
 import { AuthGuard } from './shared/guards/authGuard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+import { AccountComponent } from './account/account.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
+  { path: 'account', component: AccountComponent, canActivate: [AuthGuard] },
 
   {
     path: '',

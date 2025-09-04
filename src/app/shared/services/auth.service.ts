@@ -7,7 +7,7 @@ import {
     onAuthStateChanged,
     User,
 } from '@angular/fire/auth';
-import { browserLocalPersistence, browserSessionPersistence, setPersistence, updateProfile } from 'firebase/auth';
+import { browserLocalPersistence, browserSessionPersistence, setPersistence, updatePassword, updateProfile } from 'firebase/auth';
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -40,6 +40,12 @@ export class AuthService {
         if (this.auth.currentUser) {
         await updateProfile(this.auth.currentUser, { displayName });
         this.user$.next({ ...this.auth.currentUser });
+        }
+    }
+
+    async updatePassword(newPassword: string) {
+        if (this.auth.currentUser) {
+            await updatePassword(this.auth.currentUser, newPassword);
         }
     }
 
