@@ -10,7 +10,6 @@
             <button
                 mat-raised-button
                 color="accent"
-                [disabled]="canWrite()"
                 (click)="openImportDialog()"
             >
                 Import
@@ -19,7 +18,7 @@
                 mat-raised-button
                 color="primary"
                 type="submit"
-                [disabled]="canWrite() || form.invalid"
+                [disabled]="form.invalid"
                 (click)="saveQuiz()"
                 class="me-2"
             >
@@ -49,7 +48,7 @@
         <div class="container">
             <div class="row justify-content-start g-3">
                 <!-- Quiz Number -->
-                <div class="col-6 col-md-6 col-lg-2">
+                <div class="col-4 col-md-6 col-lg-2">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Quiz Number</mat-label>
                         <input
@@ -62,7 +61,7 @@
                 </div>
 
                 <!-- Quiz Type -->
-                <div class="col-6 col-md-6 col-lg-2">
+                <div class="col-4 col-md-6 col-lg-2">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Quiz Type</mat-label>
                         <mat-select formControlName="quizType">
@@ -77,7 +76,7 @@
                 </div>
 
                 <!-- Deployment Date -->
-                <div class="col-12 col-sm-12 col-md-6 col-lg-3">
+                <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Deployment Date</mat-label>
                         <input
@@ -94,7 +93,7 @@
                 </div>
 
                 <!-- Deployment Time (native input) -->
-                <div class="col-12 col-sm-12 col-md-6 col-lg-3">
+                <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Deployment Time</mat-label>
                         <input
@@ -111,11 +110,11 @@
                 </div>
 
                 <!-- Premium Checkbox -->
-                <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
+                <!-- <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
                     <mat-checkbox formControlName="isPremium"
                         >Premium</mat-checkbox
                     >
-                </div>
+                </div> -->
 
                 <!-- Active Checkbox -->
                 <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
@@ -145,17 +144,15 @@
                             <mat-card class="d-flex align-items-center">
                                 <!-- Drag handle icon -->
                                 <div cdkDragHandle class="drag-handle">
-                                    <mat-icon>drag_indicator</mat-icon>
-                                </div>
-
-                                <!-- Question and Answer editor -->
-                                <div class="questionAndAnswer flex-grow-1">
                                     <div class="d-flex align-items-center">
                                         <span class="question-number fw-bold">
                                             {{ i + 1 }}.
                                         </span>
                                     </div>
+                                </div>
 
+                                <!-- Question and Answer editor -->
+                                <div class="questionAndAnswer flex-grow-1">
                                     <!-- Question field -->
                                     <div class="qa-field">
                                         <quill-editor
@@ -266,7 +263,7 @@
             </mat-tab>
 
             <!-- Other Tab -->
-            <mat-tab label="Other">
+            <mat-tab label="Other" *ngIf="quiz.quizType == 2">
                 <div class="container py-3">
                     <div class="row mb-2">
                         <div class="col">

@@ -5,8 +5,8 @@ h4 {
 /* Scrollable modal card */
 mat-card.scrollable-card {
     width: 100%;
-    margin-top: 20px;
     padding: 20px;
+    height: 100%;
     max-height: 90vh;
     border-radius: 20px;
     display: flex;
@@ -71,4 +71,37 @@ a {
 
 a:hover {
     text-decoration: underline;
+}
+
+
+/* Hide action bar on small devices by default */
+.action-bar-wrapper .action-bar {
+  display: flex;
+  gap: 8px;
+  transition: max-height 0.3s ease;
+  overflow: hidden;
+}
+
+/* When `show` is added via Angular binding */
+.action-bar-wrapper .action-bar.show {
+  display: flex !important;
+  flex-direction: column;
+  max-height: 500px; /* arbitrary high value to allow growth */
+}
+
+/* Toggle button only visible on small devices */
+.toggle-action-bar {
+  display: none;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 767px) {
+  .action-bar-wrapper .action-bar {
+    display: none !important;
+    flex-direction: column;
+  }
+
+  .toggle-action-bar {
+    display: inline-block;
+  }
 }

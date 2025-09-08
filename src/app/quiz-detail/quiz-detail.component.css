@@ -90,10 +90,12 @@ mat-tab-group ::ng-deep .mat-tab-body-wrapper {
 .qa-field {
     flex: 1 1 45%;
     min-width: 250px;
-    margin-bottom: 8px;
+    display: flex;          /* make the container flexible */
+    flex-direction: column; /* stack inner content */
 }
 
 .qa-field quill-editor {
+    flex: 1;        /* fill the parent height */
     width: 100% !important;
 }
 
@@ -151,7 +153,7 @@ form.form {
     display: flex;
     flex-direction: row;
     gap: 0.8rem;
-    align-items: center;
+    align-items: stretch;
 }
 
 .drag-handle {
@@ -180,4 +182,30 @@ form.form {
     /* border-radius: 8px; */
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
     padding: 16px;
+}
+
+
+@media (max-width: 767px) {
+    .questionAndAnswer {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .qa-field {
+        min-width: 100%;
+    }
+
+    .tabGroup ::ng-deep .mat-tab-labels {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .col-4, .col-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+     .form, .top-bar, .tabGroup {
+        padding: 8px;
+    }
 }

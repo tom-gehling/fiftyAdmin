@@ -68,6 +68,7 @@ export class QuizDetailComponent implements OnInit {
         ],
     };
     activeToolbar: string | null = null;
+     actionBarVisible = false;
 
     constructor(
         private fb: FormBuilder,
@@ -270,6 +271,11 @@ export class QuizDetailComponent implements OnInit {
         this.activeToolbar = this.activeToolbar === key ? null : key;
     }
 
+    toggleActionBar() {
+    this.actionBarVisible = !this.actionBarVisible;
+    console.log(this.actionBarVisible)
+  }
+
     isToolbarVisible(index: number, type: 'question' | 'answer'): boolean {
         return this.activeToolbar === `${index}-${type}`;
     }
@@ -286,12 +292,13 @@ export class QuizDetailComponent implements OnInit {
         });
     }
 
-    canWrite() {
-        return this.authService.user$.value && !this.authService.isAnonymous;
-    }
+    // canWrite() {
+    //     return this.authService.user$.value && !this.authService.isAnonymous;
+    // }
 
     openImportDialog(): void {
         const dialogRef = this.dialog.open(ExtractComponent, {
+            height: '80vh',
             width: '80vw',
             data: {
                 quizNum: this.form.get('quizNumber')?.value,

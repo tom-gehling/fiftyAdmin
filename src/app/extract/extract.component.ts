@@ -2,9 +2,11 @@ import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { FormBuilder, FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatIcon } from '@angular/material/icon';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
     selector: 'app-extract',
@@ -17,11 +19,15 @@ export class ExtractComponent {
     quizNum: string = '';
     inputText: string = '';
     questions: { question: string; answer: string }[] = [];
+    googleSheetId: string = '';
+    googleTabName: string = 'Sheet1'; // default tab
 
     constructor(
         public dialogRef: MatDialogRef<ExtractComponent>,
         @Inject(MAT_DIALOG_DATA) public data: any,
-        private fb: FormBuilder
+        private fb: FormBuilder,
+        private location: Location,
+        private http: HttpClient
     ) {
         // Initialize with existing quiz questions
         if (data?.questions) {
@@ -47,23 +53,23 @@ export class ExtractComponent {
         });
     }
 
-    importFromGoogleSheets(sheetId: string): void {
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+    // importFromGoogleSheets(sheetId: string): void {
+    //     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
-        fetch(url)
-            .then((res) => res.text())
-            .then((text) => {
-                // The response is not pure JSON, need to strip wrapping
-                const json = JSON.parse(text.substr(47).slice(0, -2));
-                const rows = json.table.rows;
+    //     fetch(url)
+    //         .then((res) => res.text())
+    //         .then((text) => {
+    //             // The response is not pure JSON, need to strip wrapping
+    //             const json = JSON.parse(text.substr(47).slice(0, -2));
+    //             const rows = json.table.rows;
 
-                this.questions = rows.map((r: any) => ({
-                    question: r.c[0]?.v || '',
-                    answer: r.c[1]?.v || '',
-                }));
-            })
-            .catch((err) => console.error('Error loading Google Sheet:', err));
-    }
+    //             this.questions = rows.map((r: any) => ({
+    //                 question: r.c[0]?.v || '',
+    //                 answer: r.c[1]?.v || '',
+    //             }));
+    //         })
+    //         .catch((err) => console.error('Error loading Google Sheet:', err));
+    // }
 
     // Excel import
     onExcelSelected(event: Event): void {
@@ -96,7 +102,7 @@ export class ExtractComponent {
     }
 
     cancel(): void {
-        this.dialogRef.close(null);
+        this.dialogRef.close(null);   
     }
 
     get outputText(): string {
@@ -117,5 +123,18 @@ export class ExtractComponent {
 
     get showOutput(): boolean {
         return this.questions && this.questions.length > 0;
+    }
+
+    importFromGoogleSheets(sheetId: string, tabName: string): void {
+        if (!sheetId || !tabName) return;
+
+        const range = `${tabName}!A:B`; // adjust columns as needed
+        this.http.get<{question: string; answer: string}>(`/api/sheet/${sheetId}?range=${encodeURIComponent(range)}`)
+        .subscribe({
+            next: (data: any) => {
+                this.questions = data;
+            },
+            error: (err) => console.error('Error fetching Google Sheet:', err)
+        });
     }
 }
