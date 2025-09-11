@@ -1,9 +1,9 @@
-<mat-card>
+<mat-card *ngIf="form">
     <!-- Top action buttons -->
     <div class="top-bar d-flex justify-content-between align-items-center">
         <div class="title h5 mb-0">
             Quiz
-            {{ form.get("quizNumber")?.value || (id === "0" ? "New" : id) }}
+            {{ form.get("quizNumber")?.value || (id === "0" ? "" : id) }}
         </div>
 
         <div class="action-bar">
@@ -24,14 +24,14 @@
             >
                 Save
             </button>
-            <button
+            <!-- <button
                 mat-raised-button
                 color="accent"
                 type="button"
                 (click)="openPreview()"
             >
                 Preview
-            </button>
+            </button> -->
             <button
                 mat-stroked-button
                 color="warn"
@@ -48,7 +48,7 @@
         <div class="container">
             <div class="row justify-content-start g-3">
                 <!-- Quiz Number -->
-                <div class="col-4 col-md-6 col-lg-2">
+                <div class="col-4 col-md-4 col-lg-2">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Quiz Number</mat-label>
                         <input
@@ -61,7 +61,7 @@
                 </div>
 
                 <!-- Quiz Type -->
-                <div class="col-4 col-md-6 col-lg-2">
+                <div class="col-4 col-md-4 col-lg-2">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Quiz Type</mat-label>
                         <mat-select formControlName="quizType">
@@ -76,7 +76,7 @@
                 </div>
 
                 <!-- Deployment Date -->
-                <div class="col-6 col-sm-6 col-md-6 col-lg-3">
+                <!-- <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Deployment Date</mat-label>
                         <input
@@ -90,10 +90,10 @@
                         ></mat-datepicker-toggle>
                         <mat-datepicker #picker></mat-datepicker>
                     </mat-form-field>
-                </div>
+                </div> -->
 
                 <!-- Deployment Time (native input) -->
-                <div class="col-6 col-sm-6 col-md-6 col-lg-3">
+                <!-- <div class="col-6 col-sm-6 col-md-6 col-lg-3">
                     <mat-form-field appearance="outline" class="w-100">
                         <mat-label>Deployment Time</mat-label>
                         <input
@@ -107,7 +107,7 @@
                         ></mat-timepicker-toggle>
                         <mat-timepicker #timepicker></mat-timepicker>
                     </mat-form-field>
-                </div>
+                </div> -->
 
                 <!-- Premium Checkbox -->
                 <!-- <div class="col-6 col-md-3 col-lg-1 d-flex align-items-center">
@@ -155,26 +155,23 @@
                                 <div class="questionAndAnswer flex-grow-1">
                                     <!-- Question field -->
                                     <div class="qa-field">
-                                        <quill-editor
-                                            formControlName="question"
-                                            [modules]="
-                                                isToolbarVisible(i, 'question')
-                                                    ? quillModules
-                                                    : { toolbar: false }
-                                            "
-                                        ></quill-editor>
+                                        <div class="quill-editor-container">
+                                            <quill-editor
+                                                theme="bubble"
+                                                formControlName="question"
+                                                [modules]="quillModules"
+                                            ></quill-editor>
+                                        </div>
                                     </div>
 
-                                    <!-- Answer field -->
                                     <div class="qa-field">
-                                        <quill-editor
-                                            formControlName="answer"
-                                            [modules]="
-                                                isToolbarVisible(i, 'answer')
-                                                    ? quillModules
-                                                    : { toolbar: false }
-                                            "
-                                        ></quill-editor>
+                                        <div class="quill-editor-container">
+                                            <quill-editor
+                                                theme="bubble"
+                                                formControlName="answer"
+                                                [modules]="quillModules"
+                                            ></quill-editor>
+                                        </div>
                                     </div>
                                 </div>
 

@@ -25,9 +25,9 @@ export class ExtractComponent {
     constructor(
         public dialogRef: MatDialogRef<ExtractComponent>,
         @Inject(MAT_DIALOG_DATA) public data: any,
-        private fb: FormBuilder,
-        private location: Location,
-        private http: HttpClient
+        private fb: FormBuilder
+        // ,
+        // private http: HttpClient
     ) {
         // Initialize with existing quiz questions
         if (data?.questions) {
@@ -125,16 +125,16 @@ export class ExtractComponent {
         return this.questions && this.questions.length > 0;
     }
 
-    importFromGoogleSheets(sheetId: string, tabName: string): void {
-        if (!sheetId || !tabName) return;
+    // importFromGoogleSheets(sheetId: string, tabName: string): void {
+    //     if (!sheetId || !tabName) return;
 
-        const range = `${tabName}!A:B`; // adjust columns as needed
-        this.http.get<{question: string; answer: string}>(`/api/sheet/${sheetId}?range=${encodeURIComponent(range)}`)
-        .subscribe({
-            next: (data: any) => {
-                this.questions = data;
-            },
-            error: (err) => console.error('Error fetching Google Sheet:', err)
-        });
-    }
+    //     const range = `${tabName}!A:B`; // adjust columns as needed
+    //     this.http.get<{question: string; answer: string}>(`/api/sheet/${sheetId}?range=${encodeURIComponent(range)}`)
+    //     .subscribe({
+    //         next: (data: any) => {
+    //             this.questions = data;
+    //         },
+    //         error: (err) => console.error('Error fetching Google Sheet:', err)
+    //     });
+    // }
 }

@@ -33,13 +33,14 @@ import { AuthService } from '../shared/services/auth.service';
         MatPaginatorModule,
         MatFormFieldModule,
         MatInputModule,
+        
     ],
     templateUrl: './quiz.component.html',
     styleUrls: ['./quiz.component.css'],
 })
 export class QuizComponent implements OnInit, AfterViewInit {
     private quizzesService = inject(QuizzesService);
-    displayedColumns: string[] = ['number', 'quizType', 'creationTime'];
+    displayedColumns: string[] = ['quizNumber', 'quizType', 'creationTime'];
     quizTypeLabels = ['Weekly', 'Fifty+', 'Collaboration'];
     dataSource = new MatTableDataSource<Quiz>();
     selectedRow: Quiz | null = null;

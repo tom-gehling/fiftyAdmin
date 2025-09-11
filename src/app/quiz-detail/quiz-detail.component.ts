@@ -68,7 +68,7 @@ export class QuizDetailComponent implements OnInit {
         ],
     };
     activeToolbar: string | null = null;
-     actionBarVisible = false;
+    actionBarVisible = false;
 
     constructor(
         private fb: FormBuilder,
@@ -84,6 +84,13 @@ export class QuizDetailComponent implements OnInit {
         if (this.id && this.id !== '0') {
             this.loadQuiz(this.id);
         } else {
+            let emptyQuestions = Array.from({ length: 50 }, (_, i) => ({
+                questionId: i + 1,
+                question: '',
+                answer: '',
+                category: '',
+                timeless: false,
+            }));
             // new quiz
             this.quiz = {
                 quizId: Date.now(), // unique numeric ID
@@ -91,7 +98,7 @@ export class QuizDetailComponent implements OnInit {
                 isPremium: false,
                 isActive: true,
                 quizType: 0,
-                questions: [],
+                questions: emptyQuestions,
                 theme: {
                     fontColor: '#000000',
                     backgroundColor: '#ffffff',
@@ -100,6 +107,14 @@ export class QuizDetailComponent implements OnInit {
             };
             this.buildForm(this.quiz);
         }
+    }
+
+    private normalizeHtml(html: string): string {
+        if (!html) return '';
+        let cleaned = html.replace(/&nbsp;/g, ' ');       // replace non-breaking spaces
+        cleaned = cleaned.replace(/<p>\s*<\/p>/g, '');    // remove empty <p> tags
+        cleaned = cleaned.replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>'); // trim spaces inside <p>
+        return cleaned;
     }
 
     private buildForm(quiz: Quiz): void {
@@ -182,6 +197,12 @@ export class QuizDetailComponent implements OnInit {
         if (this.form.invalid) return;
 
         const formValue = this.form.value;
+
+        // normalize HTML for all questions
+        formValue.questions.forEach((q: any) => {
+            q.question = this.normalizeHtml(q.question);
+            q.answer = this.normalizeHtml(q.answer);
+        });
 
         // keep date as Date
         let deploymentDate: Date | null = formValue.deploymentDate || null;
@@ -273,12 +294,9 @@ export class QuizDetailComponent implements OnInit {
 
     toggleActionBar() {
     this.actionBarVisible = !this.actionBarVisible;
-    console.log(this.actionBarVisible)
   }
 
-    isToolbarVisible(index: number, type: 'question' | 'answer'): boolean {
-        return this.activeToolbar === `${index}-${type}`;
-    }
+
 
     openPreview(): void {
         const questions = this.form.get('questions')?.value || [];
@@ -323,5 +341,15 @@ export class QuizDetailComponent implements OnInit {
                 this.form.patchValue({ questionCount: this.questions.length });
             }
         });
+    }
+
+    onQuestionChanged(event: any, index: number) {
+        const html = event.html || '';
+        this.questions.at(index).get('question')?.setValue(this.normalizeHtml(html), { emitEvent: false });
+    }
+
+    onAnswerChanged(event: any, index: number) {
+        const html = event.html || '';
+        this.questions.at(index).get('answer')?.setValue(this.normalizeHtml(html), { emitEvent: false });
     }
 }

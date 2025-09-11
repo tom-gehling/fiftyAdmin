@@ -27,7 +27,7 @@
                         "styles": [
                             "src/styles.scss",
                             "node_modules/bootstrap/dist/css/bootstrap.min.css",
-                            "node_modules/quill/dist/quill.snow.css"
+                            "node_modules/quill/dist/quill.bubble.css"
                         ],
                         "scripts": [],
                         "server": "src/main.server.ts"
@@ -85,7 +85,7 @@
                         "styles": [
                             "src/styles.scss",
                             "node_modules/bootstrap/dist/css/bootstrap.min.css",
-                            "node_modules/quill/dist/quill.snow.css"
+                            "node_modules/quill/dist/quill.bubble.css"
                         ],
                         "scripts": []
                     }

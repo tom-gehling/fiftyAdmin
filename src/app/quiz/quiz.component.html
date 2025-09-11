@@ -1,27 +1,32 @@
 <mat-card>
     <h2>All Quizzes</h2>
-    <button
-        mat-raised-button
-        color="primary"
-        (click)="create()"
-        *ngIf="canWrite()"
-    >
-        <mat-icon>add</mat-icon>
-        Create Quiz
-    </button>
-    <!-- Global filter -->
-    <mat-form-field
-        appearance="outline"
-        style="width: 100%; margin-bottom: 1rem"
-    >
-        <mat-label>Search all</mat-label>
-        <input
-            matInput
-            (keyup)="applyFilter($event)"
-            placeholder="Type to filter all columns..."
-        />
-    </mat-form-field>
 
+    <!-- Top bar with search + create -->
+    <div class="toolbar">
+        <!-- Global filter -->
+        <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search all</mat-label>
+            <input
+                matInput
+                (keyup)="applyFilter($event)"
+                placeholder="Type to filter all columns..."
+            />
+        </mat-form-field>
+
+        <!-- Create button -->
+        <button
+            mat-icon-button
+            color="primary"
+            (click)="create()"
+            *ngIf="canWrite()"
+            matTooltip="Create Quiz"
+            class="add-button"
+        >
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+
+    <!-- Table -->
     <table
         mat-table
         [dataSource]="dataSource"
@@ -29,11 +34,10 @@
         style="width: 100%"
         matSort
     >
-        <!-- Title Column -->
         <!-- Quiz Number Column -->
-        <ng-container matColumnDef="number">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Number</th>
-            <td mat-cell *matCellDef="let row">{{ row.number }}</td>
+        <ng-container matColumnDef="quizNumber">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Quiz</th>
+            <td mat-cell *matCellDef="let row">{{ row.quizNumber }}</td>
         </ng-container>
 
         <!-- Quiz Type Column -->
@@ -64,7 +68,7 @@
     </table>
 
     <mat-paginator
-        [pageSizeOptions]="[5, 10, 20]"
+        [pageSizeOptions]="[10, 20, 50]"
         showFirstLastButtons
     ></mat-paginator>
 </mat-card>

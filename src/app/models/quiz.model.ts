@@ -20,6 +20,7 @@ export interface Quiz {
 
     // Domain ID of the quiz (number)
     quizNumber: number;
+    quizTitle?: string;
     creationTime?: Date; // optional for new docs
     deploymentDate?: Date;
     deploymentTime?: string; // e.g., "14:30"
