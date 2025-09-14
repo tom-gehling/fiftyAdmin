@@ -156,7 +156,7 @@ mat-card {
     flex-direction: column;
     flex: 1 1 auto;
     height: 100%;
-
+    /* overflow: hidden; */
 }
 
 /* Form fills available height */
@@ -164,7 +164,7 @@ form.form {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
-
+    overflow: hidden;
 }
 
 /* Tab group fills available height */

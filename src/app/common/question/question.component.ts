@@ -2,11 +2,12 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {MatExpansionModule} from '@angular/material/expansion';
 import {MatButtonModule} from '@angular/material/button';
+import { QuillViewComponent } from 'ngx-quill';
 
 @Component({
   selector: 'question',
   standalone: true,
-  imports: [MatExpansionModule, MatButtonModule, CommonModule],
+  imports: [MatExpansionModule, MatButtonModule, CommonModule, QuillViewComponent],
   templateUrl: './question.component.html',
   styleUrls: ['./question.component.css']
 })
@@ -25,7 +26,7 @@ export class QuestionComponent implements OnInit{
       
   }
 
-   @Output() answered = new EventEmitter<{ id: number; current: boolean }>();
+  @Output() answered = new EventEmitter<{ id: number; current: boolean }>();
 
   currentAnswer: boolean | null = null;
 

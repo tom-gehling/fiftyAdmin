@@ -31,6 +31,5 @@ export interface Quiz {
     theme?: QuizTheme;
     notesAbove?: string;
     notesBelow?: string;
-    sponsor?: string;
-    sponsorImageUrl?: string;
+    imageUrl?: string;
 }

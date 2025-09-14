@@ -18,6 +18,7 @@ export class AuthService {
 
     // current user observable
     public user$ = new BehaviorSubject<User | null>(null);
+    public isMember$ = new BehaviorSubject<boolean>(false);
 
     // track if Firebase has finished initializing
     public initialized$ = new BehaviorSubject(false);
@@ -78,4 +79,14 @@ export class AuthService {
     get isAnonymous(): boolean {
         return this.auth.currentUser?.isAnonymous ?? true;
     }
+
+    setMemberStatus(status: boolean) {
+    this.isMember$.next(status);
+    localStorage.setItem('isMember', status ? 'true' : 'false');
+}
+
+loadMemberStatus() {
+    const status = localStorage.getItem('isMember') === 'true';
+    this.isMember$.next(status);
+}
 }

@@ -7,6 +7,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatRippleModule } from '@angular/material/core';
 import { slideFromLeft } from '../../shared/animations/routerTransition';
 import { MENU_ITEMS, AppMenuItem } from '../../shared/config/menu.config';
 import { SideMenuComponent } from '../side-menu/side-menu.component';
@@ -24,7 +25,7 @@ import { AuthService } from '../../shared/services/auth.service';
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-    SideMenuComponent,
+    SideMenuComponent
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.css'],

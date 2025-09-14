@@ -57,6 +57,10 @@ export class QuizComponent implements OnInit, AfterViewInit {
 
     ngAfterViewInit() {
         this.dataSource.sort = this.sort;
+        this.sort.active = 'quizNumber';
+        this.sort.direction = 'asc';
+        this.sort.sortChange.emit({ active: this.sort.active, direction: this.sort.direction });
+
         this.dataSource.paginator = this.paginator;
 
         this.dataSource.filterPredicate = (data, filter) => {

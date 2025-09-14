@@ -1,9 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { AgCharts } from 'ag-charts-angular';
 import { AgChartOptions } from 'ag-charts-community';
 import { DashboardComponent } from '../dashboard/dashboard.component';
+import { combineLatest, map, Observable } from 'rxjs';
+import { Quiz } from '../models/quiz.model';
+import { QuizzesService } from '../shared/services/quizzes.service';
+import { AuthService } from '../shared/services/auth.service';
+import { register } from 'swiper/element/bundle';
+// register Swiper custom elements
+register();
+
 
 @Component({
     selector: 'app-home',
@@ -11,8 +19,41 @@ import { DashboardComponent } from '../dashboard/dashboard.component';
     imports: [CommonModule, MatCardModule, DashboardComponent],
     templateUrl: './home.component.html',
     styleUrls: ['./home.component.css'],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA], 
 })
 export class HomeComponent {
+
+    constructor(
+        private quizzesService: QuizzesService,
+        private auth: AuthService
+    ) {}
+    allQuizzes$!: Observable<Quiz[]>;
+    fiftyPlusQuizzes$!: Observable<Quiz[]>;
+    isMember$!: Observable<boolean>;
+
+    quizLogos: string[] = [
+    'quizLogos/2010s.png',
+    'quizLogos/2024.png',
+    'quizLogos/gravy.png',
+    'quizLogos/Hottest20.png',
+    'quizLogos/swifty.png',
+  ];
+
+  
+
+  ngOnInit() {
+    this.isMember$ = this.auth.isMember$;
+    this.allQuizzes$ = this.quizzesService.getAllQuizzes();
+
+    this.fiftyPlusQuizzes$ = combineLatest([this.allQuizzes$, this.isMember$]).pipe(
+      map(([quizzes, isMember]) =>
+        quizzes.filter(q => q.isPremium && isMember)
+      )
+    );
+  }
+
+
+
     userAccessChart: AgChartOptions = {
         title: { text: 'Daily Quiz Access (Last 7 Days)' },
         data: [

@@ -1,0 +1,28 @@
+.demo-container {
+  height: 100vh;
+}
+
+.demo-sidenav {
+  width: 220px;
+  padding: 8px;
+  background: #f7f7f7;
+  border-right: 1px solid #ddd;
+}
+
+.demo-sidenav h3 {
+  margin: 8px 0;
+  padding-left: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+.demo-content {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+a.mat-list-item.active {
+  background-color: #e0f2f1;
+  font-weight: 600;
+}

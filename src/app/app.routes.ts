@@ -8,11 +8,12 @@ import { LoginComponent } from './login/login.component';
 import { AuthGuard } from './shared/guards/authGuard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { AccountComponent } from './account/account.component';
+import { DemoComponent } from './demo/demo.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'account', component: AccountComponent, canActivate: [AuthGuard] },
-
+  { path: 'demo', component: DemoComponent, canActivate: [AuthGuard] },
   {
     path: '',
     component: MainLayoutComponent,

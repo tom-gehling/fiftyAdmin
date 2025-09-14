@@ -1,0 +1,28 @@
+<mat-sidenav-container class="demo-container">
+    <mat-sidenav mode="side" opened class="demo-sidenav">
+        <h3>Weekly Quizzes</h3>
+        <mat-nav-list>
+            <a
+                mat-list-item
+                *ngFor="let quiz of weeklyQuizzes"
+                (click)="selectQuiz(quiz)"
+                [class.active]="quiz.quizId === selectedQuiz?.quizId"
+            >
+                Quiz {{ quiz.quizNumber }}
+            </a>
+        </mat-nav-list>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="demo-content">
+        <mat-progress-spinner
+            *ngIf="loading"
+            mode="indeterminate"
+            diameter="40"
+        ></mat-progress-spinner>
+
+        <div *ngIf="!loading && selectedQuiz">
+            <h2>Quiz {{ selectedQuiz.quizNumber }}</h2>
+            <quiz-template [questions]="selectedQuiz.questions"></quiz-template>
+        </div>
+    </mat-sidenav-content>
+</mat-sidenav-container>

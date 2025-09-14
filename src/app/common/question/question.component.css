@@ -30,3 +30,11 @@ button.selected {
 .dot.space {
     background-color: inherit;
 }
+
+::ng-deep .ql-tooltip {
+  display: none !important;
+}
+
+.quill-readonly {
+  pointer-events: none; /* fully non-editable */
+}

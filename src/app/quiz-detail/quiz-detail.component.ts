@@ -69,6 +69,7 @@ export class QuizDetailComponent implements OnInit {
     };
     activeToolbar: string | null = null;
     actionBarVisible = false;
+    quizImagePreview: string | null = null;
 
     constructor(
         private fb: FormBuilder,
@@ -145,8 +146,7 @@ export class QuizDetailComponent implements OnInit {
             ),
             notesAbove: [quiz.notesAbove || ''],
             notesBelow: [quiz.notesBelow || ''],
-            sponsor: [quiz.sponsor || ''],
-            sponsorImageUrl: [quiz.sponsorImageUrl || ''],
+            imageUrl: ['']
         });
 
         // keep question count synced
@@ -352,4 +352,21 @@ export class QuizDetailComponent implements OnInit {
         const html = event.html || '';
         this.questions.at(index).get('answer')?.setValue(this.normalizeHtml(html), { emitEvent: false });
     }
+
+    onFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+
+  // Preview the image
+  const reader = new FileReader();
+  reader.onload = () => {
+    this.quizImagePreview = reader.result as string;
+    // Optionally, set the form control value for now (Base64 preview)
+    this.form.get('quizImage')?.setValue(this.quizImagePreview);
+  };
+  reader.readAsDataURL(file);
+//   to do -  set up firebase storage to save images
+}
 }

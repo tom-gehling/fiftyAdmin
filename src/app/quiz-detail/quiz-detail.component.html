@@ -129,7 +129,10 @@
         <mat-tab-group class="tabGroup mt-4">
             <!-- Questions Tab -->
             <mat-tab label="Questions">
-                <div formArrayName="questions" class="container py-3">
+                <div
+                    formArrayName="questions"
+                    class="questionContainer container py-3"
+                >
                     <div
                         cdkDropList
                         (cdkDropListDropped)="drop($event)"
@@ -291,7 +294,7 @@
                         </div>
                     </div>
 
-                    <div class="row mb-2">
+                    <!-- <div class="row mb-2">
                         <div class="col">
                             <h5 class="fw-bold">Sponsor</h5>
                         </div>
@@ -308,7 +311,7 @@
                                 />
                             </mat-form-field>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </mat-tab>
         </mat-tab-group>
