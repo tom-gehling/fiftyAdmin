@@ -1,0 +1,100 @@
+<p-card @if(form) class="flex flex-col h-full">
+    <!-- Top action buttons -->
+    <div class="flex items-center justify-between mb-4">
+        <div class="text-2xl font-semibold">Quiz {{ form.get("quizId")?.value || (id === "0" ? "" : id) }}</div>
+        <div class="flex gap-2">
+            <button pButton type="button" label="Import" class="p-button-outlined" (click)="openImportDialog()"></button>
+            <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="form.invalid" (click)="saveQuiz()"></button>
+            <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancel()"></button>
+        </div>
+    </div>
+
+    <!-- Core Quiz Info -->
+    <form [formGroup]="form" class="w-full">
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div>
+                <label for="quizId" class="block font-medium mb-1">Quiz Id</label>
+                <input pInputText type="number" id="quizId" formControlName="quizId" required class="w-full" />
+            </div>
+            <div>
+                <p-select id="quizType" formControlName="quizType" [options]="quizType" optionLabel="viewValue" optionValue="value" placeholder="Select Quiz Type" class="w-full"></p-select>
+            </div>
+            <div class="flex items-center">
+                <p-checkbox formControlName="isActive" binary="true" label="Active"></p-checkbox>
+            </div>
+        </div>
+
+        <!-- PrimeNG Tabs -->
+        <p-tabs class="mt-6 flex-1 flex flex-col" [(value)]="tabSelected">
+            <p-tablist>
+                <p-tab value="0">Questions</p-tab>
+                @if(form.get('quizType')?.value == QuizTypeEnum.Collab) {
+                <p-tab value="1">Color Scheme</p-tab>
+                <p-tab value="2">Other</p-tab>
+                }
+            </p-tablist>
+
+            <p-tabpanels>
+                <!-- Questions Tab -->
+                <p-tabpanel value="0">
+                    <div formArrayName="questions" class="py-3">
+                        <div cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-3">
+                            @for(q of questions.controls; track i; let i = $index) {
+                            <div cdkDrag [formGroupName]="i" class="flex">
+                                <p-card class="flex items-start gap-3 w-full p-4">
+                                    <div cdkDragHandle class="cursor-move text-gray-600">
+                                        <span class="font-bold text-lg">{{ i + 1 }}.</span>
+                                    </div>
+                                    <div class="flex flex-col md:flex-row gap-3 flex-1">
+                                        <div class="flex-1 w-full">
+                                            <quill-editor class="w-full" theme="bubble" formControlName="question" [modules]="quillModules"></quill-editor>
+                                        </div>
+                                        <div class="flex-1 w-full">
+                                            <quill-editor class="w-full" theme="bubble" formControlName="answer" [modules]="quillModules"></quill-editor>
+                                        </div>
+                                    </div>
+                                </p-card>
+                            </div>
+                            }
+                        </div>
+                    </div>
+                </p-tabpanel>
+
+                <!-- Color Scheme Tab -->
+                @if(form.get('quizType')?.value == QuizTypeEnum.Collab) {
+                <p-tabpanel value="1">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" formGroupName="theme">
+                        <div class="flex flex-col items-center">
+                            <label for="fontColor" class="font-medium mb-2">Font Color</label>
+                            <p-colorPicker id="fontColor" formControlName="fontColor"></p-colorPicker>
+                            <span>{{ form.get("theme.fontColor")?.value }}</span>
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <label for="backgroundColor" class="font-medium mb-2">Background Color</label>
+                            <p-colorPicker id="backgroundColor" formControlName="backgroundColor"></p-colorPicker>
+                            <span>{{ form.get("theme.backgroundColor")?.value }}</span>
+                        </div>
+
+                        <div class="flex flex-col items-center">
+                            <label for="tertiaryColor" class="font-medium mb-2">Tertiary Color</label>
+                            <p-colorPicker id="tertiaryColor" formControlName="tertiaryColor"></p-colorPicker>
+                            <span>{{ form.get("theme.tertiaryColor")?.value }}</span>
+                        </div>
+                    </div>
+                </p-tabpanel>
+                }
+
+                <!-- Other Tab -->
+                @if(form.get('quizType')?.value == QuizTypeEnum.Collab) {
+                <p-tabpanel value="2">
+                    <div class="flex flex-col gap-4">
+                        <input pInputText type="text" formControlName="notesAbove" placeholder="Text Above Quiz" class="w-full" />
+                        <input pInputText type="text" formControlName="notesBelow" placeholder="Text Below Quiz" class="w-full" />
+                    </div>
+                </p-tabpanel>
+                }
+            </p-tabpanels>
+        </p-tabs>
+    </form>
+</p-card>

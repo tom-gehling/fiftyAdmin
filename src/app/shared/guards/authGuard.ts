@@ -1,22 +1,20 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router } from '@angular/router';
+import { CanActivate } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { filter, map, switchMap, take } from 'rxjs/operators';
+import { filter, switchMap, take, map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthGuard implements CanActivate {
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private auth: AuthService) {}
 
-  canActivate() {
+  canActivate(): Observable<boolean> {
     return this.auth.initialized$.pipe(
-      filter(init => init),        // wait until Firebase finishes initializing
+      filter(init => init),                  // wait for Firebase to initialize
       take(1),
-      switchMap(() => this.auth.user$.pipe(take(1))),
-      map(user => {
-        if (user && !user.isAnonymous) return true;
-        this.router.navigate(['/login']);
-        return false;
-      })
+      switchMap(() => this.auth.user$),      // get current user
+      take(1),
+      map(user => !!user && !user.isAnonymous) // only allow authenticated users
     );
   }
 }

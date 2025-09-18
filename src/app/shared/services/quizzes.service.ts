@@ -11,7 +11,7 @@ import {
     Timestamp,
 } from '@angular/fire/firestore';
 import { defer, map, Observable } from 'rxjs';
-import { Quiz } from '../../models/quiz.model';
+import { Quiz } from '../models/quiz.model';
 
 @Injectable({
     providedIn: 'root',
