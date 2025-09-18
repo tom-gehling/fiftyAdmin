@@ -10,8 +10,8 @@ import {
     deleteDoc,
     Timestamp,
 } from '@angular/fire/firestore';
-import { defer, Observable } from 'rxjs';
-import { Quiz } from '../../models/quiz.model';
+import { defer, map, Observable } from 'rxjs';
+import { Quiz } from '../models/quiz.model';
 
 @Injectable({
     providedIn: 'root',
@@ -30,6 +30,18 @@ export class QuizzesService {
                 idField: 'id',
             }) as Observable<Quiz[]>;
         });
+    }
+
+    getAllPremiumQuiz(): Observable<Quiz | undefined> {
+        return this.getAllQuizzes().pipe(
+            map(quizzes => quizzes.find(q => q.isPremium))
+        );
+    }
+
+    getAllActiveQuiz(): Observable<Quiz | undefined> {
+        return this.getAllQuizzes().pipe(
+            map(quizzes => quizzes.find(q => q.isActive))
+        );
     }
 
     getQuizById(id: string): Observable<Quiz | undefined> {
