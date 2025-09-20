@@ -12,10 +12,8 @@ import { Dashboard } from './app/pages/dashboard/dashboard';
 import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 
-// Member-only pages
-// import { Exclusives } from './app/pages/fiftyPlus/exclusives/exclusives';
-// import { Archives } from './app/pages/fiftyPlus/archives/archives';
-// import { QuestionQuizzes } from './app/pages/fiftyPlus/questionQuizzes/questionQuizzes';
+// Fifty+ pages
+import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
 
 export const appRoutes: Routes = [
     // Public area
@@ -27,27 +25,40 @@ export const appRoutes: Routes = [
     {
         path: '',
         component: AppLayout,
+        canActivate: [AuthGuard],
         children: [
-            {
-                path: 'members',
-                canActivate: [AuthGuard],
-                children: [
-                    { path: '', component: Dashboard }, // Shared dashboard for members
-                    
-                    // Member-specific pages
-                    // { path: 'exclusives', component: Exclusives },
-                    // { path: 'archives', component: Archives },
-                    // { path: 'questionQuizzes', component: QuestionQuizzes },
+            { path: '', component: Dashboard }, // shared dashboard
 
-                    // Admin-only pages nested under members/admin
-                    {
-                        path: 'admin',
-                        canActivate: [AdminGuard],
-                        children: [
-                            { path: 'quizzes', component: QuizTableComponent },
-                            { path: 'quizzes/:id', component: QuizDetailComponent },
-                        ]
-                    }
+            // Fifty+ section (all members and admins)
+            {
+                path: 'members/archives',
+                component: FiftyPageComponent,
+                data: { type: 'archive', title: 'Archives' }
+            },
+            {
+                path: 'members/exclusives',
+                component: FiftyPageComponent,
+                data: { type: 'exclusive', title: 'Exclusives' }
+            },
+            {
+                path: 'members/collabs',
+                component: FiftyPageComponent,
+                data: { type: 'collaboration', title: 'Collaborations' }
+            },
+            {
+                path: 'members/questionQuizzes',
+                component: FiftyPageComponent,
+                data: { type: 'question', title: 'Question Quizzes' }
+            },
+
+            // Admin-only pages
+            {
+                path: 'members/admin',
+                canActivate: [AdminGuard],
+                children: [
+                    { path: 'quizzes', component: QuizTableComponent },
+                    { path: 'quizzes/:id', component: QuizDetailComponent },
+                    // future admin pages like "quiz tags" can go here
                 ]
             }
         ]
