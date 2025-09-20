@@ -79,6 +79,7 @@ export class Login {
         const isAdmin = await this.auth.isAdmin$.pipe(take(1)).toPromise();
         const isMember = await this.auth.isMember$.pipe(take(1)).toPromise();
 
+        console.log(isAdmin)
         if (isAdmin) {
             this.router.navigate(['/members']);
         } else if (isMember) {

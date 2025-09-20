@@ -45,7 +45,7 @@ export class AppMenu {
             label: 'Admin',
             items: [
                 { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/members/admin/quizzes'] },
-                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/members/admin/quiz-tags'] }
+                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/members/admin/quizTags'] }
             ]
         };
 

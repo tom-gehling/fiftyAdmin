@@ -14,57 +14,44 @@ import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 
 // Fifty+ pages
 import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
+import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
 
 export const appRoutes: Routes = [
-    // Public area
-    { path: '', redirectTo: '/landing', pathMatch: 'full' },
-    { path: 'landing', component: Landing },
-    { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
+  // Public area
+  { path: '', redirectTo: '/landing', pathMatch: 'full' },
+  { path: 'landing', component: Landing },
+  { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
 
-    // Protected area
-    {
-        path: '',
-        component: AppLayout,
-        canActivate: [AuthGuard],
+  // Protected area
+  {
+    path: '',
+    component: AppLayout,
+    canActivate: [AuthGuard],
+    children: [
+      { path: '', redirectTo: '/members', pathMatch: 'full' },
+      { path: 'members', component: Dashboard },
+
+      // Fifty+ pages
+      { path: 'members/archives', component: FiftyPageComponent, data: { type: 'archive', title: 'Archives' } },
+      { path: 'members/exclusives', component: FiftyPageComponent, data: { type: 'exclusive', title: 'Exclusives' } },
+      { path: 'members/collabs', component: FiftyPageComponent, data: { type: 'collaboration', title: 'Collaborations' } },
+      { path: 'members/questionQuizzes', component: FiftyPageComponent, data: { type: 'question', title: 'Question Quizzes' } },
+
+      // Admin-only pages
+      {
+        path: 'members/admin',
+        canActivate: [AdminGuard],
         children: [
-            { path: '', component: Dashboard }, // shared dashboard
-
-            // Fifty+ section (all members and admins)
-            {
-                path: 'members/archives',
-                component: FiftyPageComponent,
-                data: { type: 'archive', title: 'Archives' }
-            },
-            {
-                path: 'members/exclusives',
-                component: FiftyPageComponent,
-                data: { type: 'exclusive', title: 'Exclusives' }
-            },
-            {
-                path: 'members/collabs',
-                component: FiftyPageComponent,
-                data: { type: 'collaboration', title: 'Collaborations' }
-            },
-            {
-                path: 'members/questionQuizzes',
-                component: FiftyPageComponent,
-                data: { type: 'question', title: 'Question Quizzes' }
-            },
-
-            // Admin-only pages
-            {
-                path: 'members/admin',
-                canActivate: [AdminGuard],
-                children: [
-                    { path: 'quizzes', component: QuizTableComponent },
-                    { path: 'quizzes/:id', component: QuizDetailComponent },
-                    // future admin pages like "quiz tags" can go here
-                ]
-            }
+          { path: 'quizzes', component: QuizTableComponent },
+          { path: 'quizzes/:id', component: QuizDetailComponent },
+          { path: 'quizTags', component: QuizTagsComponent },
         ]
-    },
+      }
+    ]
+  },
 
-    // Not found
-    { path: 'notfound', component: Notfound },
-    { path: '**', redirectTo: '/notfound' }
+  // Not found
+  { path: 'notfound', component: Notfound },
+  { path: '**', redirectTo: '/notfound' }
 ];
+
