@@ -24,7 +24,7 @@ import { QuizzesService } from '@/shared/services/quizzes.service';
 import { AuthService } from '@/shared/services/auth.service';
 import { DynamicDialogModule, DynamicDialogRef, DialogService } from 'primeng/dynamicdialog';
 import { QuizExtractComponent } from './quizExtract';
-
+import { DatePickerModule } from 'primeng/datepicker';
 
 @Component({
   selector: 'quiz-detail',
@@ -42,6 +42,7 @@ import { QuizExtractComponent } from './quizExtract';
     DragDropModule,
     SelectModule,
     ColorPickerModule,
+    DatePickerModule,
     DynamicDialogModule
   ],
   templateUrl: './quizDetail.html'
@@ -53,13 +54,12 @@ export class QuizDetailComponent implements OnInit {
   quizImagePreview: string | null = null;
 
   tabSelected: string = '0'; // default tab
-
   QuizTypeEnum = QuizTypeEnum;
 
   quizType = [
-    { value: 1, viewValue: 'Weekly' },
-    { value: 2, viewValue: 'Fifty+' },
-    { value: 3, viewValue: 'Collaboration' },
+    { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
+    { value: QuizTypeEnum.FiftyPlus, viewValue: 'Fifty+' },
+    { value: QuizTypeEnum.Collab, viewValue: 'Collaboration' },
   ];
 
   quillModules = {
@@ -122,8 +122,7 @@ export class QuizDetailComponent implements OnInit {
       isActive: [quiz.isActive ?? true],
       isPremium: [quiz.isPremium || false],
       questionCount: [quiz.questions?.length || 50],
-      deploymentDate: [quiz.deploymentDate || null],
-      deploymentTime: [quiz.deploymentTime || null],
+      deploymentDate: [quiz.deploymentDate || null], // <-- Date & time
       theme: this.fb.group({
         fontColor: [quiz.theme?.fontColor || '#000000'],
         backgroundColor: [quiz.theme?.backgroundColor || '#ffffff'],
@@ -184,11 +183,6 @@ export class QuizDetailComponent implements OnInit {
     }
   }
 
-  removeQuestion(index: number): void {
-    this.questions.removeAt(index);
-    this.form.patchValue({ questionCount: this.questions.length });
-  }
-
   drop(event: CdkDragDrop<FormGroup[]>): void {
     const questionArray = this.questions.controls as FormGroup[];
     moveItemInArray(questionArray, event.previousIndex, event.currentIndex);
@@ -206,10 +200,22 @@ export class QuizDetailComponent implements OnInit {
     if (this.form.invalid) return;
 
     const formValue = this.form.value;
+
+    // Normalize question & answer
     formValue.questions.forEach((q: any) => {
       q.question = this.normalizeHtml(q.question);
       q.answer = this.normalizeHtml(q.answer);
     });
+
+    // Handle deploymentDate & deploymentTime
+    const deployment: Date | null = formValue.deploymentDate;
+    if (deployment) {
+      formValue.deploymentDate = deployment;
+      formValue.deploymentTime = deployment.toTimeString().slice(0,5); // HH:MM
+    } else {
+      formValue.deploymentDate = null;
+      formValue.deploymentTime = null;
+    }
 
     const quizData: Quiz = { ...this.quiz, ...formValue };
 
@@ -242,38 +248,35 @@ export class QuizDetailComponent implements OnInit {
     });
   }
 
-openImportDialog(): void {
-  const ref: DynamicDialogRef = this.dialogService.open(QuizExtractComponent, {
-    header: 'Import Questions',
-    width: '50%',
-    modal: true, // 👈 enables background dimming
-    dismissableMask: true, // optional: allow clicking outside to close
-    contentStyle: { 'max-height': '80vh', overflow: 'auto' },
-    data: {
-      questions: this.questions.value,
-      quizNum: this.form.get('quizId')?.value
-    }
-  });
+  openImportDialog(): void {
+    const ref: DynamicDialogRef = this.dialogService.open(QuizExtractComponent, {
+      header: 'Import Questions',
+      width: '50%',
+      modal: true,
+      dismissableMask: true,
+      contentStyle: { 'max-height': '80vh', overflow: 'auto' },
+      data: {
+        questions: this.questions.value,
+        quizNum: this.form.get('quizId')?.value
+      }
+    });
 
-  ref.onClose.subscribe((result: { questions: any[], quizNum: string } | null) => {
-    if (result) {
-      // update the form with imported questions
-      this.questions.clear();
-      result.questions.forEach(q => {
-        this.questions.push(this.fb.group({
-          questionId: [q.questionId || null],
-          question: [q.question || ''],
-          answer: [q.answer || ''],
-          category: [q.category || ''],
-          timeless: [q.timeless || false]
-        }));
-      });
-
-      this.form.patchValue({ quizId: result.quizNum });
-      this.form.patchValue({ questionCount: result.questions.length });
-    }
-  });
-}
+    ref.onClose.subscribe((result: { questions: any[], quizNum: string } | null) => {
+      if (result) {
+        this.questions.clear();
+        result.questions.forEach(q => {
+          this.questions.push(this.fb.group({
+            questionId: [q.questionId || null],
+            question: [q.question || ''],
+            answer: [q.answer || ''],
+            category: [q.category || ''],
+            timeless: [q.timeless || false]
+          }));
+        });
+        this.form.patchValue({ quizId: result.quizNum, questionCount: result.questions.length });
+      }
+    });
+  }
 
   onFileSelected(event: Event) {
     const file = (event.target as HTMLInputElement)?.files?.[0];
