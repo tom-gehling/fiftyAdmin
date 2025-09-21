@@ -31,7 +31,6 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { QuizTagsService } from '@/shared/services/quizTags.service';
 import { QuizTag } from '@/shared/models/quizTags.model';
 import { NotifyService } from '@/shared/services/notify.service';
-import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'quiz-detail',

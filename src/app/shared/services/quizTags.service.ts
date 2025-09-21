@@ -1,9 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, doc, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where } from '@angular/fire/firestore';
-
+import { Firestore, collection, doc, addDoc, setDoc, getDoc, getDocs, updateDoc } from '@angular/fire/firestore';
 import { QuizTag } from '@/shared/models/quizTags.model';
-import { Timestamp } from 'firebase/firestore';
-import { BehaviorSubject, Observable, from } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from '@/shared/services/auth.service';
 
@@ -28,51 +26,60 @@ export class QuizTagsService {
     this.tags$.next(tags);
   }
 
-  /** Get all tags (live) */
+  /** Get all tags (excluding deleted) */
   getAllTags(): Observable<QuizTag[]> {
     return this.tagsObservable.pipe(
-      map(tags => tags.filter(t => !t.deletionTime)) // exclude deleted tags
+      map(tags => tags.filter(t => !t.deletionTime))
     );
   }
 
-
-  async createTag(name: string): Promise<void> {
+  /** Create a new tag */
+  async createTag(name: string, isActive: boolean = true): Promise<void> {
     if (!this.auth.isAdmin$.value) {
       throw new Error('You are not authorized to create tags');
     }
 
     const newTag: QuizTag = {
       name,
+      isActive,
       creationUser: this.auth.currentUserId!,
-      creationTime: new Date() 
+      creationTime: new Date()
     };
 
     const docRef = await addDoc(this.collectionRef, newTag);
     this.tags$.next([...this.tags$.value, { ...newTag, id: docRef.id }]);
-}
+  }
 
-  /** Update an existing tag name */
-  async updateTag(tagId: string, newName: string): Promise<void> {
+  /** Update an existing tag */
+  async updateTag(tagId: string, name: string, isActive: boolean): Promise<void> {
     const docRef = doc(this.firestore, 'quizTags', tagId);
-    await updateDoc(docRef, { name: newName });
-    const updatedTags = this.tags$.value.map(t => t.id === tagId ? { ...t, name: newName } : t);
+    await updateDoc(docRef, { name, isActive });
+
+    const updatedTags = this.tags$.value.map(t =>
+      t.id === tagId ? { ...t, name, isActive } : t
+    );
     this.tags$.next(updatedTags);
   }
 
+  /** Soft delete a tag */
   async deleteTag(tagId: string): Promise<void> {
     if (!this.auth.isAdmin$.value) {
       throw new Error('You are not authorized to delete tags');
     }
 
     const docRef = doc(this.firestore, 'quizTags', tagId);
+    const deletionTime = new Date();
+
     await updateDoc(docRef, {
       deletionUser: this.auth.currentUserId!,
-      deletionTime: new Date() 
+      deletionTime
     });
 
-    const updatedTags = this.tags$.value.map(t => t.id === tagId ? { ...t, deletionUser: this.auth.currentUserId!, deletionTime: new Date() } : t);
+    const updatedTags = this.tags$.value.map(t =>
+      t.id === tagId ? { ...t, deletionUser: this.auth.currentUserId!, deletionTime } : t
+    );
     this.tags$.next(updatedTags);
-}
+  }
 
   /** Get a single tag by ID */
   async getTagById(tagId: string): Promise<QuizTag | undefined> {

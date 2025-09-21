@@ -5,4 +5,5 @@ export interface QuizTag {
   creationTime?: Date;     // Timestamp when created
   deletionUser?: string;   // UID or username of who deleted it
   deletionTime?: Date;     // Timestamp when deleted
+  isActive?: boolean; 
 }
