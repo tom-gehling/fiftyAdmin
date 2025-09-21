@@ -17,6 +17,7 @@ import { ColorPickerModule } from 'primeng/colorpicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
+import { FloatLabelModule } from 'primeng/floatlabel';
 
 // Angular CDK Drag & Drop
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -52,7 +53,8 @@ import { NotifyService } from '@/shared/services/notify.service';
     DynamicDialogModule,
     MultiSelectModule,
     ToastModule,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    FloatLabelModule
   ],
   templateUrl: './quizDetail.html'
 })
@@ -177,28 +179,45 @@ export class QuizDetailComponent implements OnInit {
     return this.form.get('questions') as FormArray;
   }
 
-  setQuestionCount(count: number): void {
-    if (count == null || isNaN(count)) return;
-    const current = this.questions.length;
+  private removedQuestionsBackup: any[] = [];
 
-    if (count > current) {
-      for (let i = current; i < count; i++) {
-        this.questions.push(
-          this.fb.group({
-            questionId: [i + 1],
-            question: [''],
-            answer: [''],
-            category: [''],
-            timeless: [false],
-          })
-        );
-      }
-    } else if (count < current) {
-      for (let i = current - 1; i >= count; i--) {
-        this.questions.removeAt(i);
-      }
+setQuestionCount(count: number): void {
+  if (count == null || isNaN(count)) return;
+  const current = this.questions.length;
+
+  if (count > current) {
+    // Restore from backup first
+    const toRestore = this.removedQuestionsBackup.splice(0, count - current);
+    toRestore.forEach(q => this.questions.push(this.fb.group(q)));
+
+    // Add new empty questions if needed
+    for (let i = this.questions.length; i < count; i++) {
+      this.questions.push(
+        this.fb.group({
+          questionId: [i + 1],
+          question: [''],
+          answer: [''],
+          category: [''],
+          timeless: [false],
+        })
+      );
+    }
+  } else if (count < current) {
+    // Backup removed questions
+    this.removedQuestionsBackup = this.questions.controls
+      .slice(count)
+      .map(c => c.value)
+      .concat(this.removedQuestionsBackup);
+
+    for (let i = current - 1; i >= count; i--) {
+      this.questions.removeAt(i);
     }
   }
+
+  // Reassign questionId for all visible questions
+  this.questions.controls.forEach((q, i) => q.get('questionId')?.setValue(i + 1));
+}
+
 
   drop(event: CdkDragDrop<FormGroup[]>): void {
     const questionArray = this.questions.controls as FormGroup[];
@@ -323,4 +342,11 @@ export class QuizDetailComponent implements OnInit {
     };
     reader.readAsDataURL(file);
   }
+
+showQuestionCountPrompt(): void {
+  let countStr = prompt('Enter the number of questions to display', this.questions.length.toString());
+  let count = parseInt(countStr ?? '50', 10);
+  if (isNaN(count) || count <= 0) count = 50;
+  this.setQuestionCount(count);
+}
 }
