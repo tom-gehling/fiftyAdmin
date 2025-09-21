@@ -70,7 +70,7 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
                 <ng-template pTemplate="body" let-quiz>
                     <tr [pSelectableRow]="quiz">
                         <td>{{ quiz.quizId }}</td>
-                        <td>{{ getQuizTypeLabel(quiz.quizType) }}</td>
+                        <td>{{ getQuizTypeName(quiz.quizType) }}</td>
                         <!-- <td>{{ quiz.creationTime | date:'short' }}</td> -->
                     </tr>
                 </ng-template>
@@ -86,7 +86,12 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 export class QuizTableComponent implements OnInit {
     quizzes: Quiz[] = [];
     selectedQuiz: Quiz | null = null;
-    quizTypeLabels = ['Weekly', 'Fifty+', 'Collaboration'];
+    quizType = [
+    { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
+    { value: QuizTypeEnum.FiftyPlus, viewValue: 'Fifty+' },
+    { value: QuizTypeEnum.Collab, viewValue: 'Collaboration' },
+    { value: QuizTypeEnum.QuestionType, viewValue: 'Question-Type' }
+  ];
 
     @ViewChild('quizTable') quizTable!: Table;
 
@@ -109,9 +114,8 @@ export class QuizTableComponent implements OnInit {
         this.quizTable.filterGlobal(value, 'contains');
     }
 
-    getQuizTypeLabel(type?: QuizTypeEnum): string {
-        if (type === undefined) return 'Unknown';
-        return this.quizTypeLabels[type] || 'Unknown';
+    getQuizTypeName(quizTypeId: number){
+        return this.quizType.find(x => x.value == quizTypeId)?.viewValue;
     }
 
     canWrite(): boolean {

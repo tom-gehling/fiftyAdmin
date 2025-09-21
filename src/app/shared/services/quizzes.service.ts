@@ -9,10 +9,12 @@ import {
     updateDoc,
     deleteDoc,
     Timestamp,
+    CollectionReference
 } from '@angular/fire/firestore';
 import { defer, map, Observable } from 'rxjs';
 import { Quiz } from '../models/quiz.model';
 import { QuizTypeEnum } from '../enums/QuizTypeEnum';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
     providedIn: 'root',
@@ -133,4 +135,20 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
         const quizDoc = doc(this.firestore, this.collectionName, id);
         await deleteDoc(quizDoc);
     }
+
+async getNextQuizId(): Promise<number> {
+  const quizCollection: CollectionReference = collection(this.firestore, this.collectionName);
+  const snapshot = await firstValueFrom(collectionData(quizCollection, { idField: 'id' }));
+
+  if (!snapshot || snapshot.length === 0) {
+    return 1; // start from 1 if no quizzes exist
+  }
+
+  const quizIds = (snapshot as Quiz[])
+    .map(q => Number(q.quizId))
+    .filter(id => !isNaN(id));
+
+  return quizIds.length === 0 ? 1 : Math.max(...quizIds) + 1;
+}
+
 }

@@ -5,6 +5,8 @@ import { QuizTagsService } from '@/shared/services/quizTags.service';
 import { Quiz } from '@/shared/models/quiz.model';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { firstValueFrom } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 
 register();
 
@@ -16,6 +18,7 @@ interface TagWithQuizzes {
 @Component({
   selector: 'app-fifty-quizzes-dashboard',
   standalone: true,
+  imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA], 
   template: `
     <div class="w-full flex flex-col gap-8 p-4">
@@ -36,7 +39,7 @@ interface TagWithQuizzes {
           >
             <div class="w-[100px] h-[100px] rounded-lg overflow-hidden shadow-md border border-gray-200">
               <img
-                [src]="quiz.imageUrl || '/assets/default-quiz-logo.png'"
+                [src]="quiz.imageUrl || '/assets/logos/aussie.png'"
                 alt="{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}"
                 class="w-full h-full object-cover"
               />
@@ -67,13 +70,10 @@ export class FiftyQuizzesDashboardComponent implements OnInit {
         tag,
         quizzes: allQuizzes.filter(
           q =>
-            q.quizType === 1 && // Fifty+ quiz type enum
             q.tags?.some(t => t.id === tag.id)
         ),
       }))
       .filter(t => t.quizzes.length > 0);
-
-      console.log(allTags)
-      console.log(allQuizzes)
+      console.log(this.tagsWithQuizzes);
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, doc, addDoc, setDoc, getDoc, getDocs, updateDoc } from '@angular/fire/firestore';
+import { Firestore, collection, doc, addDoc, getDocs, getDoc, updateDoc } from '@angular/fire/firestore';
 import { QuizTag } from '@/shared/models/quizTags.model';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -33,30 +33,37 @@ export class QuizTagsService {
     );
   }
 
-  /** Create a new tag */
-  async createTag(name: string, isActive: boolean = true): Promise<void> {
+  /** Create a new tag with optional quizzes */
+  async createTag(tagData: Partial<QuizTag>): Promise<void> {
     if (!this.auth.isAdmin$.value) {
       throw new Error('You are not authorized to create tags');
     }
 
     const newTag: QuizTag = {
-      name,
-      isActive,
+      name: tagData.name || '',
+      isActive: tagData.isActive ?? true,
       creationUser: this.auth.currentUserId!,
-      creationTime: new Date()
+      creationTime: new Date(),
+      quizIds: tagData.quizIds || [],
     };
 
     const docRef = await addDoc(this.collectionRef, newTag);
     this.tags$.next([...this.tags$.value, { ...newTag, id: docRef.id }]);
   }
 
-  /** Update an existing tag */
-  async updateTag(tagId: string, name: string, isActive: boolean): Promise<void> {
+  /** Update an existing tag including quiz assignments */
+  async updateTag(tagId: string, tagData: Partial<QuizTag>): Promise<void> {
     const docRef = doc(this.firestore, 'quizTags', tagId);
-    await updateDoc(docRef, { name, isActive });
+    const updatePayload: any = {
+      name: tagData.name,
+      isActive: tagData.isActive,
+      quizIds: tagData.quizIds || [],
+    };
+
+    await updateDoc(docRef, updatePayload);
 
     const updatedTags = this.tags$.value.map(t =>
-      t.id === tagId ? { ...t, name, isActive } : t
+      t.id === tagId ? { ...t, ...updatePayload } : t
     );
     this.tags$.next(updatedTags);
   }
