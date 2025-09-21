@@ -14,6 +14,9 @@ import { TabsModule } from 'primeng/tabs';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { ColorPickerModule } from 'primeng/colorpicker';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ToastModule } from 'primeng/toast';
 
 // Angular CDK Drag & Drop
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -25,6 +28,10 @@ import { AuthService } from '@/shared/services/auth.service';
 import { DynamicDialogModule, DynamicDialogRef, DialogService } from 'primeng/dynamicdialog';
 import { QuizExtractComponent } from './quizExtract';
 import { DatePickerModule } from 'primeng/datepicker';
+import { QuizTagsService } from '@/shared/services/quizTags.service';
+import { QuizTag } from '@/shared/models/quizTags.model';
+import { NotifyService } from '@/shared/services/notify.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'quiz-detail',
@@ -43,7 +50,10 @@ import { DatePickerModule } from 'primeng/datepicker';
     SelectModule,
     ColorPickerModule,
     DatePickerModule,
-    DynamicDialogModule
+    DynamicDialogModule,
+    MultiSelectModule,
+    ToastModule,
+    ProgressSpinnerModule
   ],
   templateUrl: './quizDetail.html'
 })
@@ -52,9 +62,11 @@ export class QuizDetailComponent implements OnInit {
   quiz!: Quiz;
   form!: FormGroup;
   quizImagePreview: string | null = null;
-
+  availableTags: QuizTag[] = [];
+  selectedTags: QuizTag[] = [];
   tabSelected: string = '0'; // default tab
   QuizTypeEnum = QuizTypeEnum;
+  saving: boolean = false;
 
   quizType = [
     { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
@@ -76,10 +88,16 @@ export class QuizDetailComponent implements OnInit {
     private authService: AuthService,
     private ngZone: NgZone,
     private route: ActivatedRoute,
-    private dialogService: DialogService
+    private dialogService: DialogService,
+    private quizTagService: QuizTagsService,
+    private notify: NotifyService
   ) {}
 
   ngOnInit(): void {
+    this.quizTagService.getAllTags().subscribe(tags => {
+      this.availableTags = tags;
+    });
+
     this.route.paramMap.subscribe(params => {
       this.id = params.get('id') || '0';
       if (this.id && this.id !== '0') {
@@ -122,7 +140,7 @@ export class QuizDetailComponent implements OnInit {
       isActive: [quiz.isActive ?? true],
       isPremium: [quiz.isPremium || false],
       questionCount: [quiz.questions?.length || 50],
-      deploymentDate: [quiz.deploymentDate || null], // <-- Date & time
+      deploymentDate: [quiz.deploymentDate || null],
       theme: this.fb.group({
         fontColor: [quiz.theme?.fontColor || '#000000'],
         backgroundColor: [quiz.theme?.backgroundColor || '#ffffff'],
@@ -142,9 +160,9 @@ export class QuizDetailComponent implements OnInit {
       notesAbove: [quiz.notesAbove || ''],
       notesBelow: [quiz.notesBelow || ''],
       imageUrl: [''],
+      tags: [quiz.tags || []],
     });
 
-    // Reset tab if not Collaboration
     this.form.get('quizType')?.valueChanges.subscribe((type) => {
       if (type !== QuizTypeEnum.Collab) {
         this.tabSelected = '0';
@@ -199,19 +217,19 @@ export class QuizDetailComponent implements OnInit {
   async saveQuiz(): Promise<void> {
     if (this.form.invalid) return;
 
-    const formValue = this.form.value;
+    this.saving = true;
+    try{
+      const formValue = this.form.value;
 
-    // Normalize question & answer
     formValue.questions.forEach((q: any) => {
       q.question = this.normalizeHtml(q.question);
       q.answer = this.normalizeHtml(q.answer);
     });
 
-    // Handle deploymentDate & deploymentTime
     const deployment: Date | null = formValue.deploymentDate;
     if (deployment) {
       formValue.deploymentDate = deployment;
-      formValue.deploymentTime = deployment.toTimeString().slice(0,5); // HH:MM
+      formValue.deploymentTime = deployment.toTimeString().slice(0,5);
     } else {
       formValue.deploymentDate = null;
       formValue.deploymentTime = null;
@@ -225,14 +243,31 @@ export class QuizDetailComponent implements OnInit {
       } else {
         this.id = await this.quizzesService.createQuiz(quizData);
       }
-      this.router.navigate(['/quizzes']);
+
+      this.notify.success('Quiz saved successfully');
+      this.router.navigate(['/members/admin/quizzes']);
     } catch (error) {
       console.error('Error saving quiz:', error);
+      this.notify.error('Error saving quiz');
+      this.saving = false;
+    } finally {
+      this.saving = false;
     }
+
+    }
+    catch (error) {
+      console.error('Error saving quiz:', error);
+      this.notify.error('Error saving quiz');
+      this.saving = false;
+    } finally {
+      this.saving = false;
+    }
+
+    
   }
 
   cancel(): void {
-    this.router.navigate(['/quizzes']);
+    this.router.navigate(['/members/admin/quizzes']);
   }
 
   private loadQuiz(id: string): void {

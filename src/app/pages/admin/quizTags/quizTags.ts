@@ -22,16 +22,12 @@ import { QuizTag } from '@/shared/models/quizTags.model';
         <ng-template pTemplate="header">
           <tr>
             <th>Name</th>
-            <th>Created By</th>
-            <th>Created At</th>
             <th>Actions</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-tag>
           <tr>
             <td>{{ tag.name }}</td>
-            <td>{{ tag.creationUser }}</td>
-            <td>{{ tag.creationTime | date:'short' }}</td>
             <td>
               <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-sm p-mr-2" (click)="editTag(tag)"></button>
               <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger" (click)="deleteTag(tag)"></button>
@@ -40,18 +36,29 @@ import { QuizTag } from '@/shared/models/quizTags.model';
         </ng-template>
       </p-table>
 
-      <p-dialog [(visible)]="tagDialog" header="{{ isEditing ? 'Edit Tag' : 'New Tag' }}" modal>
+      <p-dialog [(visible)]="tagDialog" [modal]="true" [style]="{ width: '25rem' }">
+        <!-- Header -->
+        <ng-template #header>
+            <span class="font-bold whitespace-nowrap">
+                {{ isEditing ? 'Edit Tag' : 'New Tag' }}
+            </span>
+        </ng-template>
+
+        <!-- Content -->
         <div class="p-fluid">
-          <div class="p-field">
-            <label for="tagName">Name</label>
-            <input id="tagName" type="text" pInputText [(ngModel)]="currentTagName" />
-          </div>
+            <div class="p-field">
+                <label for="tagName" class="font-semibold">Name: </label>
+                <input id="tagName" type="text" pInputText [(ngModel)]="currentTagName" autocomplete="off" />
+            </div>
         </div>
-        <p-footer>
-          <button pButton type="button" label="Cancel" class="p-button-text" (click)="closeDialog()"></button>
-          <button pButton type="button" label="Save" (click)="saveTag()"></button>
-        </p-footer>
-      </p-dialog>
+
+        <!-- Footer -->
+        <ng-template #footer>
+            <p-button label="Cancel" [text]="true" severity="secondary" (click)="closeDialog()" />
+            <p-button label="Save" [outlined]="true" severity="secondary" (click)="saveTag()" />
+        </ng-template>
+    </p-dialog>
+
     </div>
   `
 })

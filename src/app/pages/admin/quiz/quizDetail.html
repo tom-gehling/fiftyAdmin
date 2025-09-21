@@ -1,3 +1,8 @@
+<!-- Full-screen Tailwind spinner while saving -->
+<div *ngIf="saving" class="fixed inset-0 flex items-center justify-center z-50">
+    <div class="w-16 h-16 border-4 border-t-4 border-gray-200 border-t-green-500 rounded-full animate-spin"></div>
+</div>
+
 <p-card *ngIf="form" class="flex flex-col h-full">
     <!-- Top action buttons -->
     <div class="flex items-center justify-between mb-4">
@@ -7,12 +12,6 @@
             <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="form.invalid" (click)="saveQuiz()"></button>
             <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancel()"></button>
         </div>
-    </div>
-
-    <!-- Deployment Date/Time Picker -->
-    <div class="flex items-center gap-4 mb-4">
-        <label for="deployment" class="font-medium">Deployment</label>
-        <p-datepicker inputId="calendar-24h" formControlName="deploymentDate" [showTime]="true" [hourFormat]="'24'" placeholder="Select date & time" class="w-64"></p-datepicker>
     </div>
 
     <!-- Core Quiz Info -->
@@ -25,6 +24,11 @@
             <div>
                 <p-select id="quizType" formControlName="quizType" [options]="quizType" optionLabel="viewValue" optionValue="value" placeholder="Select Quiz Type" class="w-full"></p-select>
             </div>
+            <!-- Deployment Date/Time Picker -->
+            <div class="flex items-center gap-4 mb-4">
+                <label for="deployment" class="font-medium">Deployment</label>
+                <p-datepicker inputId="calendar-24h" formControlName="deploymentDate" [showTime]="true" [hourFormat]="'24'" placeholder="Select date & time" class="w-64"></p-datepicker>
+            </div>
             <div class="flex items-center">
                 <p-checkbox formControlName="isActive" binary="true" label="Active"></p-checkbox>
             </div>
@@ -35,7 +39,7 @@
             <p-tablist>
                 <p-tab value="0">Questions</p-tab>
                 <p-tab *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab" value="1">Color Scheme</p-tab>
-                <p-tab *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab" value="2">Other</p-tab>
+                <p-tab value="2">Other</p-tab>
             </p-tablist>
 
             <p-tabpanels>
@@ -84,7 +88,11 @@
                 </p-tabpanel>
 
                 <!-- Other Tab -->
-                <p-tabpanel *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab" value="2">
+                <p-tabpanel value="2">
+                    <div class="mb-4">
+                        <label class="block font-medium mb-1">Tags</label>
+                        <p-multiSelect [options]="availableTags" [(ngModel)]="selectedTags" formControlName="tags" optionLabel="name" display="chip" placeholder="Select tags" class="w-full md:w-80"></p-multiSelect>
+                    </div>
                     <div class="flex flex-col gap-4">
                         <input pInputText type="text" formControlName="notesAbove" placeholder="Text Above Quiz" class="w-full" />
                         <input pInputText type="text" formControlName="notesBelow" placeholder="Text Below Quiz" class="w-full" />

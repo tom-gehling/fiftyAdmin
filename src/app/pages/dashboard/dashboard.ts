@@ -8,15 +8,18 @@ import { SubmissionsWallWidget } from './components/submissionwallwidget';
 import { AuthService } from '@/shared/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { AsyncPipe } from '@angular/common';
+import { FiftyQuizzesDashboardComponent } from './components/fiftyquizzes';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, RecentSalesWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe],
+    imports: [CommonModule, StatsWidget, RecentSalesWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <!-- Only show stats widget if user is NOT admin -->
             <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async)" />
+            <app-fifty-quizzes-dashboard />
+            
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-submissions-wall-widget />

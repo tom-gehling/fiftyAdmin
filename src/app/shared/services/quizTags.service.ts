@@ -11,7 +11,6 @@ import { AuthService } from '@/shared/services/auth.service';
 export class QuizTagsService {
   private firestore = inject(Firestore);
   private auth = inject(AuthService);
-  private adminUserId = 'SPECIFIC_USER_UID'; // Only this user can create/delete
 
   private collectionRef = collection(this.firestore, 'quizTags');
 
@@ -36,9 +35,9 @@ export class QuizTagsService {
     );
   }
 
-  /** Create a new tag (only allowed for adminUserId) */
+
   async createTag(name: string): Promise<void> {
-    if (this.auth.currentUserId !== this.adminUserId) {
+    if (!this.auth.isAdmin$.value) {
       throw new Error('You are not authorized to create tags');
     }
 
@@ -50,7 +49,7 @@ export class QuizTagsService {
 
     const docRef = await addDoc(this.collectionRef, newTag);
     this.tags$.next([...this.tags$.value, { ...newTag, id: docRef.id }]);
-  }
+}
 
   /** Update an existing tag name */
   async updateTag(tagId: string, newName: string): Promise<void> {
@@ -60,9 +59,8 @@ export class QuizTagsService {
     this.tags$.next(updatedTags);
   }
 
-  /** Soft delete a tag (only allowed for adminUserId) */
   async deleteTag(tagId: string): Promise<void> {
-    if (this.auth.currentUserId !== this.adminUserId) {
+    if (!this.auth.isAdmin$.value) {
       throw new Error('You are not authorized to delete tags');
     }
 
@@ -74,7 +72,7 @@ export class QuizTagsService {
 
     const updatedTags = this.tags$.value.map(t => t.id === tagId ? { ...t, deletionUser: this.auth.currentUserId!, deletionTime: new Date() } : t);
     this.tags$.next(updatedTags);
-  }
+}
 
   /** Get a single tag by ID */
   async getTagById(tagId: string): Promise<QuizTag | undefined> {

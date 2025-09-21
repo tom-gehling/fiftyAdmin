@@ -1,4 +1,5 @@
 import { QuizTypeEnum } from "../enums/QuizTypeEnum";
+import { QuizTag } from "./quizTags.model";
 
 
 // Represents a single quiz question
@@ -42,4 +43,6 @@ export interface Quiz {
     notesAbove?: string;
     notesBelow?: string;
     imageUrl?: string;
+
+    tags?: QuizTag[];
 }
