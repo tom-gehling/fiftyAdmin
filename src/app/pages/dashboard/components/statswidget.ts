@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
     imports: [CommonModule],
     template: `
     <!-- Active Weekly Quiz -->
-    <div class="col-span-12 lg:col-span-12 xl:col-span-3">
+    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
         <div class="card mb-0 h-full flex flex-col justify-between p-4">
             <div>
                 <span class="block text-muted-color font-medium mb-2">Active Weekly Quiz</span>
@@ -20,7 +20,7 @@ import { CommonModule } from '@angular/common';
     </div>
 
     <!-- Weekly Quiz Page Views -->
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
         <div class="card mb-0 h-full flex flex-col justify-between p-4">
             <div class="flex justify-between items-center">
                 <div>
@@ -38,7 +38,7 @@ import { CommonModule } from '@angular/common';
     </div>
 
     <!-- Member Count -->
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
         <div class="card mb-0 h-full flex flex-col justify-between p-4">
             <div class="flex justify-between items-center">
                 <div>
@@ -57,7 +57,7 @@ import { CommonModule } from '@angular/common';
     </div>
 
     <!-- Weekly Submissions -->
-    <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
         <div class="card mb-0 h-full flex flex-col justify-between p-4">
             <div class="flex justify-between items-center">
                 <div>
@@ -73,9 +73,9 @@ import { CommonModule } from '@angular/common';
     `
 })
 export class StatsWidget {
-    activeQuiz: { title: string; deploymentDate: string } | null = { title: '#169', deploymentDate: '2025-09-15' };
-    pageViews = 57632;
-    memberCount = 2340;
-    memberIncrease = 12;
-    weeklySubmissions = 188;
+    activeQuiz: { title: string; deploymentDate: string } | null = { title: '#170', deploymentDate: '2025-09-19' };
+    pageViews = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
+    memberCount = Math.floor(Math.random() * (4000 - 2000 + 1)) + 2000;
+    memberIncrease = Math.floor(Math.random() * (1 - 20 + 1)) + 20;
+    weeklySubmissions = Math.floor(Math.random() * (100 - 300 + 1)) + 300;
 }

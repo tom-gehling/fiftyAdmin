@@ -1,4 +1,5 @@
 import { QuizTypeEnum } from "../enums/QuizTypeEnum";
+import { QuizTag } from "./quizTags.model";
 
 
 // Represents a single quiz question
@@ -30,8 +31,8 @@ export interface Quiz {
     quizTitle?: string;
 
     creationTime?: Date;
+    createdBy?: string; //refers to a user
     deploymentDate?: Date;
-    deploymentTime?: string;  // e.g., "14:30"
     quizType?: QuizTypeEnum;        // could be enum: Weekly, Fifty+, Collab
     isPremium?: boolean;
     isActive?: boolean;

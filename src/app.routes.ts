@@ -12,48 +12,46 @@ import { Dashboard } from './app/pages/dashboard/dashboard';
 import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 
-// Member-only pages
-// import { Exclusives } from './app/pages/fiftyPlus/exclusives/exclusives';
-// import { Archives } from './app/pages/fiftyPlus/archives/archives';
-// import { QuestionQuizzes } from './app/pages/fiftyPlus/questionQuizzes/questionQuizzes';
+// Fifty+ pages
+import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
+import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
 
 export const appRoutes: Routes = [
-    // Public area
-    { path: '', redirectTo: '/landing', pathMatch: 'full' },
-    { path: 'landing', component: Landing },
-    { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
+  // Public area
+  { path: '', redirectTo: '/landing', pathMatch: 'full' },
+  { path: 'landing', component: Landing },
+  { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
 
-    // Protected area
-    {
-        path: '',
-        component: AppLayout,
+  // Protected area
+  {
+    path: '',
+    component: AppLayout,
+    canActivate: [AuthGuard],
+    children: [
+      { path: '', redirectTo: '/members', pathMatch: 'full' },
+      { path: 'members', component: Dashboard },
+
+      // Fifty+ pages
+      { path: 'members/archives', component: FiftyPageComponent, data: { type: 'archive', title: 'Archives' } },
+      { path: 'members/exclusives', component: FiftyPageComponent, data: { type: 'exclusive', title: 'Exclusives' } },
+      { path: 'members/collabs', component: FiftyPageComponent, data: { type: 'collaboration', title: 'Collaborations' } },
+      { path: 'members/questionQuizzes', component: FiftyPageComponent, data: { type: 'question', title: 'Question Quizzes' } },
+
+      // Admin-only pages
+      {
+        path: 'members/admin',
+        canActivate: [AdminGuard],
         children: [
-            {
-                path: 'members',
-                canActivate: [AuthGuard],
-                children: [
-                    { path: '', component: Dashboard }, // Shared dashboard for members
-                    
-                    // Member-specific pages
-                    // { path: 'exclusives', component: Exclusives },
-                    // { path: 'archives', component: Archives },
-                    // { path: 'questionQuizzes', component: QuestionQuizzes },
-
-                    // Admin-only pages nested under members/admin
-                    {
-                        path: 'admin',
-                        canActivate: [AdminGuard],
-                        children: [
-                            { path: 'quizzes', component: QuizTableComponent },
-                            { path: 'quizzes/:id', component: QuizDetailComponent },
-                        ]
-                    }
-                ]
-            }
+          { path: 'quizzes', component: QuizTableComponent },
+          { path: 'quizzes/:id', component: QuizDetailComponent },
+          { path: 'quizTags', component: QuizTagsComponent },
         ]
-    },
+      }
+    ]
+  },
 
-    // Not found
-    { path: 'notfound', component: Notfound },
-    { path: '**', redirectTo: '/notfound' }
+  // Not found
+  { path: 'notfound', component: Notfound },
+  { path: '**', redirectTo: '/notfound' }
 ];
+

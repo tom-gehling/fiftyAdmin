@@ -10,6 +10,7 @@ import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { appRoutes } from './app.routes';
 import { DialogService } from 'primeng/dynamicdialog';
+import { MessageService } from 'primeng/api';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -31,6 +32,7 @@ export const appConfig: ApplicationConfig = {
         provideAnalytics(() => getAnalytics()),
         provideAuth(() => getAuth()),
         provideFirestore(() => getFirestore()),
-        DialogService
+        DialogService,
+        MessageService
     ]
 };

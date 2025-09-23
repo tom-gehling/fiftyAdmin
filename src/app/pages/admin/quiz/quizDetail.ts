@@ -1,9 +1,10 @@
 import { Component, OnInit, NgZone } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
+import { serverTimestamp, Timestamp } from 'firebase/firestore';
 
 // PrimeNG
 import { CardModule } from 'primeng/card';
@@ -14,6 +15,10 @@ import { TabsModule } from 'primeng/tabs';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { ColorPickerModule } from 'primeng/colorpicker';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ToastModule } from 'primeng/toast';
+import { FloatLabelModule } from 'primeng/floatlabel';
 
 // Angular CDK Drag & Drop
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -24,7 +29,11 @@ import { QuizzesService } from '@/shared/services/quizzes.service';
 import { AuthService } from '@/shared/services/auth.service';
 import { DynamicDialogModule, DynamicDialogRef, DialogService } from 'primeng/dynamicdialog';
 import { QuizExtractComponent } from './quizExtract';
-
+import { DatePickerModule } from 'primeng/datepicker';
+import { QuizTagsService } from '@/shared/services/quizTags.service';
+import { QuizTag } from '@/shared/models/quizTags.model';
+import { NotifyService } from '@/shared/services/notify.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'quiz-detail',
@@ -42,7 +51,13 @@ import { QuizExtractComponent } from './quizExtract';
     DragDropModule,
     SelectModule,
     ColorPickerModule,
-    DynamicDialogModule
+    DatePickerModule,
+    DynamicDialogModule,
+    MultiSelectModule,
+    ToastModule,
+    ProgressSpinnerModule,
+    FloatLabelModule,
+    FormsModule
   ],
   templateUrl: './quizDetail.html'
 })
@@ -51,15 +66,17 @@ export class QuizDetailComponent implements OnInit {
   quiz!: Quiz;
   form!: FormGroup;
   quizImagePreview: string | null = null;
-
-  tabSelected: string = '0'; // default tab
-
+  availableTags: QuizTag[] = [];
+  selectedTags: QuizTag[] = [];
+  tabSelected: string = '0';
   QuizTypeEnum = QuizTypeEnum;
+  saving: boolean = false;
 
   quizType = [
-    { value: 1, viewValue: 'Weekly' },
-    { value: 2, viewValue: 'Fifty+' },
-    { value: 3, viewValue: 'Collaboration' },
+    { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
+    { value: QuizTypeEnum.FiftyPlus, viewValue: 'Fifty+' },
+    { value: QuizTypeEnum.Collab, viewValue: 'Collaboration' },
+    { value: QuizTypeEnum.QuestionType, viewValue: 'Question-Type' }
   ];
 
   quillModules = {
@@ -69,6 +86,17 @@ export class QuizDetailComponent implements OnInit {
     ],
   };
 
+  logos: string[] = [
+    '2010s-clear-1.png', 'aussie.png', 'boomer.png', 'chrissy.png', 'EURO.png',
+    'footy.png', 'HOTTEST-20 (1).png', 'logo.png', 'loser.png', 'Movie.png',
+    'movie2.png', 'olympic.png', 'peoples.png', 'reality.png', 'SA.png',
+    'spooky.png', 'swifty (1).png', 'weekly-hundred.png', 'Yearl-2023.png',
+    'yearly-22022.png', 'yeswequiz.png'
+  ];
+
+  private removedQuestionsBackup: any[] = [];
+  logoDialogVisible: boolean = false;
+
   constructor(
     private fb: FormBuilder,
     private router: Router,
@@ -76,21 +104,29 @@ export class QuizDetailComponent implements OnInit {
     private authService: AuthService,
     private ngZone: NgZone,
     private route: ActivatedRoute,
-    private dialogService: DialogService
+    private dialogService: DialogService,
+    private quizTagService: QuizTagsService,
+    private notify: NotifyService
   ) {}
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
+    // Load tags
+    this.quizTagService.getAllTags().subscribe(tags => {
+      this.availableTags = tags;
+    });
+
+    // Load quiz
+    this.route.paramMap.subscribe(async params => {
       this.id = params.get('id') || '0';
       if (this.id && this.id !== '0') {
-        this.loadQuiz(this.id);
+        await this.loadQuiz(this.id);
       } else {
-        this.initializeEmptyQuiz();
+        await this.initializeEmptyQuiz();
       }
     });
   }
 
-  private initializeEmptyQuiz(): void {
+  private async initializeEmptyQuiz(): Promise<void> {
     const emptyQuestions = Array.from({ length: 50 }, (_, i) => ({
       questionId: i + 1,
       question: '',
@@ -99,8 +135,9 @@ export class QuizDetailComponent implements OnInit {
       timeless: false,
     }));
 
+    const nextQuizId = await this.quizzesService.getNextQuizId();
     this.quiz = {
-      quizId: Date.now(),
+      quizId: nextQuizId,
       isPremium: false,
       isActive: true,
       quizType: QuizTypeEnum.Weekly,
@@ -115,6 +152,16 @@ export class QuizDetailComponent implements OnInit {
   }
 
   private buildForm(quiz: Quiz): void {
+
+    let deploymentDate: Date | null = null;
+    const ts = quiz.deploymentDate;
+    if (ts) {
+      if ('toDate' in ts && typeof ts.toDate === 'function') {
+        deploymentDate = ts.toDate();
+      }else {
+        deploymentDate = new Date(ts);
+      }
+    }
     this.form = this.fb.group({
       quizId: [quiz.quizId || null],
       quizTitle: [quiz.quizTitle || ''],
@@ -122,8 +169,7 @@ export class QuizDetailComponent implements OnInit {
       isActive: [quiz.isActive ?? true],
       isPremium: [quiz.isPremium || false],
       questionCount: [quiz.questions?.length || 50],
-      deploymentDate: [quiz.deploymentDate || null],
-      deploymentTime: [quiz.deploymentTime || null],
+      deploymentDate: [deploymentDate],
       theme: this.fb.group({
         fontColor: [quiz.theme?.fontColor || '#000000'],
         backgroundColor: [quiz.theme?.backgroundColor || '#ffffff'],
@@ -145,16 +191,11 @@ export class QuizDetailComponent implements OnInit {
       imageUrl: [''],
     });
 
-    // Reset tab if not Collaboration
     this.form.get('quizType')?.valueChanges.subscribe((type) => {
-      if (type !== QuizTypeEnum.Collab) {
-        this.tabSelected = '0';
-      }
+      if (type !== QuizTypeEnum.Collab) this.tabSelected = '0';
     });
 
-    this.form.get('questionCount')?.valueChanges.subscribe((count) => {
-      this.setQuestionCount(count);
-    });
+    this.form.get('questionCount')?.valueChanges.subscribe((count) => this.setQuestionCount(count));
   }
 
   get questions(): FormArray {
@@ -166,124 +207,124 @@ export class QuizDetailComponent implements OnInit {
     const current = this.questions.length;
 
     if (count > current) {
-      for (let i = current; i < count; i++) {
-        this.questions.push(
-          this.fb.group({
-            questionId: [i + 1],
-            question: [''],
-            answer: [''],
-            category: [''],
-            timeless: [false],
-          })
-        );
+      const toRestore = this.removedQuestionsBackup.splice(0, count - current);
+      toRestore.forEach(q => this.questions.push(this.fb.group(q)));
+      for (let i = this.questions.length; i < count; i++) {
+        this.questions.push(this.fb.group({
+          questionId: [i + 1],
+          question: [''],
+          answer: [''],
+          category: [''],
+          timeless: [false],
+        }));
       }
     } else if (count < current) {
-      for (let i = current - 1; i >= count; i--) {
-        this.questions.removeAt(i);
-      }
+      this.removedQuestionsBackup = this.questions.controls
+        .slice(count)
+        .map(c => c.value)
+        .concat(this.removedQuestionsBackup);
+      for (let i = current - 1; i >= count; i--) this.questions.removeAt(i);
     }
-  }
 
-  removeQuestion(index: number): void {
-    this.questions.removeAt(index);
-    this.form.patchValue({ questionCount: this.questions.length });
+    this.questions.controls.forEach((q, i) => q.get('questionId')?.setValue(i + 1));
   }
 
   drop(event: CdkDragDrop<FormGroup[]>): void {
-    const questionArray = this.questions.controls as FormGroup[];
-    moveItemInArray(questionArray, event.previousIndex, event.currentIndex);
+    moveItemInArray(this.questions.controls as FormGroup[], event.previousIndex, event.currentIndex);
   }
 
   normalizeHtml(html: string): string {
     if (!html) return '';
-    let cleaned = html.replace(/&nbsp;/g, ' ');
-    cleaned = cleaned.replace(/<p>\s*<\/p>/g, '');
-    cleaned = cleaned.replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
-    return cleaned;
+    return html.replace(/&nbsp;/g, ' ').replace(/<p>\s*<\/p>/g, '').replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
   }
 
   async saveQuiz(): Promise<void> {
-    if (this.form.invalid) return;
+  if (this.form.invalid) return;
+  this.saving = true;
 
+  try {
     const formValue = this.form.value;
+
+    // Normalize HTML in questions
     formValue.questions.forEach((q: any) => {
       q.question = this.normalizeHtml(q.question);
       q.answer = this.normalizeHtml(q.answer);
     });
 
+    // Handle deploymentDate
+    if (!formValue.deploymentDate) {
+      formValue.deploymentDate = serverTimestamp(); // Firestore sets it
+    } else if (!(formValue.deploymentDate instanceof Date)) {
+      formValue.deploymentDate = new Date(formValue.deploymentDate);
+    }
+
     const quizData: Quiz = { ...this.quiz, ...formValue };
 
-    try {
-      if (this.id && this.id !== '0') {
-        await this.quizzesService.updateQuiz(this.id, quizData);
-      } else {
-        this.id = await this.quizzesService.createQuiz(quizData);
-      }
-      this.router.navigate(['/quizzes']);
-    } catch (error) {
-      console.error('Error saving quiz:', error);
+    if (this.id && this.id !== '0') {
+      await this.quizzesService.updateQuiz(this.id, quizData);
+    } else {
+      const currentUserId = this.authService.currentUserId;
+      this.id = await this.quizzesService.createQuiz(quizData, currentUserId);
     }
+
+    this.notify.success('Quiz saved successfully');
+    this.router.navigate(['/members/admin/quizzes']);
+  } catch (error) {
+    console.error('Error saving quiz:', error);
+    this.notify.error('Error saving quiz');
+  } finally {
+    this.saving = false;
   }
+}
+
 
   cancel(): void {
-    this.router.navigate(['/quizzes']);
+    this.router.navigate(['/members/admin/quizzes']);
   }
 
-  private loadQuiz(id: string): void {
-    this.quizzesService.getQuizById(id).subscribe((quiz) => {
-      this.ngZone.run(() => {
-        if (!quiz) {
-          this.initializeEmptyQuiz();
-        } else {
-          this.quiz = quiz;
-          this.buildForm(this.quiz);
-        }
-      });
+  private async loadQuiz(id: string): Promise<void> {
+    const quiz = await firstValueFrom(this.quizzesService.getQuizById(id));
+    this.ngZone.run(async () => {
+      if (!quiz) {
+        await this.initializeEmptyQuiz();
+      } else {
+        this.quiz = quiz;
+        this.buildForm(this.quiz);
+      }
     });
   }
 
-openImportDialog(): void {
-  const ref: DynamicDialogRef = this.dialogService.open(QuizExtractComponent, {
-    header: 'Import Questions',
-    width: '50%',
-    modal: true, // 👈 enables background dimming
-    dismissableMask: true, // optional: allow clicking outside to close
-    contentStyle: { 'max-height': '80vh', overflow: 'auto' },
-    data: {
-      questions: this.questions.value,
-      quizNum: this.form.get('quizId')?.value
-    }
-  });
+  openImportDialog(): void {
+    const ref: DynamicDialogRef = this.dialogService.open(QuizExtractComponent, {
+      header: 'Import Questions',
+      width: '50%',
+      modal: true,
+      dismissableMask: true,
+      contentStyle: { 'max-height': '80vh', overflow: 'auto' },
+      data: {
+        questions: this.questions.value,
+        quizNum: this.form.get('quizId')?.value
+      }
+    });
 
-  ref.onClose.subscribe((result: { questions: any[], quizNum: string } | null) => {
-    if (result) {
-      // update the form with imported questions
-      this.questions.clear();
-      result.questions.forEach(q => {
-        this.questions.push(this.fb.group({
-          questionId: [q.questionId || null],
-          question: [q.question || ''],
-          answer: [q.answer || ''],
-          category: [q.category || ''],
-          timeless: [q.timeless || false]
-        }));
-      });
-
-      this.form.patchValue({ quizId: result.quizNum });
-      this.form.patchValue({ questionCount: result.questions.length });
-    }
-  });
-}
-
-  onFileSelected(event: Event) {
-    const file = (event.target as HTMLInputElement)?.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.quizImagePreview = reader.result as string;
-      this.form.get('quizImage')?.setValue(this.quizImagePreview);
-    };
-    reader.readAsDataURL(file);
+    ref.onClose.subscribe((result: { questions: any[], quizNum: string } | null) => {
+      if (result) {
+        this.questions.clear();
+        result.questions.forEach(q => {
+          this.questions.push(this.fb.group({
+            questionId: [q.questionId || null],
+            question: [q.question || ''],
+            answer: [q.answer || ''],
+            category: [q.category || ''],
+            timeless: [q.timeless || false]
+          }));
+        });
+        this.form.patchValue({ quizId: result.quizNum, questionCount: result.questions.length });
+      }
+    });
   }
+
+  showLogoDialog(): void { this.logoDialogVisible = true; }
+  selectLogoFromDialog(logo: string): void { this.form.get('imageUrl')?.setValue(logo); this.logoDialogVisible = false; }
+
 }
