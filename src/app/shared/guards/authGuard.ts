@@ -15,7 +15,7 @@ export class AuthGuard implements CanActivate {
       switchMap(() => this.auth.user$),       // get current user
       take(1),
       map(user => {
-        const allowed = !!user && !user.isAnonymous;
+        const allowed = !!user && !user.isAnon;
         if (!allowed) this.router.navigate(['/landing']); // redirect if not allowed
         return allowed;
       })

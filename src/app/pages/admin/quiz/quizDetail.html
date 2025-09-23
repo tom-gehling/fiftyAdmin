@@ -3,6 +3,14 @@
     <div class="w-16 h-16 border-4 border-t-4 border-gray-200 border-t-green-500 rounded-full animate-spin"></div>
 </div>
 
+<div class="p-field w-full">
+    <p-floatlabel class="w-full">
+        <p-datepicker inputId="calendar-24h" [(ngModel)]="datefield" [showTime]="true" [hourFormat]="'12'" placeholder="Select date & time" class="w-full"></p-datepicker>
+        <label for="calendar-24h">Deployment</label>
+    </p-floatlabel>
+</div>
+<button pButton type="button" label="Import" class="p-button-outlined" (click)="getDateValue()"></button>
+
 <p-card *ngIf="form" class="flex flex-col h-full">
     <!-- Top action buttons -->
     <div class="flex items-center justify-between mb-4">
@@ -36,7 +44,7 @@
             <!-- Deployment Date/Time -->
             <div class="p-field w-full">
                 <p-floatlabel class="w-full">
-                    <p-datepicker inputId="calendar-24h" formControlName="deploymentDate" [showTime]="true" [hourFormat]="'24'" placeholder="Select date & time" class="w-full"></p-datepicker>
+                    <p-datepicker inputId="calendar-24h" formControlName="deploymentDate" [showTime]="true" [hourFormat]="'12'" placeholder="Select date & time" class="w-full"></p-datepicker>
                     <label for="calendar-24h">Deployment</label>
                 </p-floatlabel>
             </div>
@@ -55,8 +63,7 @@
                 <label for="isActive" class="font-semibold">Active</label>
             </div>
         </div>
-
-        <!-- PrimeNG Tabs -->
+        <!-- Tabs -->
         <p-tabs class="mt-6 flex-1 flex flex-col" [(value)]="tabSelected">
             <p-tablist>
                 <p-tab value="0">Questions</p-tab>
@@ -69,25 +76,19 @@
                 <p-tabpanel value="0">
                     <div formArrayName="questions" cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-3 py-3">
                         <div *ngFor="let q of questions.controls; let i = index" [formGroupName]="i" cdkDrag>
-                            <!-- <p-card class="flex gap-3 w-full p-4 items-stretch cursor-grab"> -->
-                            <!-- Editors wrapper -->
                             <div class="flex flex-1 gap-3 items-stretch">
-                                <!-- Drag handle / Question number -->
                                 <div cdkDragHandle class="flex-shrink-0 w-8 flex justify-center items-center text-gray-600 dark:text-gray-300 cursor-move">
                                     <span class="font-bold text-lg">{{ i + 1 }}.</span>
                                 </div>
 
-                                <!-- Question editor -->
                                 <div class="flex-1 border border-gray-300 dark:border-gray-700 rounded-md p-1 flex flex-col">
                                     <quill-editor formControlName="question" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
                                 </div>
 
-                                <!-- Answer editor -->
                                 <div class="flex-1 border border-gray-300 dark:border-gray-700 rounded-md p-1 flex flex-col">
                                     <quill-editor formControlName="answer" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
                                 </div>
                             </div>
-                            <!-- </p-card> -->
                         </div>
                     </div>
                 </p-tabpanel>
@@ -115,11 +116,40 @@
 
                 <!-- Other Tab -->
                 <p-tabpanel value="2">
-                    <div class="mb-4">
-                        <label class="block font-medium mb-1">Tags</label>
-                        <p-multiSelect [options]="availableTags" [(ngModel)]="selectedTags" formControlName="tags" optionLabel="name" display="chip" placeholder="Select tags" class="w-full md:w-80"></p-multiSelect>
+                    <!-- Image Section -->
+                    <div class="mb-6">
+                        <div *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
+                            <h3 class="font-semibold mb-2">Image</h3>
+                            <div class="mb-6 flex items-center gap-4 h-20">
+                                <button pButton type="button" label="Select Logo" (click)="showLogoDialog()"></button>
+
+                                <!-- Selected Preview (inline, larger) -->
+                                <div *ngIf="form.get('imageUrl')?.value" class="flex-shrink-0 h-full flex items-center">
+                                    <img [src]="'assets/logos/' + form.get('imageUrl')?.value" alt="Logo" class="max-h-full object-contain" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Logo Selection Dialog -->
+                        <p-dialog header="Select Logo" [(visible)]="logoDialogVisible" modal="true" [style]="{width: '600px', maxHeight: '70vh'}" [contentStyle]="{overflowY: 'auto'}" [closable]="true">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <div
+                                    *ngFor="let logo of logos"
+                                    class="cursor-pointer border rounded-md p-2 flex justify-center items-center hover:shadow-md"
+                                    [ngClass]="{'border-green-500 shadow-lg': form.get('imageUrl')?.value === logo}"
+                                    (click)="selectLogoFromDialog(logo)"
+                                >
+                                    <div class="w-24 h-24 flex justify-center items-center overflow-hidden">
+                                        <img [src]="'assets/logos/' + logo" [alt]="logo" class="max-w-full max-h-full object-contain" />
+                                    </div>
+                                </div>
+                            </div>
+                        </p-dialog>
                     </div>
-                    <div class="flex flex-col gap-4">
+
+                    <!-- Notes Section -->
+                    <div class="mb-6 flex flex-col gap-3">
+                        <h3 class="font-semibold mb-2">Notes</h3>
                         <input pInputText type="text" formControlName="notesAbove" placeholder="Text Above Quiz" class="w-full" />
                         <input pInputText type="text" formControlName="notesBelow" placeholder="Text Below Quiz" class="w-full" />
                     </div>

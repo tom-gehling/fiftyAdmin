@@ -1,125 +1,168 @@
 import { Injectable, inject } from '@angular/core';
 import {
-    Auth,
-    signInAnonymously,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    User,
-    updateProfile,
-    updatePassword
+  Auth,
+  User as FirebaseUser,
+  signInAnonymously,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  onAuthStateChanged,
 } from '@angular/fire/auth';
-import { Firestore, collection, query, where, getDocs } from '@angular/fire/firestore';
-import { browserLocalPersistence, browserSessionPersistence, setPersistence } from 'firebase/auth';
+import {
+  Firestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  increment,
+} from '@angular/fire/firestore';
+import {
+  browserLocalPersistence,
+  browserSessionPersistence,
+  setPersistence,
+} from 'firebase/auth';
 import { BehaviorSubject } from 'rxjs';
+
+export interface AppUser {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoUrl?: string;
+  createdAt: Date;
+  isAdmin?: boolean;
+  isMember: boolean;
+  isAnon: boolean;
+  followers: string[];
+  following: string[];
+  loginCount: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-    private auth = inject(Auth);
-    private firestore = inject(Firestore);
+  private auth = inject(Auth);
+  private firestore = inject(Firestore);
 
-    // Observables
-    public user$ = new BehaviorSubject<User | null>(null);
-    public isMember$ = new BehaviorSubject<boolean>(false);
-    public isAdmin$ = new BehaviorSubject<boolean>(false);
-    public initialized$ = new BehaviorSubject(false);
+  public user$ = new BehaviorSubject<AppUser | null>(null);
+  public isMember$ = new BehaviorSubject(false);
+  public isAdmin$ = new BehaviorSubject(false);
+  public initialized$ = new BehaviorSubject(false);
 
-    constructor() {
-        // Listen for Firebase auth changes
-        onAuthStateChanged(this.auth, async (user) => {
-            this.user$.next(user);
-
-            if (user && !user.isAnonymous) {
-                await this.checkAdminOrMember(user.email);
-            } else {
-                // Anonymous or logged out
-                this.isAdmin$.next(false);
-                this.isMember$.next(false);
-            }
-
-            this.initialized$.next(true);
-        });
-    }
-
-    // Email/password login
-    async loginEmailPassword(email: string, password: string, rememberMe: boolean = false) {
-        await setPersistence(this.auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-        const cred = await signInWithEmailAndPassword(this.auth, email, password);
-
-        // Set fallback display name if missing
-        if (!cred.user.displayName) {
-            const fallbackName = email.split('@')[0];
-            await updateProfile(cred.user, { displayName: fallbackName });
-        }
-
-        this.user$.next(cred.user);
-        await this.checkAdminOrMember(cred.user.email);
-
-        return cred.user;
-    }
-
-    // Optional anonymous login
-    async loginAnonymous() {
-        if (!this.auth.currentUser) {
-            const cred = await signInAnonymously(this.auth);
-            this.user$.next(cred.user);
-            this.isAdmin$.next(false);
-            this.isMember$.next(false);
-            return cred.user;
-        }
-        return this.auth.currentUser;
-    }
-
-    // Update profile
-    async updateDisplayName(displayName: string) {
-        if (this.auth.currentUser) {
-            await updateProfile(this.auth.currentUser, { displayName });
-            this.user$.next({ ...this.auth.currentUser });
-        }
-    }
-
-    async updatePassword(newPassword: string) {
-        if (this.auth.currentUser) {
-            await updatePassword(this.auth.currentUser, newPassword);
-        }
-    }
-
-    async logout() {
-        await signOut(this.auth);
+  constructor() {
+    onAuthStateChanged(this.auth, async (user) => {
+      if (user) {
+        const appUser = await this.ensureUserDocument(user);
+        this.user$.next(appUser);
+      } else {
         this.user$.next(null);
-        this.isAdmin$.next(false);
         this.isMember$.next(false);
+        this.isAdmin$.next(false);
+      }
+      this.initialized$.next(true);
+    });
+  }
+
+  /** Email/password login */
+  async loginEmailPassword(
+    email: string,
+    password: string,
+    rememberMe: boolean = false
+  ): Promise<AppUser> {
+    await setPersistence(
+      this.auth,
+      rememberMe ? browserLocalPersistence : browserSessionPersistence
+    );
+
+    const cred = await signInWithEmailAndPassword(this.auth, email, password);
+
+    if (!cred.user.displayName) {
+      await updateProfile(cred.user, {
+        displayName: email.split('@')[0],
+      });
     }
 
-    get currentUserId(): string | null {
-        return this.auth.currentUser?.uid ?? null;
+    const appUser = await this.ensureUserDocument(cred.user);
+    this.user$.next(appUser);
+    return appUser;
+  }
+
+  /** Anonymous login */
+  async loginAnonymous(): Promise<AppUser> {
+    if (!this.auth.currentUser) {
+      const cred = await signInAnonymously(this.auth);
+      const appUser = await this.ensureUserDocument(cred.user, true);
+      this.user$.next(appUser);
+      return appUser;
     }
 
-    get isAnonymous(): boolean {
-        return this.auth.currentUser?.isAnonymous ?? true;
+    return await this.ensureUserDocument(this.auth.currentUser, true);
+  }
+
+  /** Update display name */
+  async updateDisplayName(displayName: string) {
+    if (!this.auth.currentUser) return;
+    await updateProfile(this.auth.currentUser, { displayName });
+    const appUser = await this.ensureUserDocument(this.auth.currentUser);
+    this.user$.next(appUser);
+  }
+
+  async logout() {
+    await signOut(this.auth);
+    this.user$.next(null);
+    this.isAdmin$.next(false);
+    this.isMember$.next(false);
+  }
+
+  get currentUserId(): string | null {
+    return this.auth.currentUser?.uid ?? null;
+  }
+
+  get isAnonymous(): boolean {
+    return this.auth.currentUser?.isAnonymous ?? true;
+  }
+
+  /**
+   * Ensures the Firestore user document exists and returns AppUser
+   */
+  private async ensureUserDocument(user: FirebaseUser, isAnon = false): Promise<AppUser> {
+    const userRef = doc(this.firestore, 'users', user.uid);
+    const snapshot = await getDoc(userRef);
+
+    // Check admins collection if email exists
+    let isAdmin = false;
+    if (user.email) {
+      const q = query(
+        collection(this.firestore, 'admins'),
+        where('emailAddress', '==', user.email)
+      );
+      const adminSnap = await getDocs(q);
+      isAdmin = !adminSnap.empty;
     }
 
-    /**
-     * Check if user is an admin or a member
-     */
-    private async checkAdminOrMember(email: string | null) {
-        if (!email) {
-            this.isAdmin$.next(false);
-            this.isMember$.next(false);
-            return;
-        }
+    const now = new Date();
+    const loginCount = snapshot.exists() ? snapshot.data()?.['loginCount'] ?? 0 : 0;
 
-        const q = query(collection(this.firestore, 'admins'), where('emailAddress', '==', email));
-        const snapshot = await getDocs(q);
+    const appUser: AppUser = {
+      uid: user.uid,
+      email: user.email ?? '',
+      displayName: user.displayName ?? '',
+      photoUrl: user.photoURL ?? '',
+      createdAt: snapshot.exists() ? snapshot.data()?.['createdAt'].toDate() : now,
+      isAdmin,
+      isMember: true, // admins are also members
+      isAnon,
+      followers: snapshot.exists() ? snapshot.data()?.['followers'] ?? [] : [],
+      following: snapshot.exists() ? snapshot.data()?.['following'] ?? [] : [],
+      loginCount: loginCount + 1,
+    };
 
-        if (!snapshot.empty) {
-            // Admin user
-            this.isAdmin$.next(true);
-            this.isMember$.next(false);
-        } else {
-            // Authenticated but not admin → member
-            this.isAdmin$.next(false);
-            this.isMember$.next(true);
-        }
-    }
+    await setDoc(userRef, appUser, { merge: true });
+
+    this.isAdmin$.next(isAdmin);
+    this.isMember$.next(appUser.isMember);
+
+    return appUser;
+  }
 }

@@ -1,9 +1,10 @@
 import { Component, OnInit, NgZone } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
+import { serverTimestamp, Timestamp } from 'firebase/firestore';
 
 // PrimeNG
 import { CardModule } from 'primeng/card';
@@ -55,7 +56,8 @@ import { firstValueFrom } from 'rxjs';
     MultiSelectModule,
     ToastModule,
     ProgressSpinnerModule,
-    FloatLabelModule
+    FloatLabelModule,
+    FormsModule
   ],
   templateUrl: './quizDetail.html'
 })
@@ -69,6 +71,7 @@ export class QuizDetailComponent implements OnInit {
   tabSelected: string = '0';
   QuizTypeEnum = QuizTypeEnum;
   saving: boolean = false;
+  datefield: Date | null = null;
 
   quizType = [
     { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
@@ -84,7 +87,16 @@ export class QuizDetailComponent implements OnInit {
     ],
   };
 
+  logos: string[] = [
+    '2010s-clear-1.png', 'aussie.png', 'boomer.png', 'chrissy.png', 'EURO.png',
+    'footy.png', 'HOTTEST-20 (1).png', 'logo.png', 'loser.png', 'Movie.png',
+    'movie2.png', 'olympic.png', 'peoples.png', 'reality.png', 'SA.png',
+    'spooky.png', 'swifty (1).png', 'weekly-hundred.png', 'Yearl-2023.png',
+    'yearly-22022.png', 'yeswequiz.png'
+  ];
+
   private removedQuestionsBackup: any[] = [];
+  logoDialogVisible: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -99,10 +111,12 @@ export class QuizDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Load tags
     this.quizTagService.getAllTags().subscribe(tags => {
       this.availableTags = tags;
     });
 
+    // Load quiz
     this.route.paramMap.subscribe(async params => {
       this.id = params.get('id') || '0';
       if (this.id && this.id !== '0') {
@@ -114,7 +128,6 @@ export class QuizDetailComponent implements OnInit {
   }
 
   private async initializeEmptyQuiz(): Promise<void> {
-    console.log('here')
     const emptyQuestions = Array.from({ length: 50 }, (_, i) => ({
       questionId: i + 1,
       question: '',
@@ -124,7 +137,6 @@ export class QuizDetailComponent implements OnInit {
     }));
 
     const nextQuizId = await this.quizzesService.getNextQuizId();
-    console.log(nextQuizId)
     this.quiz = {
       quizId: nextQuizId,
       isPremium: false,
@@ -141,6 +153,16 @@ export class QuizDetailComponent implements OnInit {
   }
 
   private buildForm(quiz: Quiz): void {
+
+    let deploymentDate: Date | null = null;
+    const ts = quiz.deploymentDate;
+    if (ts) {
+      if ('toDate' in ts && typeof ts.toDate === 'function') {
+        deploymentDate = ts.toDate();
+      }else {
+        deploymentDate = new Date(ts);
+      }
+    }
     this.form = this.fb.group({
       quizId: [quiz.quizId || null],
       quizTitle: [quiz.quizTitle || ''],
@@ -148,7 +170,7 @@ export class QuizDetailComponent implements OnInit {
       isActive: [quiz.isActive ?? true],
       isPremium: [quiz.isPremium || false],
       questionCount: [quiz.questions?.length || 50],
-      deploymentDate: [quiz.deploymentDate || null],
+      deploymentDate: [deploymentDate],
       theme: this.fb.group({
         fontColor: [quiz.theme?.fontColor || '#000000'],
         backgroundColor: [quiz.theme?.backgroundColor || '#ffffff'],
@@ -168,18 +190,13 @@ export class QuizDetailComponent implements OnInit {
       notesAbove: [quiz.notesAbove || ''],
       notesBelow: [quiz.notesBelow || ''],
       imageUrl: [''],
-      tags: [quiz.tags || []],
     });
 
     this.form.get('quizType')?.valueChanges.subscribe((type) => {
-      if (type !== QuizTypeEnum.Collab) {
-        this.tabSelected = '0';
-      }
+      if (type !== QuizTypeEnum.Collab) this.tabSelected = '0';
     });
 
-    this.form.get('questionCount')?.valueChanges.subscribe((count) => {
-      this.setQuestionCount(count);
-    });
+    this.form.get('questionCount')?.valueChanges.subscribe((count) => this.setQuestionCount(count));
   }
 
   get questions(): FormArray {
@@ -193,85 +210,82 @@ export class QuizDetailComponent implements OnInit {
     if (count > current) {
       const toRestore = this.removedQuestionsBackup.splice(0, count - current);
       toRestore.forEach(q => this.questions.push(this.fb.group(q)));
-
       for (let i = this.questions.length; i < count; i++) {
-        this.questions.push(
-          this.fb.group({
-            questionId: [i + 1],
-            question: [''],
-            answer: [''],
-            category: [''],
-            timeless: [false],
-          })
-        );
+        this.questions.push(this.fb.group({
+          questionId: [i + 1],
+          question: [''],
+          answer: [''],
+          category: [''],
+          timeless: [false],
+        }));
       }
     } else if (count < current) {
       this.removedQuestionsBackup = this.questions.controls
         .slice(count)
         .map(c => c.value)
         .concat(this.removedQuestionsBackup);
-
-      for (let i = current - 1; i >= count; i--) {
-        this.questions.removeAt(i);
-      }
+      for (let i = current - 1; i >= count; i--) this.questions.removeAt(i);
     }
 
-    this.questions.controls.forEach((q, i) =>
-      q.get('questionId')?.setValue(i + 1)
-    );
+    this.questions.controls.forEach((q, i) => q.get('questionId')?.setValue(i + 1));
   }
 
   drop(event: CdkDragDrop<FormGroup[]>): void {
-    const questionArray = this.questions.controls as FormGroup[];
-    moveItemInArray(questionArray, event.previousIndex, event.currentIndex);
+    moveItemInArray(this.questions.controls as FormGroup[], event.previousIndex, event.currentIndex);
   }
 
   normalizeHtml(html: string): string {
     if (!html) return '';
-    let cleaned = html.replace(/&nbsp;/g, ' ');
-    cleaned = cleaned.replace(/<p>\s*<\/p>/g, '');
-    cleaned = cleaned.replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
-    return cleaned;
+    return html.replace(/&nbsp;/g, ' ').replace(/<p>\s*<\/p>/g, '').replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
+  }
+
+  getDateValue(){
+    console.log(this.datefield)
+    console.log(this.form.get('deploymentDate')?.value)
+
+    console.log(Timestamp.fromDate(this.datefield ? this.datefield : new Date()))
+
   }
 
   async saveQuiz(): Promise<void> {
-    if (this.form.invalid) return;
+  if (this.form.invalid) return;
+  this.saving = true;
 
-    this.saving = true;
-    try {
-      const formValue = this.form.value;
+  try {
+    const formValue = this.form.value;
 
-      formValue.questions.forEach((q: any) => {
-        q.question = this.normalizeHtml(q.question);
-        q.answer = this.normalizeHtml(q.answer);
-      });
+    // Normalize HTML in questions
+    formValue.questions.forEach((q: any) => {
+      q.question = this.normalizeHtml(q.question);
+      q.answer = this.normalizeHtml(q.answer);
+    });
 
-      const deployment: Date | null = formValue.deploymentDate;
-      if (deployment) {
-        formValue.deploymentDate = deployment;
-        formValue.deploymentTime = deployment.toTimeString().slice(0, 5);
-      } else {
-        formValue.deploymentDate = null;
-        formValue.deploymentTime = null;
-      }
-
-      const quizData: Quiz = { ...this.quiz, ...formValue };
-
-      if (this.id && this.id !== '0') {
-        await this.quizzesService.updateQuiz(this.id, quizData);
-      } else {
-        this.id = await this.quizzesService.createQuiz(quizData);
-      }
-
-      this.notify.success('Quiz saved successfully');
-      this.router.navigate(['/members/admin/quizzes']);
-    } catch (error) {
-      console.error('Error saving quiz:', error);
-      this.notify.error('Error saving quiz');
-    } finally {
-      this.saving = false;
+    // Handle deploymentDate
+    if (!formValue.deploymentDate) {
+      formValue.deploymentDate = serverTimestamp(); // Firestore sets it
+    } else if (!(formValue.deploymentDate instanceof Date)) {
+      formValue.deploymentDate = new Date(formValue.deploymentDate);
     }
+
+    const quizData: Quiz = { ...this.quiz, ...formValue };
+
+    if (this.id && this.id !== '0') {
+      await this.quizzesService.updateQuiz(this.id, quizData);
+    } else {
+      const currentUserId = this.authService.currentUserId;
+      this.id = await this.quizzesService.createQuiz(quizData, currentUserId);
+    }
+
+    this.notify.success('Quiz saved successfully');
+    this.router.navigate(['/members/admin/quizzes']);
+  } catch (error) {
+    console.error('Error saving quiz:', error);
+    this.notify.error('Error saving quiz');
+  } finally {
+    this.saving = false;
   }
+}
+
 
   cancel(): void {
     this.router.navigate(['/members/admin/quizzes']);
@@ -319,22 +333,7 @@ export class QuizDetailComponent implements OnInit {
     });
   }
 
-  onFileSelected(event: Event) {
-    const file = (event.target as HTMLInputElement)?.files?.[0];
-    if (!file) return;
+  showLogoDialog(): void { this.logoDialogVisible = true; }
+  selectLogoFromDialog(logo: string): void { this.form.get('imageUrl')?.setValue(logo); this.logoDialogVisible = false; }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.quizImagePreview = reader.result as string;
-      this.form.get('quizImage')?.setValue(this.quizImagePreview);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  showQuestionCountPrompt(): void {
-    let countStr = prompt('Enter the number of questions to display', this.questions.length.toString());
-    let count = parseInt(countStr ?? '50', 10);
-    if (isNaN(count) || count <= 0) count = 50;
-    this.setQuestionCount(count);
-  }
 }

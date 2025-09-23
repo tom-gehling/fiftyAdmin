@@ -6,7 +6,6 @@ import { Quiz } from '@/shared/models/quiz.model';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { firstValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 
 register();
 
@@ -19,7 +18,7 @@ interface TagWithQuizzes {
   selector: 'app-fifty-quizzes-dashboard',
   standalone: true,
   imports: [CommonModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA], 
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="w-full flex flex-col gap-8 p-4">
       <ng-container *ngFor="let tagGroup of tagsWithQuizzes">
@@ -54,6 +53,7 @@ interface TagWithQuizzes {
   `,
 })
 export class FiftyQuizzesDashboardComponent implements OnInit {
+  // Correct type here
   tagsWithQuizzes: TagWithQuizzes[] = [];
 
   constructor(
@@ -62,18 +62,20 @@ export class FiftyQuizzesDashboardComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    const allTags = await firstValueFrom(this.quizTagsService.getAllTags()) || [];
+    // Load all tags
+    const allTags: QuizTag[] = await firstValueFrom(this.quizTagsService.getAllTags()) || [];
 
+    // Load all quizzes
     const allQuizzes: Quiz[] = await firstValueFrom(this.quizzesService.getAllQuizzes()) || [];
+
+    // Map tags to quizzes using tag.quizIds
     this.tagsWithQuizzes = allTags
       .map(tag => ({
         tag,
-        quizzes: allQuizzes.filter(
-          q =>
-            q.tags?.some(t => t.id === tag.id)
-        ),
+        quizzes: allQuizzes.filter(q => tag.quizIds?.includes(q.quizId.toString()))
       }))
       .filter(t => t.quizzes.length > 0);
-      console.log(this.tagsWithQuizzes);
+
+    console.log(this.tagsWithQuizzes);
   }
 }

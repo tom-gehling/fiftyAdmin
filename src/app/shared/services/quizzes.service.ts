@@ -115,9 +115,13 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
   );
 }
 
-    async createQuiz(data: Quiz): Promise<string> {
+    async createQuiz(data: Quiz, userId: string | null = null): Promise<string> {
         if (!data.creationTime) {
             (data.creationTime as any) = Timestamp.now();
+        }
+
+        if (userId) {
+            (data as any).createdBy = userId;
         }
 
         const quizCollection = collection(this.firestore, this.collectionName);
