@@ -13,7 +13,7 @@ import { FiftyQuizzesDashboardComponent } from './components/fiftyquizzes';
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, RecentSalesWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent],
+    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <!-- Only show stats widget if user is NOT admin -->

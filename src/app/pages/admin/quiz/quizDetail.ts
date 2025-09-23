@@ -71,7 +71,6 @@ export class QuizDetailComponent implements OnInit {
   tabSelected: string = '0';
   QuizTypeEnum = QuizTypeEnum;
   saving: boolean = false;
-  datefield: Date | null = null;
 
   quizType = [
     { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
@@ -237,14 +236,6 @@ export class QuizDetailComponent implements OnInit {
   normalizeHtml(html: string): string {
     if (!html) return '';
     return html.replace(/&nbsp;/g, ' ').replace(/<p>\s*<\/p>/g, '').replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
-  }
-
-  getDateValue(){
-    console.log(this.datefield)
-    console.log(this.form.get('deploymentDate')?.value)
-
-    console.log(Timestamp.fromDate(this.datefield ? this.datefield : new Date()))
-
   }
 
   async saveQuiz(): Promise<void> {

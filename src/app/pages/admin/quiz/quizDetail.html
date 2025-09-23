@@ -3,14 +3,6 @@
     <div class="w-16 h-16 border-4 border-t-4 border-gray-200 border-t-green-500 rounded-full animate-spin"></div>
 </div>
 
-<div class="p-field w-full">
-    <p-floatlabel class="w-full">
-        <p-datepicker inputId="calendar-24h" [(ngModel)]="datefield" [showTime]="true" [hourFormat]="'12'" placeholder="Select date & time" class="w-full"></p-datepicker>
-        <label for="calendar-24h">Deployment</label>
-    </p-floatlabel>
-</div>
-<button pButton type="button" label="Import" class="p-button-outlined" (click)="getDateValue()"></button>
-
 <p-card *ngIf="form" class="flex flex-col h-full">
     <!-- Top action buttons -->
     <div class="flex items-center justify-between mb-4">
