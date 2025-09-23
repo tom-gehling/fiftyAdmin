@@ -51,38 +51,55 @@ export class QuizzesService {
         return defer(() => {
             const quizDocRef = doc(this.firestore, this.collectionName, id);
             return docData(quizDocRef, { idField: 'id' }) as Observable<
-                Quiz | undefined
-            >;
+                Quiz | undefined>
+            ;
         });
     }
 
     getActiveQuiz(): Observable<Quiz | undefined> {
-        const now = new Date();
-        return this.getAllQuizzes().pipe(
-            map(quizzes => 
-            quizzes
-                .filter(q => q.quizType == QuizTypeEnum.Weekly && q.deploymentDate != null && q.deploymentDate <= now)
-                .sort((a, b) => (b.deploymentDate!.getTime() - a.deploymentDate!.getTime()))[0]
-            )
-        );
-    }
+  const now = new Date();
+  return this.getAllQuizzes().pipe(
+    map(quizzes =>
+      quizzes
+        .filter(q =>
+          q.quizType === QuizTypeEnum.Weekly &&
+          q.deploymentDate != null &&
+          (q.deploymentDate instanceof Date ? q.deploymentDate : q.deploymentDate.toDate()) <= now
+        )
+        .sort((a, b) => {
+          const aTime = a.deploymentDate instanceof Date ? a.deploymentDate.getTime() : a.deploymentDate?.toDate().getTime() ?? 0;
+          const bTime = b.deploymentDate instanceof Date ? b.deploymentDate.getTime() : b.deploymentDate?.toDate().getTime() ?? 0;
+          return bTime - aTime;
+        })[0]
+    )
+  );
+}
 
 getArchiveQuizzes(getHeader: boolean = false): Observable<any[]> {
   const now = new Date();
   return this.getAllQuizzes().pipe(
     map(quizzes => {
-      // only past weekly quizzes
-      const pastQuizzes = quizzes.filter(
-        q => q.quizType === QuizTypeEnum.Weekly && q.deploymentDate != null && q.deploymentDate < now
-      );
+      const pastQuizzes = quizzes
+        .filter(q =>
+          q.quizType === QuizTypeEnum.Weekly &&
+          q.deploymentDate != null &&
+          (q.deploymentDate instanceof Date ? q.deploymentDate : q.deploymentDate.toDate()) < now
+        );
 
-      // find active quiz
       const activeQuiz = pastQuizzes
-        .sort((a, b) => b.deploymentDate!.getTime() - a.deploymentDate!.getTime())[0];
+        .sort((a, b) => {
+          const aTime = a.deploymentDate instanceof Date ? a.deploymentDate.getTime() : a.deploymentDate?.toDate().getTime() ?? 0;
+          const bTime = b.deploymentDate instanceof Date ? b.deploymentDate.getTime() : b.deploymentDate?.toDate().getTime() ?? 0;
+          return bTime - aTime;
+        })[0];
 
-      // all other past quizzes excluding the active quiz
-      const archiveQuizzes = pastQuizzes.filter(q => q.id !== activeQuiz?.id)
-        .sort((a, b) => b.deploymentDate!.getTime() - a.deploymentDate!.getTime());
+      const archiveQuizzes = pastQuizzes
+        .filter(q => q.id !== activeQuiz?.id)
+        .sort((a, b) => {
+          const aTime = a.deploymentDate instanceof Date ? a.deploymentDate.getTime() : a.deploymentDate?.toDate().getTime() ?? 0;
+          const bTime = b.deploymentDate instanceof Date ? b.deploymentDate.getTime() : b.deploymentDate?.toDate().getTime() ?? 0;
+          return bTime - aTime;
+        });
 
       if (getHeader) {
         return archiveQuizzes.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }));
@@ -92,6 +109,7 @@ getArchiveQuizzes(getHeader: boolean = false): Observable<any[]> {
     })
   );
 }
+
 
 getExclusives(getHeader: boolean = false): Observable<any[]> {
   return this.getAllQuizzes().pipe(

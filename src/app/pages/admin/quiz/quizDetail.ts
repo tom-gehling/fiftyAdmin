@@ -154,14 +154,17 @@ export class QuizDetailComponent implements OnInit {
   private buildForm(quiz: Quiz): void {
 
     let deploymentDate: Date | null = null;
+  if (quiz.deploymentDate) {
     const ts = quiz.deploymentDate;
-    if (ts) {
-      if ('toDate' in ts && typeof ts.toDate === 'function') {
-        deploymentDate = ts.toDate();
-      }else {
-        deploymentDate = new Date(ts);
-      }
+    if (ts instanceof Date) {
+      deploymentDate = ts;
+    } else if ('toDate' in ts && typeof ts.toDate === 'function') {
+      deploymentDate = ts.toDate();
+    } else {
+      // fallback if it's a string or number
+      deploymentDate = new Date(ts as any);
     }
+  }
     this.form = this.fb.group({
       quizId: [quiz.quizId || null],
       quizTitle: [quiz.quizTitle || ''],

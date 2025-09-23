@@ -1,0 +1,16 @@
+<div class="mb-4 border border-gray-300 rounded-lg shadow-md">
+    <button class="w-full text-left px-4 py-3 bg-gray-100 hover:bg-gray-200 flex items-center justify-between font-semibold" (click)="toggleReveal()">
+        <span>Q{{ index + 1 }}. {{ question?.question }}</span>
+        <span class="text-green-500 font-bold" *ngIf="correct">✔</span>
+        <span class="text-red-500 font-bold" *ngIf="incorrect">✖</span>
+    </button>
+
+    <div *ngIf="revealed" class="p-4 bg-white space-y-2">
+        <p class="font-bold" [innerHTML]="question?.answer"></p>
+
+        <div class="flex gap-2 mt-2">
+            <button class="flex-1 py-2 rounded bg-green-500 text-white font-semibold hover:bg-green-600 disabled:opacity-50" (click)="markCorrect()" [disabled]="correct || incorrect">Correct</button>
+            <button class="flex-1 py-2 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50" (click)="markIncorrect()" [disabled]="correct || incorrect">Incorrect</button>
+        </div>
+    </div>
+</div>
