@@ -21,6 +21,10 @@ interface MenuChangeEvent {
     key: string;
     routeEvent?: boolean;
 }
+interface QuizTheme {
+  backgroundColor: string;
+  color: string;
+}
 
 @Injectable({
     providedIn: 'root'
@@ -41,6 +45,8 @@ export class LayoutService {
         staticMenuMobileActive: false,
         menuHoverActive: false
     };
+    
+    quizTheme = signal<QuizTheme | null>(null);
 
     layoutConfig = signal<layoutConfig>(this._config);
 
@@ -174,5 +180,9 @@ export class LayoutService {
 
     reset() {
         this.resetSource.next(true);
+    }
+
+    setQuizTheme(theme: QuizTheme | null) {
+        this.quizTheme.set(theme);
     }
 }

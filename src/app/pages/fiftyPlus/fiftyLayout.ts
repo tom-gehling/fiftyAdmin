@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuizCollectionComponent } from '../common/quizCollection/quizCollection';
-
+import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 
 @Component({
   selector: 'app-fifty-layout',
@@ -12,6 +12,6 @@ import { QuizCollectionComponent } from '../common/quizCollection/quizCollection
   `
 })
 export class FiftyLayoutComponent {
-  @Input() type!: 'archives' | 'exclusives' | 'collaborations';
+  @Input() type!: QuizTypeEnum;
   @Input() title!: string;
 }

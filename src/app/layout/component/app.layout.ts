@@ -11,7 +11,7 @@ import { LayoutService } from '../service/layout.service';
     selector: 'app-layout',
     standalone: true,
     imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter],
-    template: `<div class="layout-wrapper" [ngClass]="containerClass">
+    template: `<div class="layout-wrapper" [ngClass]="containerClass" [ngStyle]="containerStyle">
         <app-topbar></app-topbar>
         <app-sidebar></app-sidebar>
         <div class="layout-main-container">
@@ -27,6 +27,7 @@ export class AppLayout {
     overlayMenuOpenSubscription: Subscription;
 
     menuOutsideClickListener: any;
+    currentRouteEnd: string | null = null;
 
     @ViewChild(AppSidebar) appSidebar!: AppSidebar;
 
@@ -98,6 +99,17 @@ export class AppLayout {
             'layout-mobile-active': this.layoutService.layoutState().staticMenuMobileActive
         };
     }
+
+    get containerStyle(): Record<string, string> {
+  const quizTheme = this.layoutService.quizTheme();
+  if (quizTheme) {
+    return {
+      'background-color': quizTheme.backgroundColor,
+      'color': quizTheme.color,
+    };
+  }
+  return {}; // no styling if no quiz selected
+}
 
     ngOnDestroy() {
         if (this.overlayMenuOpenSubscription) {

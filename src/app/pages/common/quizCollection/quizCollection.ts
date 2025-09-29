@@ -3,10 +3,13 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { CardModule } from 'primeng/card';
+import { Observable } from 'rxjs';
+
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { Quiz } from '@/shared/models/quiz.model';
 import { QuizTemplateComponent } from '../quizTemplate/quizTemplate.component';
-import { Observable } from 'rxjs';
+import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
+import { LayoutService } from '@/layout/service/layout.service';
 
 @Component({
   selector: 'app-quiz-collection',
@@ -31,7 +34,7 @@ import { Observable } from 'rxjs';
 
       <div class="quiz-display">
         <ng-container *ngIf="selectedQuiz; else selectMessage">
-          <app-quiz-template [quiz]="selectedQuiz"></app-quiz-template>
+        <app-quiz-template [quiz]="selectedQuiz"></app-quiz-template>
         </ng-container>
         <ng-template #selectMessage>
           <p>Select a quiz from the drawer.</p>
@@ -81,13 +84,16 @@ import { Observable } from 'rxjs';
 })
 export class QuizCollectionComponent implements OnInit {
   @Input() title: string = 'Quizzes';
-  @Input() quizType: 'archives' | 'exclusives' | 'collaborations' = 'archives';
+  @Input() quizType: QuizTypeEnum = QuizTypeEnum.Weekly;
 
   drawerVisible = false;
   quizHeaders: { quizId: number, id?: string, quizTitle?: string }[] = [];
   selectedQuiz?: Quiz;
 
-  constructor(private quizzesService: QuizzesService) {}
+  constructor(
+    private quizzesService: QuizzesService,
+    private layoutService: LayoutService
+  ) {}
 
   ngOnInit() {
     // let fetchHeaders$: Observable<{ quizId: number, id?: string, quizTitle?: string }[]>;
@@ -108,12 +114,22 @@ export class QuizCollectionComponent implements OnInit {
     //   this.quizHeaders = headers;
     //   if (headers.length) this.loadQuiz(headers[0].id);
     // });
-  }
+}
 
   loadQuiz(id?: string) {
     if (!id) return;
+
     this.quizzesService.getQuizById(id).subscribe(quiz => {
       this.selectedQuiz = quiz;
+
+      if (quiz?.theme) {
+        this.layoutService.setQuizTheme({
+          backgroundColor: quiz.theme.backgroundColor,
+          color: quiz.theme.fontColor
+        });
+      } else {
+        this.layoutService.setQuizTheme(null);
+      }
     });
   }
 }
