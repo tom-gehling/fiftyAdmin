@@ -8,7 +8,7 @@ import { FiftyLayoutComponent } from './fiftyLayout';
   standalone: true,
   imports: [FiftyLayoutComponent],
   template: `
-    <app-fifty-layout [type]="type" [title]="title"></app-fifty-layout>
+    <app-fifty-layout [title]="title"></app-fifty-layout>
   `
 })
 export class FiftyPageComponent implements OnInit {
