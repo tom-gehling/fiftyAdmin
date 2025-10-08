@@ -57,55 +57,77 @@ app.get('/api/quizStats/:quizId', async (req, res): Promise<void> => {
 
     let totalScore = 0;
     let totalTime = 0;
-    let count = 0;
-    const questionStats: Record<number, { correct: number; total: number }> = {};
+    let attempts = 0;
+    let completedCount = 0;
+    const questionStats: Record<string, { correct: number; total: number }> = {};
 
     snapshot.forEach(doc => {
       const result = doc.data() as any;
-      count++;
+      attempts++;
+
+      // Count completed sessions
+      if (result.completedAt) {
+        completedCount++;
+      }
+
+      // Add score
       totalScore += result.score ?? 0;
 
-      const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
-      const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
-      const durationSeconds = completed && started ? (completed.getTime() - started.getTime()) / 1000 : 0;
-      totalTime += durationSeconds;
+      // Calculate time taken (only if both timestamps exist)
+      const started = result.startedAt?.toDate?.() ?? (result.startedAt ? new Date(result.startedAt) : null);
+      const completed = result.completedAt?.toDate?.() ?? (result.completedAt ? new Date(result.completedAt) : null);
+      if (started && completed) {
+        totalTime += (completed.getTime() - started.getTime()) / 1000;
+      }
 
+      // Collect question-level stats
       (result.answers || []).forEach((a: any) => {
-        const qid = a.questionId;
+        const qid = String(a.questionId);
         if (!questionStats[qid]) questionStats[qid] = { correct: 0, total: 0 };
         questionStats[qid].total++;
         if (a.correct) questionStats[qid].correct++;
       });
     });
 
-    const averageScore = totalScore / count;
-    const averageTime = totalTime / count;
+    // Calculate averages
+    const averageScore = attempts > 0 ? totalScore / attempts : 0;
+    const averageTime = completedCount > 0 ? totalTime / completedCount : 0;
 
-    const difficulty = Object.entries(questionStats).map(([id, stat]) => ({
-      questionId: Number(id),
-      correctRate: stat.correct / stat.total
+    // Build per-question accuracy
+    const questionAccuracy = Object.entries(questionStats).map(([id, stat]) => ({
+      questionId: id,
+      correctCount: stat.correct,
+      totalAttempts: stat.total,
+      correctRate: stat.total > 0 ? stat.correct / stat.total : 0
     }));
 
-    const hardest = difficulty.sort((a, b) => a.correctRate - b.correctRate).slice(0, 5);
-    const easiest = [...difficulty].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
+    // Sort to find hardest/easiest
+    const hardestQuestions = [...questionAccuracy]
+      .sort((a, b) => a.correctRate - b.correctRate)
+      .slice(0, 5);
 
+    const easiestQuestions = [...questionAccuracy]
+      .sort((a, b) => b.correctRate - a.correctRate)
+      .slice(0, 5);
+
+    // Final response
     res.status(200).json({
       quizId,
-      attempts: count,
+      attempts,
+      completedCount,
       averageScore,
       averageTime,
-      hardestQuestions: hardest,
-      easiestQuestions: easiest
+      questionAccuracy,
+      hardestQuestions,
+      easiestQuestions
     });
-
-    return; // ✅ ensures all code paths return
 
   } catch (error) {
     console.error('Error generating stats:', error);
     res.status(500).json({ error: 'Internal Server Error' });
-    return;
   }
 });
+
 
 
 
