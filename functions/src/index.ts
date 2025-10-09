@@ -55,9 +55,9 @@ app.get('/api/quizStats/:quizId', async (req, res): Promise<void> => {
       return;
     }
 
+    let attempts = 0; // total submissions
     let totalScore = 0;
     let totalTime = 0;
-    let attempts = 0;
     let completedCount = 0;
     const questionStats: Record<string, { correct: number; total: number }> = {};
 
@@ -65,32 +65,32 @@ app.get('/api/quizStats/:quizId', async (req, res): Promise<void> => {
       const result = doc.data() as any;
       attempts++;
 
-      // Count completed sessions
+      // Only include completed sessions in stats
       if (result.completedAt) {
         completedCount++;
+
+        // Add score
+        totalScore += result.score ?? 0;
+
+        // Calculate time taken
+        const started = result.startedAt?.toDate?.() ?? (result.startedAt ? new Date(result.startedAt) : null);
+        const completed = result.completedAt?.toDate?.() ?? (result.completedAt ? new Date(result.completedAt) : null);
+        if (started && completed) {
+          totalTime += (completed.getTime() - started.getTime()) / 1000;
+        }
+
+        // Collect question-level stats
+        (result.answers || []).forEach((a: any) => {
+          const qid = String(a.questionId);
+          if (!questionStats[qid]) questionStats[qid] = { correct: 0, total: 0 };
+          questionStats[qid].total++;
+          if (a.correct) questionStats[qid].correct++;
+        });
       }
-
-      // Add score
-      totalScore += result.score ?? 0;
-
-      // Calculate time taken (only if both timestamps exist)
-      const started = result.startedAt?.toDate?.() ?? (result.startedAt ? new Date(result.startedAt) : null);
-      const completed = result.completedAt?.toDate?.() ?? (result.completedAt ? new Date(result.completedAt) : null);
-      if (started && completed) {
-        totalTime += (completed.getTime() - started.getTime()) / 1000;
-      }
-
-      // Collect question-level stats
-      (result.answers || []).forEach((a: any) => {
-        const qid = String(a.questionId);
-        if (!questionStats[qid]) questionStats[qid] = { correct: 0, total: 0 };
-        questionStats[qid].total++;
-        if (a.correct) questionStats[qid].correct++;
-      });
     });
 
-    // Calculate averages
-    const averageScore = attempts > 0 ? totalScore / attempts : 0;
+    // Calculate averages only on completed quizzes
+    const averageScore = completedCount > 0 ? totalScore / completedCount : 0;
     const averageTime = completedCount > 0 ? totalTime / completedCount : 0;
 
     // Build per-question accuracy
@@ -113,8 +113,8 @@ app.get('/api/quizStats/:quizId', async (req, res): Promise<void> => {
     // Final response
     res.status(200).json({
       quizId,
-      attempts,
-      completedCount,
+      attempts,       // total submissions
+      completedCount, // number of completed quizzes
       averageScore,
       averageTime,
       questionAccuracy,

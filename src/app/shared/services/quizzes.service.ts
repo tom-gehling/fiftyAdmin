@@ -56,6 +56,15 @@ export class QuizzesService {
         });
     }
 
+    getQuizByQuizId(quizId: string): Observable<Quiz | undefined> {
+        return defer(() => {
+            const quizDocRef = doc(this.firestore, this.collectionName, quizId);
+            return docData(quizDocRef, { idField: 'quizId' }) as Observable<
+                Quiz | undefined>
+            ;
+        });
+    }
+
     getActiveQuiz(): Observable<Quiz | undefined> {
   const now = new Date();
   return this.getAllQuizzes().pipe(

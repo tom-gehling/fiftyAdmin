@@ -28,29 +28,20 @@ import { FormsModule } from '@angular/forms';
       <!-- Header -->
       <div class="flex justify-between items-center mb-4">
         <div class="font-semibold text-xl">Quiz Statistics</div>
-        <div>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-ellipsis-v"
-            class="p-button-rounded p-button-text p-button-plain"
-            (click)="menu.toggle($event)">
-          </button>
-          <p-menu #menu [popup]="true" [model]="menuItems"></p-menu>
+        <!-- Quiz Selector -->
+        <div class="mb-5">
+          <p-select
+            [options]="allQuizzes"
+            [(ngModel)]="selectedQuizId"
+            optionLabel="quizId"
+            optionValue="quizId"
+            placeholder="Select Quiz"
+            (onChange)="loadQuizStats(selectedQuizId?.toString())">
+          </p-select>
         </div>
       </div>
 
-      <!-- Quiz Selector -->
-      <div class="mb-5">
-        <p-select
-          [options]="allQuizzes"
-          [(ngModel)]="selectedQuizId"
-          optionLabel="quizTitle"
-          optionValue="quizId"
-          placeholder="Select Quiz"
-          (onChange)="loadQuizStats(selectedQuizId)">
-        </p-select>
-      </div>
+      
 
       <!-- Loading Spinner -->
       <div *ngIf="loading" class="flex justify-center items-center h-32">
@@ -65,7 +56,7 @@ import { FormsModule } from '@angular/forms';
           Avg Score: <strong>{{ stats.averageScore | number:'1.1-2' }}</strong> •
           Avg Time: <strong>{{ stats.averageTime | number:'1.0-0' }}s</strong>
         </div>
-      </div>
+      
 
       <!-- Easiest Questions -->
       <div *ngIf="easiestQuestions.length" class="mb-6">
@@ -102,6 +93,7 @@ import { FormsModule } from '@angular/forms';
           </li>
         </ul>
       </div>
+      </div>
 
       <div *ngIf="!loading && !stats" class="text-center text-gray-500">No stats available.</div>
     </div>
@@ -115,11 +107,6 @@ export class QuizStatsWidgetComponent implements OnInit {
   hardestQuestions: { question: string; correctRate: number }[] = [];
   easiestQuestions: { question: string; correctRate: number }[] = [];
   loading = true;
-
-  menuItems = [
-    { label: 'Refresh', icon: 'pi pi-refresh', command: () => this.loadQuizStats(this.selectedQuizId!) },
-    { label: 'Export Data', icon: 'pi pi-download' }
-  ];
 
   constructor(
     private quizzesService: QuizzesService,
@@ -144,7 +131,7 @@ export class QuizStatsWidgetComponent implements OnInit {
     if (!quizId) return;
     try {
       this.loading = true;
-      this.quiz = await firstValueFrom(this.quizzesService.getQuizById(quizId));
+      this.quiz = await firstValueFrom(this.quizzesService.getQuizByQuizId(quizId));
       this.stats = await this.quizStatsService.getQuizStats(quizId);
 
       this.hardestQuestions = this.stats.hardestQuestions.map(h => ({
