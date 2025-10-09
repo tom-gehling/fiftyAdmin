@@ -20,16 +20,21 @@ import { QuizStatsWidgetComponent } from './components/quizstatswidget';
             <!-- Only show stats widget if user is NOT admin -->
             <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async)" />
             <!-- <app-fifty-quizzes-dashboard /> -->
+            <!-- [ ]: hook up active quiz to stats widget -->
+            <!-- [ ]: get fifty + carousel created-->
+            <!-- [ ]: widget for avg score graph across quizzes-->
+            <!-- [ ]: widget for User stats: user name? quizzes completed, avg score, best score -->
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-submissions-wall-widget />
+                <!-- [ ]: fix up height issue on mobile/ keep photos square -->
                 <app-best-selling-widget />
             </div>
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-quiz-stats-widget />
                 <app-membership-report-widget />
-                <app-notifications-widget />
+                <!-- <app-notifications-widget /> -->
             </div>
         </div>
     `

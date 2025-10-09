@@ -13,6 +13,9 @@ import { Observable } from 'rxjs';
   standalone: true,
   imports: [CommonModule, ButtonModule, DrawerModule, CardModule, QuizTemplateComponent],
   template: `
+    <!-- [ ]: create quiz collection layout: expand button, drawer nav bar on left with all quizzes from collect, on click load a normal quiz -->
+    <!-- [ ]: add locking to quizzes if not access - allow them to open quiz but only see to question 3?? -->
+
     <!-- <p-card class="quiz-collection-card flex flex-col h-full">
       <p-button icon="pi pi-bars" (onClick)="drawerVisible = true" class="menu-button"></p-button>
 

@@ -50,6 +50,7 @@ import { FormsModule } from '@angular/forms';
 
       <!-- Stats Summary -->
       <div *ngIf="!loading && stats" class="mb-6">
+        <!-- [ ]: should not load any stats unless there are completeds -->
         <div class="text-lg mb-1"><strong>{{ quiz?.quizTitle || 'Quiz ' + selectedQuizId }}</strong></div>
         <div class="text-muted-color text-sm">
           {{ stats.attempts }} attempts •
@@ -60,6 +61,7 @@ import { FormsModule } from '@angular/forms';
 
       <!-- Easiest Questions -->
       <div *ngIf="easiestQuestions.length" class="mb-6">
+        <!-- [ ]: make this in the same way as the best selling widget -> add start of question? -->
         <div class="font-semibold text-green-500 mb-3">Easiest Questions</div>
         <ul class="list-none p-0 m-0">
           <li *ngFor="let q of easiestQuestions" class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">

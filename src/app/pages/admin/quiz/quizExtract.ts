@@ -24,6 +24,7 @@ import { TabsModule } from 'primeng/tabs';
         <!-- Tabs -->
         <p-tabs [(value)]="selectedTab" class="flex-1 flex flex-col overflow-hidden">
           <p-tablist>
+            <!-- [ ]: set default selection to plain text -->
             <p-tab value="0">Plain Text</p-tab>
             <p-tab value="1">Excel</p-tab>
             <p-tab value="2">Google Sheets</p-tab>
@@ -33,6 +34,7 @@ import { TabsModule } from 'primeng/tabs';
             <!-- Plain Text Tab -->
             <p-tabpanel value="0" class="flex flex-col gap-4 h-full overflow-y-auto">
               <h4 class="text-lg font-semibold">Paste Questions and Answers</h4>
+              <!-- [ ]: make extracts quill editors to preserve formatting -->
               <textarea
                 rows="10"
                 [(ngModel)]="inputText"

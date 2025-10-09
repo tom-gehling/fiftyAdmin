@@ -42,7 +42,7 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
     <div class="p-4">
       <h2 class="text-xl font-bold mb-4">Quiz Tags</h2>
       <button pButton type="button" label="Add Tag" icon="pi pi-plus" (click)="openNewTagDialog()"></button>
-
+      <!-- [ ]: add ordering functionality for fifty+ layout -->
       <p-table [value]="tags" class="mt-4">
         <ng-template pTemplate="header">
           <tr>
@@ -56,7 +56,8 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
           <tr>
             <td>{{ tag.name }}</td>
             <td>{{ tag.isActive ? 'Yes' : 'No' }}</td>
-            <td>{{ getQuizTitles(tag) }}</td>
+            <td>{{ getQuizTitles(tag) }}</td> 
+            <!-- [ ]: currently returning object object, should be commma separated quiz ids -->
             <td>
               <button pButton type="button" icon="pi pi-pencil" class="p-button-rounded p-button-sm p-mr-2" (click)="editTag(tag)"></button>
               <button pButton type="button" icon="pi pi-trash" class="p-button-rounded p-button-sm p-button-danger" (click)="deleteTag(tag)"></button>
