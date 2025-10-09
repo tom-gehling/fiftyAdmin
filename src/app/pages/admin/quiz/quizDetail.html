@@ -6,7 +6,7 @@
 <p-card *ngIf="form" class="flex flex-col h-full">
     <!-- Top action buttons -->
     <div class="flex items-center justify-between mb-4">
-        <div class="text-2xl font-semibold">Quiz {{ form.get("quizId")?.value || (id === "0" ? "" : id) }}</div>
+        <div class="text-2xl font-semibold">Quiz {{ form.get("quizId")?.value || "" }}</div>
         <div class="flex gap-2">
             <button pButton type="button" label="Import" class="p-button-outlined" (click)="openImportDialog()"></button>
             <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="form.invalid" (click)="saveQuiz()"></button>
@@ -16,10 +16,10 @@
 
     <!-- Core Quiz Info -->
     <form [formGroup]="form" class="w-full">
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4 pt-3">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4 pt-3">
             <!-- Quiz Id -->
             <div class="p-field w-full">
-                <p-floatlabel class="w-full">
+                <p-floatlabel class="w-full" variant="in">
                     <input pInputText type="number" id="quizId" formControlName="quizId" class="w-full" />
                     <label for="quizId">Quiz Id</label>
                 </p-floatlabel>
@@ -27,7 +27,7 @@
 
             <!-- Quiz Type -->
             <div class="p-field w-full">
-                <p-floatlabel class="w-full">
+                <p-floatlabel class="w-full" variant="in">
                     <p-select id="quizType" formControlName="quizType" [options]="quizType" optionLabel="viewValue" optionValue="value" placeholder="Select Quiz Type" class="w-full"></p-select>
                     <label for="quizType">Quiz Type</label>
                 </p-floatlabel>
@@ -35,7 +35,7 @@
 
             <!-- Deployment Date/Time -->
             <div class="p-field w-full">
-                <p-floatlabel class="w-full">
+                <p-floatlabel class="w-full" variant="in">
                     <p-datepicker inputId="calendar-24h" formControlName="deploymentDate" [showTime]="true" [hourFormat]="'12'" placeholder="Select date & time" class="w-full"></p-datepicker>
                     <label for="calendar-24h">Deployment</label>
                 </p-floatlabel>
@@ -43,7 +43,7 @@
 
             <!-- Question Count -->
             <div class="p-field w-full">
-                <p-floatlabel class="w-full">
+                <p-floatlabel class="w-full" variant="in">
                     <label for="questionCount" class="font-semibold">Question Count</label>
                     <input pInputText type="number" id="questionCount" formControlName="questionCount" min="1" class="w-full" />
                 </p-floatlabel>
@@ -55,6 +55,7 @@
                 <label for="isActive" class="font-semibold">Active</label>
             </div>
         </div>
+
         <!-- Tabs -->
         <p-tabs class="mt-6 flex-1 flex flex-col" [(value)]="tabSelected">
             <p-tablist>
@@ -65,20 +66,25 @@
 
             <p-tabpanels>
                 <!-- Questions Tab -->
-                <p-tabpanel value="0">
-                    <div formArrayName="questions" cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-3 py-3">
+                <p-tabpanel value="0" class="">
+                    <div formArrayName="questions" cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-4 py-3">
                         <div *ngFor="let q of questions.controls; let i = index" [formGroupName]="i" cdkDrag>
-                            <div class="flex flex-1 gap-3 items-stretch">
-                                <div cdkDragHandle class="flex-shrink-0 w-8 flex justify-center items-center text-gray-600 dark:text-gray-300 cursor-move">
-                                    <span class="font-bold text-lg">{{ i + 1 }}.</span>
+                            <!-- Container with shadow -->
+                            <div class="flex flex-row gap-3 items-center p-2 rounded-md shadow hover:shadow-lg transition-shadow">
+                                <!-- Left: Number, vertically centered -->
+                                <div cdkDragHandle class="w-4 sm:w-4 md:w-6 lg:w-8 flex justify-center items-center text-gray-600 dark:text-gray-300 cursor-move flex-shrink-0">
+                                    <span class="font-bold text-lg">Q{{ i + 1 }}.</span>
                                 </div>
 
-                                <div class="flex-1 border border-gray-300 dark:border-gray-700 rounded-md p-1 flex flex-col">
-                                    <quill-editor formControlName="question" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
-                                </div>
+                                <!-- Right: Editors -->
+                                <div class="flex flex-1 flex-col sm:flex-row gap-2">
+                                    <div class="flex-1 border border-gray-300 dark:border-gray-600 rounded-md p-1">
+                                        <quill-editor formControlName="question" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
+                                    </div>
 
-                                <div class="flex-1 border border-gray-300 dark:border-gray-700 rounded-md p-1 flex flex-col">
-                                    <quill-editor formControlName="answer" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
+                                    <div class="flex-1 border border-gray-300 dark:border-gray-600 rounded-md p-1">
+                                        <quill-editor formControlName="answer" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -109,26 +115,23 @@
                 <!-- Other Tab -->
                 <p-tabpanel value="2">
                     <!-- Image Section -->
-                    <div class="mb-6">
-                        <div *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
-                            <h3 class="font-semibold mb-2">Image</h3>
-                            <div class="mb-6 flex items-center gap-4 h-20">
-                                <button pButton type="button" label="Select Logo" (click)="showLogoDialog()"></button>
+                    <div class="mb-6" *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
+                        <h3 class="font-semibold mb-2">Image</h3>
+                        <div class="mb-6 flex items-center gap-4 h-20">
+                            <button pButton type="button" label="Select Logo" (click)="showLogoDialog()"></button>
 
-                                <!-- Selected Preview (inline, larger) -->
-                                <div *ngIf="form.get('imageUrl')?.value" class="flex-shrink-0 h-full flex items-center">
-                                    <img [src]="'assets/logos/' + form.get('imageUrl')?.value" alt="Logo" class="max-h-full object-contain" />
-                                </div>
+                            <div *ngIf="form.get('imageUrl')?.value" class="flex-shrink-0 h-full flex items-center">
+                                <img [src]="'assets/logos/' + form.get('imageUrl')?.value" alt="Logo" class="max-h-full object-contain" />
                             </div>
                         </div>
 
                         <!-- Logo Selection Dialog -->
-                        <p-dialog header="Select Logo" [(visible)]="logoDialogVisible" modal="true" [style]="{width: '600px', maxHeight: '70vh'}" [contentStyle]="{overflowY: 'auto'}" [closable]="true">
+                        <p-dialog header="Select Logo" [(visible)]="logoDialogVisible" modal="true" [style]="{ width: '600px', maxHeight: '70vh' }" [contentStyle]="{ overflowY: 'auto' }" [closable]="true">
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 <div
                                     *ngFor="let logo of logos"
                                     class="cursor-pointer border rounded-md p-2 flex justify-center items-center hover:shadow-md"
-                                    [ngClass]="{'border-green-500 shadow-lg': form.get('imageUrl')?.value === logo}"
+                                    [ngClass]="{ 'border-green-500 shadow-lg': form.get('imageUrl')?.value === logo }"
                                     (click)="selectLogoFromDialog(logo)"
                                 >
                                     <div class="w-24 h-24 flex justify-center items-center overflow-hidden">

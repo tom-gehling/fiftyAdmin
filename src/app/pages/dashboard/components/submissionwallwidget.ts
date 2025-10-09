@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, AfterViewInit } from '@angular/core';
 import { register } from 'swiper/element/bundle';
 register();
 
@@ -21,12 +21,10 @@ interface Submission {
       <div class="card p-4 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden">
         <h3 class="text-xl font-bold mb-4 text-gray-900">Submissions Wall</h3>
 
-        <div class="w-full" style="height: calc(4 * 16rem);">
+        <div class="w-full h-[64rem] md:h-[48rem] sm:h-[32rem]">
           <swiper-container
+            id="submissionsSwiper"
             direction="vertical"
-            slides-per-view="2"
-            space-between="12"
-            mousewheel="true"
             loop="true"
             class="w-full h-full"
           >
@@ -65,7 +63,7 @@ interface Submission {
     </div>
   `
 })
-export class SubmissionsWallWidget {
+export class SubmissionsWallWidget implements AfterViewInit {
   submissions: Submission[] = [
     { teamName: 'Saturday Night Slay', location: 'Melbourne', score: 42, pictureUrl: '/assets/submissions/sub1.jpeg', submittedAt: 'Sat 21 Sep, 8:34pm' },
     { teamName: 'Quiz In My Pants', location: 'Sydney', score: 38, pictureUrl: '/assets/submissions/sub6.jpeg', submittedAt: 'Sat 21 Sep, 8:36pm' },
@@ -73,4 +71,35 @@ export class SubmissionsWallWidget {
     { teamName: '35kms', location: 'Perth', score: 42, pictureUrl: '/assets/submissions/sub7.jpeg', submittedAt: 'Sat 21 Sep, 8:42pm' },
     { teamName: 'Emu Baes', location: 'Adelaide', score: 47, pictureUrl: '/assets/submissions/sub5.jpeg', submittedAt: 'Sat 21 Sep, 8:50pm' }
   ];
+
+  ngAfterViewInit() {
+    this.updateSwiperConfig();
+    window.addEventListener('resize', () => this.updateSwiperConfig());
+  }
+
+  updateSwiperConfig() {
+    const swiperEl = document.getElementById('submissionsSwiper') as any;
+    if (!swiperEl) return;
+
+    const width = window.innerWidth;
+
+    // Mobile = horizontal, 1 slide per view
+    if (width < 640) {
+      swiperEl.setAttribute('slides-per-view', '1');
+      swiperEl.setAttribute('direction', 'horizontal');
+    }
+    // Tablet = vertical, 2 slides
+    else if (width < 1024) {
+      swiperEl.setAttribute('slides-per-view', '2');
+      swiperEl.setAttribute('direction', 'vertical');
+    }
+    // Desktop = vertical, 3 slides
+    else {
+      swiperEl.setAttribute('slides-per-view', '3');
+      swiperEl.setAttribute('direction', 'vertical');
+    }
+
+    // Refresh swiper after changing attributes
+    swiperEl.swiper?.update();
+  }
 }

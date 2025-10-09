@@ -29,13 +29,14 @@ import { AuthService } from '@/shared/services/auth.service';
                     <i class="pi pi-bars"></i>
                 </button>
 
-                <a class="layout-topbar-logo" routerLink="/">
+                
+                <a class="flex items-center space-x-2 p-2" routerLink="/">
                     <img 
                         src="assets/logos/logo.png"
                         alt="My Logo"
-                        class="h-8"
-                        [style.filter]="layoutService.isDarkTheme() ? 'invert(0)' : 'invert(1)'" />
-                    <span>FiftyAdmin</span>
+                        class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto object-contain"
+                        [style.filter]="layoutService.isDarkTheme() ? 'invert(0)' : 'invert(1)'"
+                        />
                 </a>
             </div>
 

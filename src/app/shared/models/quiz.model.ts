@@ -1,3 +1,4 @@
+import { Timestamp } from "firebase/firestore";
 import { QuizTypeEnum } from "../enums/QuizTypeEnum";
 import { QuizTag } from "./quizTags.model";
 
@@ -32,7 +33,7 @@ export interface Quiz {
 
     creationTime?: Date;
     createdBy?: string; //refers to a user
-    deploymentDate?: Date;
+    deploymentDate?: Timestamp | Date;
     quizType?: QuizTypeEnum;        // could be enum: Weekly, Fifty+, Collab
     isPremium?: boolean;
     isActive?: boolean;
