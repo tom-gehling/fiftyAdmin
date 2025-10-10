@@ -8,7 +8,9 @@
     <div class="flex items-center justify-between mb-4">
         <div class="text-2xl font-semibold">Quiz {{ form.get("quizId")?.value || "" }}</div>
         <div class="flex gap-2">
-            <button pButton type="button" label="Import" class="p-button-outlined" (click)="openImportDialog()"></button>
+            <div class="hidden lg:flex">
+                <button pButton type="button" label="Import" class="p-button-outlined" (click)="openImportDialog()"></button>
+            </div>
             <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="form.invalid" (click)="saveQuiz()"></button>
             <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancel()"></button>
         </div>

@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ViewChild } from '@angular/core';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -6,14 +6,15 @@ import * as XLSX from 'xlsx';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TabsModule } from 'primeng/tabs';
+import { QuillModule, QuillEditorComponent } from 'ngx-quill';
 
 @Component({
   selector: 'app-extract',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardModule, ButtonModule, TabsModule],
+  imports: [CommonModule, FormsModule, CardModule, ButtonModule, TabsModule, QuillModule],
   template: `
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <p-card class="w-full max-w-3xl h-[90vh] flex flex-col rounded-2xl p-6 overflow-hidden">
+    <div class="fixed inset-0 flex items-center justify-center z-50">
+      <p-card class="w-full h-[90vh] flex flex-col rounded-2xl p-6 overflow-hidden">
 
         <!-- Header -->
         <div class="flex justify-between items-center mb-4">
@@ -22,26 +23,34 @@ import { TabsModule } from 'primeng/tabs';
         </div>
 
         <!-- Tabs -->
-        <p-tabs [(value)]="selectedTab" class="flex-1 flex flex-col overflow-hidden">
+        <p-tabs [(value)]="selectedTab" class="flex-1 flex flex-col overflow-visible">
           <p-tablist>
-            <!-- [ ]: set default selection to plain text -->
             <p-tab value="0">Plain Text</p-tab>
             <p-tab value="1">Excel</p-tab>
             <p-tab value="2">Google Sheets</p-tab>
           </p-tablist>
 
-          <p-tabpanels class="flex-1 flex flex-col overflow-hidden">
+          <p-tabpanels class="flex-1 flex flex-col overflow-visible">
             <!-- Plain Text Tab -->
-            <p-tabpanel value="0" class="flex flex-col gap-4 h-full overflow-y-auto">
+            <p-tabpanel value="0" class="flex flex-col gap-4 h-full overflow-visible">
               <h4 class="text-lg font-semibold">Paste Questions and Answers</h4>
-              <!-- [ ]: make extracts quill editors to preserve formatting -->
-              <textarea
-                rows="10"
-                [(ngModel)]="inputText"
-                placeholder="Question[TAB]Answer"
-                class="w-full p-3 rounded-xl border border-gray-300 resize-y"
-              ></textarea>
-              <button pButton type="button" label="Import" class="p-button-raised w-fit" (click)="importTextQuestions(inputText)"></button>
+              <div class="quill-wrapper border border-gray-300 dark:border-gray-600 rounded-md p-1 overflow-visible relative">
+                <quill-editor
+                  #quillEditor
+                  [(ngModel)]="inputText"
+                  [modules]="quillModules"
+                  theme="bubble"
+                  style="width: 100%; height: 300px"
+                  placeholder="Paste questions and answers here (Question[TAB]Answer)"
+                ></quill-editor>
+              </div>
+              <button
+                pButton
+                type="button"
+                label="Import"
+                class="p-button-raised w-fit"
+                (click)="importTextQuestions()"
+              ></button>
             </p-tabpanel>
 
             <!-- Excel Tab -->
@@ -65,15 +74,36 @@ import { TabsModule } from 'primeng/tabs';
 
       </p-card>
     </div>
-  `
+  `,
+  styles: [`
+    /* Allow Quill bubble toolbar to appear above dialog */
+    .ql-bubble {
+      z-index: 999999 !important;
+    }
+    .ql-container, .quill-wrapper, .p-card, .p-tabview-panels, .p-tabview-panel, .p-dialog-content {
+      overflow: visible !important;
+    }
+    .quill-wrapper {
+      position: relative;
+    }
+  `]
 })
 export class QuizExtractComponent {
-  selectedTab = 0;
+  @ViewChild('quillEditor') quillEditor!: QuillEditorComponent;
+
+  selectedTab = '0';
   quizNum: string = '';
   inputText: string = '';
   questions: { question: string; answer: string }[] = [];
   googleSheetId: string = '';
   googleTabName: string = 'Sheet1';
+
+  quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+    ],
+  };
 
   constructor(
     public ref: DynamicDialogRef,
@@ -83,17 +113,54 @@ export class QuizExtractComponent {
     if (config?.data?.quizNum) this.quizNum = config.data.quizNum;
   }
 
-  importTextQuestions(inputText: string): void {
-    if (!inputText) return;
+  importTextQuestions(): void {
+    if (!this.quillEditor?.quillEditor) return;
 
-    const lines = inputText.split('\n');
-    this.questions = lines.map(line => {
-      const [question, answer] = line.split('\t');
-      return { question: question || '', answer: answer || '' };
+    const quill = this.quillEditor.quillEditor;
+    const htmlContent = quill.root.innerHTML;
+
+    const tempEl = document.createElement('div');
+    tempEl.innerHTML = htmlContent;
+
+    const rows: { question: string; answer: string }[] = [];
+
+    // Look for table rows
+    tempEl.querySelectorAll('tr').forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      if (tds.length >= 2) {
+        const questionHtml = this.stripInlineStyles(tds[0].innerHTML);
+        const answerHtml = this.stripInlineStyles(tds[1].innerHTML);
+        rows.push({ question: questionHtml, answer: answerHtml });
+      }
     });
+
+    // Fallback: if no table, split by <p> or <div>
+    if (!rows.length) {
+  tempEl.childNodes.forEach(node => {
+    if (node instanceof Element && (node.tagName === 'DIV' || node.tagName === 'P') && node.innerHTML.trim()) {
+      const [q, a] = node.innerHTML.split('\t').map(html => this.stripInlineStyles(html));
+      rows.push({ question: q || '', answer: a || '' });
+    }
+  });
+}
+
+    this.questions = rows;
     this.saveAndClose();
   }
 
+  private stripInlineStyles(html: string): string {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+
+    // Remove all style attributes
+    temp.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
+
+    return temp.innerHTML.trim();
+  }
+
+  /**
+   * Import questions from Excel file
+   */
   onExcelSelected(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
