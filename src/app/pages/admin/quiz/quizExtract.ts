@@ -113,40 +113,56 @@ export class QuizExtractComponent {
     if (config?.data?.quizNum) this.quizNum = config.data.quizNum;
   }
 
-  importTextQuestions(): void {
-    if (!this.quillEditor?.quillEditor) return;
-
-    const quill = this.quillEditor.quillEditor;
-    const htmlContent = quill.root.innerHTML;
-
-    const tempEl = document.createElement('div');
-    tempEl.innerHTML = htmlContent;
-
-    const rows: { question: string; answer: string }[] = [];
-
-    // Look for table rows
-    tempEl.querySelectorAll('tr').forEach(tr => {
-      const tds = tr.querySelectorAll('td');
-      if (tds.length >= 2) {
-        const questionHtml = this.stripInlineStyles(tds[0].innerHTML);
-        const answerHtml = this.stripInlineStyles(tds[1].innerHTML);
-        rows.push({ question: questionHtml, answer: answerHtml });
-      }
-    });
-
-    // Fallback: if no table, split by <p> or <div>
-    if (!rows.length) {
-  tempEl.childNodes.forEach(node => {
-    if (node instanceof Element && (node.tagName === 'DIV' || node.tagName === 'P') && node.innerHTML.trim()) {
-      const [q, a] = node.innerHTML.split('\t').map(html => this.stripInlineStyles(html));
-      rows.push({ question: q || '', answer: a || '' });
-    }
-  });
+  private convertPipesToList(html: string): string {
+  if (!html.includes('|')) return html;
+  const items = html.split('|').map(item => item.trim()).filter(Boolean);
+  if (!items.length) return html;
+  return `<ul>${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
 }
 
-    this.questions = rows;
-    this.saveAndClose();
+importTextQuestions(): void {
+  if (!this.quillEditor?.quillEditor) return;
+
+  const quill = this.quillEditor.quillEditor;
+  const htmlContent = quill.root.innerHTML;
+
+  const tempEl = document.createElement('div');
+  tempEl.innerHTML = htmlContent;
+
+  const rows: { question: string; answer: string }[] = [];
+
+  // Look for table rows
+  tempEl.querySelectorAll('tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    if (tds.length >= 2) {
+      let questionHtml = this.stripInlineStyles(tds[0].innerHTML);
+      let answerHtml = this.stripInlineStyles(tds[1].innerHTML);
+
+      questionHtml = this.convertPipesToList(questionHtml);
+      answerHtml = this.convertPipesToList(answerHtml);
+
+      rows.push({ question: questionHtml, answer: answerHtml });
+    }
+  });
+
+  // Fallback: if no table, split by <p> or <div>
+  if (!rows.length) {
+    tempEl.childNodes.forEach(node => {
+      if (node instanceof Element && (node.tagName === 'DIV' || node.tagName === 'P') && node.innerHTML.trim()) {
+        let [q, a] = node.innerHTML.split('\t').map(html => this.stripInlineStyles(html));
+
+        q = this.convertPipesToList(q);
+        a = this.convertPipesToList(a);
+
+        rows.push({ question: q || '', answer: a || '' });
+      }
+    });
   }
+
+  this.questions = rows;
+  this.saveAndClose();
+}
+
 
   private stripInlineStyles(html: string): string {
     const temp = document.createElement('div');
