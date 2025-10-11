@@ -49,55 +49,55 @@ import { FormsModule } from '@angular/forms';
       </div>
 
       <!-- Stats Summary -->
-      <div *ngIf="!loading && stats" class="mb-6">
+      <div *ngIf="!loading && stats?.completedCount" class="mb-6">
         <!-- [ ]: should not load any stats unless there are completeds -->
         <div class="text-lg mb-1"><strong>{{ quiz?.quizTitle || 'Quiz ' + selectedQuizId }}</strong></div>
         <div class="text-muted-color text-sm">
-          {{ stats.attempts }} attempts •
-          Avg Score: <strong>{{ stats.averageScore | number:'1.1-2' }}</strong> •
-          Avg Time: <strong>{{ stats.averageTime | number:'1.0-0' }}s</strong>
+          {{ stats?.attempts }} attempts •
+          Avg Score: <strong>{{ stats?.averageScore | number:'1.1-2' }}</strong> •
+          Avg Time: <strong>{{ averageTimeHHMM}}</strong>
         </div>
       
 
       <!-- Easiest Questions -->
-      <div *ngIf="easiestQuestions.length" class="mb-6">
-        <!-- [ ]: make this in the same way as the best selling widget -> add start of question? -->
-        <div class="font-semibold text-green-500 mb-3">Easiest Questions</div>
-        <ul class="list-none p-0 m-0">
-          <li *ngFor="let q of easiestQuestions" class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-            <div class="text-sm md:w-1/2">
-              <span class="font-medium text-surface-900 dark:text-surface-0">
-                {{ q.question }}
-              </span>
-            </div>
-            <div class="mt-2 md:mt-0 flex items-center md:w-1/2">
-              <p-progressBar [value]="q.correctRate * 100" styleClass="flex-1" [showValue]="false" [style]="{ height: '8px' }"></p-progressBar>
-              <span class="text-green-400 ml-3 font-medium">{{ (q.correctRate * 100) | number:'1.0-0' }}%</span>
-            </div>
-          </li>
-        </ul>
+        <div *ngIf="easiestQuestions.length" class="mb-6">
+          <!-- [ ]: make this in the same way as the best selling widget -> add start of question? -->
+          <div class="font-semibold text-green-500 mb-3">Easiest Questions</div>
+          <ul class="list-none p-0 m-0">
+            <li *ngFor="let q of easiestQuestions" class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+              <div class="text-sm md:w-1/2">
+                <span class="font-medium text-surface-900 dark:text-surface-0">
+                  {{ q.question }}
+                </span>
+              </div>
+              <div class="mt-2 md:mt-0 flex items-center md:w-1/2">
+                <p-progressBar [value]="q.correctRate * 100" styleClass="flex-1" [showValue]="false" [style]="{ height: '8px' }"></p-progressBar>
+                <span class="text-green-400 ml-3 font-medium">{{ (q.correctRate * 100) | number:'1.0-0' }}%</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Hardest Questions -->
+        <div *ngIf="hardestQuestions.length">
+          <div class="font-semibold text-red-400 mb-3">Hardest Questions</div>
+          <ul class="list-none p-0 m-0">
+            <li *ngFor="let q of hardestQuestions" class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+              <div class="text-sm md:w-1/2">
+                <span class="font-medium text-surface-900 dark:text-surface-0">
+                  {{ q.question }}
+                </span>
+              </div>
+              <div class="mt-2 md:mt-0 flex items-center md:w-1/2">
+                <p-progressBar [value]="q.correctRate * 100" styleClass="flex-1 p-progressbar-danger" [showValue]="false" [style]="{ height: '8px' }"></p-progressBar>
+                <span class="text-red-400 ml-3 font-medium">{{ (q.correctRate * 100) | number:'1.0-0' }}%</span>
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
 
-      <!-- Hardest Questions -->
-      <div *ngIf="hardestQuestions.length">
-        <div class="font-semibold text-red-400 mb-3">Hardest Questions</div>
-        <ul class="list-none p-0 m-0">
-          <li *ngFor="let q of hardestQuestions" class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-            <div class="text-sm md:w-1/2">
-              <span class="font-medium text-surface-900 dark:text-surface-0">
-                {{ q.question }}
-              </span>
-            </div>
-            <div class="mt-2 md:mt-0 flex items-center md:w-1/2">
-              <p-progressBar [value]="q.correctRate * 100" styleClass="flex-1 p-progressbar-danger" [showValue]="false" [style]="{ height: '8px' }"></p-progressBar>
-              <span class="text-red-400 ml-3 font-medium">{{ (q.correctRate * 100) | number:'1.0-0' }}%</span>
-            </div>
-          </li>
-        </ul>
-      </div>
-      </div>
-
-      <div *ngIf="!loading && !stats" class="text-center text-gray-500">No stats available.</div>
+      <div *ngIf="!loading && !stats?.completedCount" class="text-center text-gray-500">No stats available.</div>
     </div>
   `
 })
@@ -109,6 +109,8 @@ export class QuizStatsWidgetComponent implements OnInit {
   hardestQuestions: { question: string; correctRate: number }[] = [];
   easiestQuestions: { question: string; correctRate: number }[] = [];
   loading = true;
+
+  averageTimeHHMM = '';
 
   constructor(
     private quizzesService: QuizzesService,
@@ -129,6 +131,13 @@ export class QuizStatsWidgetComponent implements OnInit {
     }
   }
 
+  private formatSecondsToHHMM(seconds: number): string {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(hrs)}h ${pad(mins)}m`;
+  }
+
   async loadQuizStats(quizId?: string) {
     if (!quizId) return;
     try {
@@ -136,18 +145,37 @@ export class QuizStatsWidgetComponent implements OnInit {
       this.quiz = await firstValueFrom(this.quizzesService.getQuizByQuizId(quizId));
       this.stats = await this.quizStatsService.getQuizStats(quizId);
 
-      this.hardestQuestions = this.stats.hardestQuestions.map(h => ({
-        question: this.quiz?.questions.find(q => q.questionId === h.questionId)?.question || `Q${h.questionId}`,
-        correctRate: h.correctRate
-      }));
+      if (this.stats) {
+        // Convert averageTime from seconds to hh:mm string
+        this.averageTimeHHMM = this.formatSecondsToHHMM(this.stats.averageTime);
+      }
 
-      this.easiestQuestions = this.stats.easiestQuestions.map(e => ({
-        question: this.quiz?.questions.find(q => q.questionId === e.questionId)?.question || `Q${e.questionId}`,
-        correctRate: e.correctRate
-      }));
+      // Only show stats if there are completed quizzes
+      if (this.stats.completedCount > 0) {
+        const questionMap = new Map(
+          (this.quiz?.questions || []).map(q => [q.questionId, q.question])
+        );
+
+        // Map hardest questions with question text
+        this.hardestQuestions = this.stats.hardestQuestions.map(h => ({
+  question: questionMap.get(Number(h.questionId)) || `Q${h.questionId}`,
+  correctRate: h.correctRate
+}));
+
+this.easiestQuestions = this.stats.easiestQuestions.map(e => ({
+  question: questionMap.get(Number(e.questionId)) || `Q${e.questionId}`,
+  correctRate: e.correctRate
+}));
+      } else {
+        this.hardestQuestions = [];
+        this.easiestQuestions = [];
+      }
+
     } catch (err) {
       console.error('Error loading quiz stats:', err);
       this.stats = undefined;
+      this.hardestQuestions = [];
+      this.easiestQuestions = [];
     } finally {
       this.loading = false;
     }

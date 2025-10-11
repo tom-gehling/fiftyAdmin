@@ -4,7 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
-import { serverTimestamp, Timestamp } from 'firebase/firestore';
+import { serverTimestamp } from 'firebase/firestore';
 
 // PrimeNG
 import { CardModule } from 'primeng/card';
@@ -19,6 +19,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { SpeedDialModule } from 'primeng/speeddial';
 
 // Angular CDK Drag & Drop
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -34,6 +35,7 @@ import { QuizTagsService } from '@/shared/services/quizTags.service';
 import { QuizTag } from '@/shared/models/quizTags.model';
 import { NotifyService } from '@/shared/services/notify.service';
 import { firstValueFrom } from 'rxjs';
+import { MenuItem } from 'primeng/api';
 
 @Component({
   selector: 'quiz-detail',
@@ -57,9 +59,37 @@ import { firstValueFrom } from 'rxjs';
     ToastModule,
     ProgressSpinnerModule,
     FloatLabelModule,
-    FormsModule
+    FormsModule,
+    SpeedDialModule
   ],
-  templateUrl: './quizDetail.html'
+  templateUrl: './quizDetail.html',
+  styles: [`
+    /* ✅ Ensure SpeedDial button stays inline but menu overlays other elements */
+    ::ng-deep .p-speeddial {
+      position: relative !important;
+      overflow: visible !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ✅ Make SpeedDial menu items overlay nearby elements (e.g., editors) */
+    ::ng-deep .p-speeddial-action {
+      position: absolute !important;
+      z-index: 50 !important;
+    }
+
+    /* ✅ Optional: ensures Quill editors don’t block overlay clicks */
+    ::ng-deep .ql-container {
+      position: relative;
+      z-index: 0;
+    }
+
+    /* ✅ Center the SpeedDial button horizontally within its flex cell */
+    ::ng-deep .p-speeddial-button {
+      margin: 0 auto !important;
+    }
+  `]
 })
 export class QuizDetailComponent implements OnInit {
   id!: string;
@@ -71,6 +101,9 @@ export class QuizDetailComponent implements OnInit {
   tabSelected: string = '0';
   QuizTypeEnum = QuizTypeEnum;
   saving: boolean = false;
+
+  // NEW: Holds the SpeedDial menu for each question
+  questionMenus: MenuItem[][] = [];
 
   quizType = [
     { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
@@ -87,11 +120,11 @@ export class QuizDetailComponent implements OnInit {
   };
 
   logos: string[] = [
-    '2010s-clear-1.png', 'aussie.png', 'boomer.png', 'chrissy.png', 'EURO.png',
-    'footy.png', 'HOTTEST-20 (1).png', 'logo.png', 'loser.png', 'Movie.png',
-    'movie2.png', 'olympic.png', 'peoples.png', 'reality.png', 'SA.png',
-    'spooky.png', 'swifty (1).png', 'weekly-hundred.png', 'Yearl-2023.png',
-    'yearly-22022.png', 'yeswequiz.png'
+    '2010s-clear-1.png','aussie.png','boomer.png','chrissy.png','EURO.png',
+    'footy.png','HOTTEST-20 (1).png','logo.png','loser.png','Movie.png',
+    'movie2.png','olympic.png','peoples.png','reality.png','SA.png',
+    'spooky.png','swifty (1).png','weekly-hundred.png','Yearl-2023.png',
+    'yearly-22022.png','yeswequiz.png'
   ];
 
   private removedQuestionsBackup: any[] = [];
@@ -152,19 +185,14 @@ export class QuizDetailComponent implements OnInit {
   }
 
   private buildForm(quiz: Quiz): void {
-
     let deploymentDate: Date | null = null;
-  if (quiz.deploymentDate) {
-    const ts = quiz.deploymentDate;
-    if (ts instanceof Date) {
-      deploymentDate = ts;
-    } else if ('toDate' in ts && typeof ts.toDate === 'function') {
-      deploymentDate = ts.toDate();
-    } else {
-      // fallback if it's a string or number
-      deploymentDate = new Date(ts as any);
+    if (quiz.deploymentDate) {
+      const ts = quiz.deploymentDate;
+      if (ts instanceof Date) deploymentDate = ts;
+      else if ('toDate' in ts && typeof ts.toDate === 'function') deploymentDate = ts.toDate();
+      else deploymentDate = new Date(ts as any);
     }
-  }
+
     this.form = this.fb.group({
       quizId: [quiz.quizId || null],
       quizTitle: [quiz.quizTitle || ''],
@@ -194,15 +222,33 @@ export class QuizDetailComponent implements OnInit {
       imageUrl: [''],
     });
 
+    // Sync SpeedDial menus initially
+    this.syncQuestionMenus();
+
     this.form.get('quizType')?.valueChanges.subscribe((type) => {
       if (type !== QuizTypeEnum.Collab) this.tabSelected = '0';
     });
 
-    this.form.get('questionCount')?.valueChanges.subscribe((count) => this.setQuestionCount(count));
+    this.form.get('questionCount')?.valueChanges.subscribe((count) => {
+      this.setQuestionCount(count);
+      this.syncQuestionMenus();
+    });
   }
 
   get questions(): FormArray {
     return this.form.get('questions') as FormArray;
+  }
+
+  private syncQuestionMenus(): void {
+    const count = this.questions.length;
+    this.questionMenus = Array.from({ length: count }, (_, i) => this.createQuestionMenu(i));
+  }
+
+  private createQuestionMenu(index: number): MenuItem[] {
+    return [
+      { icon: 'pi pi-pencil', command: () => console.log('Edit question', index) },
+      { icon: 'pi pi-flag', command: () => this.toggleFlag(index) }
+    ];
   }
 
   setQuestionCount(count: number): void {
@@ -242,44 +288,37 @@ export class QuizDetailComponent implements OnInit {
   }
 
   async saveQuiz(): Promise<void> {
-  if (this.form.invalid) return;
-  this.saving = true;
+    if (this.form.invalid) return;
+    this.saving = true;
 
-  try {
-    const formValue = this.form.value;
+    try {
+      const formValue = this.form.value;
+      formValue.questions.forEach((q: any) => {
+        q.question = this.normalizeHtml(q.question);
+        q.answer = this.normalizeHtml(q.answer);
+      });
 
-    // Normalize HTML in questions
-    formValue.questions.forEach((q: any) => {
-      q.question = this.normalizeHtml(q.question);
-      q.answer = this.normalizeHtml(q.answer);
-    });
+      if (!formValue.deploymentDate) formValue.deploymentDate = serverTimestamp();
+      else if (!(formValue.deploymentDate instanceof Date)) formValue.deploymentDate = new Date(formValue.deploymentDate);
 
-    // Handle deploymentDate
-    if (!formValue.deploymentDate) {
-      formValue.deploymentDate = serverTimestamp(); // Firestore sets it
-    } else if (!(formValue.deploymentDate instanceof Date)) {
-      formValue.deploymentDate = new Date(formValue.deploymentDate);
+      const quizData: Quiz = { ...this.quiz, ...formValue };
+
+      if (this.id && this.id !== '0') {
+        await this.quizzesService.updateQuiz(this.id, quizData);
+      } else {
+        const currentUserId = this.authService.currentUserId;
+        this.id = await this.quizzesService.createQuiz(quizData, currentUserId);
+      }
+
+      this.notify.success('Quiz saved successfully');
+      this.router.navigate(['/members/admin/quizzes']);
+    } catch (error) {
+      console.error('Error saving quiz:', error);
+      this.notify.error('Error saving quiz');
+    } finally {
+      this.saving = false;
     }
-
-    const quizData: Quiz = { ...this.quiz, ...formValue };
-
-    if (this.id && this.id !== '0') {
-      await this.quizzesService.updateQuiz(this.id, quizData);
-    } else {
-      const currentUserId = this.authService.currentUserId;
-      this.id = await this.quizzesService.createQuiz(quizData, currentUserId);
-    }
-
-    this.notify.success('Quiz saved successfully');
-    this.router.navigate(['/members/admin/quizzes']);
-  } catch (error) {
-    console.error('Error saving quiz:', error);
-    this.notify.error('Error saving quiz');
-  } finally {
-    this.saving = false;
   }
-}
-
 
   cancel(): void {
     this.router.navigate(['/members/admin/quizzes']);
@@ -288,9 +327,8 @@ export class QuizDetailComponent implements OnInit {
   private async loadQuiz(id: string): Promise<void> {
     const quiz = await firstValueFrom(this.quizzesService.getQuizById(id));
     this.ngZone.run(async () => {
-      if (!quiz) {
-        await this.initializeEmptyQuiz();
-      } else {
+      if (!quiz) await this.initializeEmptyQuiz();
+      else {
         this.quiz = quiz;
         this.buildForm(this.quiz);
       }
@@ -304,30 +342,30 @@ export class QuizDetailComponent implements OnInit {
       modal: true,
       dismissableMask: true,
       contentStyle: { 'max-height': '80vh', overflow: 'auto' },
-      data: {
-        questions: this.questions.value,
-        quizNum: this.form.get('quizId')?.value
-      }
+      data: { questions: this.questions.value, quizNum: this.form.get('quizId')?.value }
     });
 
     ref.onClose.subscribe((result: { questions: any[], quizNum: string } | null) => {
       if (result) {
         this.questions.clear();
-        result.questions.forEach(q => {
-          this.questions.push(this.fb.group({
-            questionId: [q.questionId || null],
-            question: [q.question || ''],
-            answer: [q.answer || ''],
-            category: [q.category || ''],
-            timeless: [q.timeless || false]
-          }));
-        });
+        result.questions.forEach(q => this.questions.push(this.fb.group({
+          questionId: [q.questionId || null],
+          question: [q.question || ''],
+          answer: [q.answer || ''],
+          category: [q.category || ''],
+          timeless: [q.timeless || false]
+        })));
         this.form.patchValue({ quizId: result.quizNum, questionCount: result.questions.length });
+        this.syncQuestionMenus();
       }
     });
   }
 
+  toggleFlag(index: number): void {
+    const control = this.questions.at(index);
+    control.get('timeless')?.setValue(!control.get('timeless')?.value);
+  }
+
   showLogoDialog(): void { this.logoDialogVisible = true; }
   selectLogoFromDialog(logo: string): void { this.form.get('imageUrl')?.setValue(logo); this.logoDialogVisible = false; }
-
 }

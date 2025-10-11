@@ -2,13 +2,22 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
+export interface QuestionAccuracy {
+  questionId: string;
+  correctCount: number;
+  totalAttempts: number;
+  correctRate: number;
+}
+
 export interface QuizStatsResponse {
   quizId: string;
   attempts: number;
+  completedCount: number;
   averageScore: number;
   averageTime: number;
-  hardestQuestions: { questionId: number; correctRate: number }[];
-  easiestQuestions: { questionId: number; correctRate: number }[];
+  questionAccuracy: QuestionAccuracy[];
+  hardestQuestions: QuestionAccuracy[];
+  easiestQuestions: QuestionAccuracy[];
 }
 
 @Injectable({ providedIn: 'root' })
