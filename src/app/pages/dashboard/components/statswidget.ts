@@ -31,6 +31,10 @@ import { Timestamp } from 'firebase/firestore';
       <div class="card mb-0 h-full flex flex-col justify-between p-4">
         <div>
           <span class="block text-muted-color font-medium mb-2">Next Weekly Quiz Status</span>
+          <div class="inline-flex gap-3">
+          <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl mt-2">
+            {{ nextQuizReady === null ? 'Yet to be created' : (nextQuizReady ? 'Ready' : 'In Progress') }}
+          </div>
           <div 
             class="w-6 h-6 flex items-center justify-center rounded-full border-2 border-green-500"
             [class.bg-green-500]="nextQuizReady"
@@ -38,8 +42,6 @@ import { Timestamp } from 'firebase/firestore';
           >
             <i *ngIf="nextQuizReady" class="pi pi-check text-white text-sm"></i>
           </div>
-          <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl mt-2">
-            {{ nextQuizReady === null ? 'Yet to be created' : (nextQuizReady ? 'Ready' : 'In Progress') }}
           </div>
         </div>
         <div class="mt-4 text-muted-color text-sm" *ngIf="nextDeployment">
@@ -148,7 +150,7 @@ export class StatsWidget implements OnInit {
       return;
     }
 
-    this.nextQuizReady = !!(nextQuiz.quizTitle && nextQuiz.questions?.length);
+    this.nextQuizReady = !!(nextQuiz.questions?.length);
     this.nextDeployment = nextQuiz.deploymentDate;
   }
 }
