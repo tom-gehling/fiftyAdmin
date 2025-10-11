@@ -20,11 +20,40 @@ export class QuizTagsService {
   }
 
   /** Load all tags into the BehaviorSubject */
-  private async loadAllTags() {
-    const snapshot = await getDocs(this.collectionRef);
-    const tags = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as QuizTag));
-    this.tags$.next(tags);
-  }
+  /** Load all tags into the BehaviorSubject */
+private async loadAllTags() {
+  const snapshot = await getDocs(this.collectionRef);
+
+  const tags: QuizTag[] = snapshot.docs.map(d => {
+    const data = d.data() as QuizTag;
+
+    return {
+      id: d.id,
+      name: data.name,
+      isActive: data.isActive ?? true,
+      creationUser: data.creationUser,
+      creationTime: data.creationTime
+        ? (data.creationTime instanceof Date
+            ? data.creationTime
+            : new Date((data.creationTime as any).seconds * 1000))
+        : new Date(),
+      deletionUser: data.deletionUser,
+      deletionTime: data.deletionTime
+        ? (data.deletionTime instanceof Date
+            ? data.deletionTime
+            : new Date((data.deletionTime as any).seconds * 1000))
+        : undefined,
+      quizIds: Array.isArray(data.quizIds) ? data.quizIds.map(id => Number(id)) : [],
+      order: data.order ?? 0
+    };
+  });
+
+  // Sort by order
+  tags.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  this.tags$.next(tags);
+}
+
 
   /** Get all tags (excluding deleted) */
   getAllTags(): Observable<QuizTag[]> {
@@ -40,11 +69,12 @@ export class QuizTagsService {
     }
 
     const newTag: QuizTag = {
-      name: tagData.name || '',
+      name: tagData.name?.trim() || '',
       isActive: tagData.isActive ?? true,
       creationUser: this.auth.currentUserId!,
       creationTime: new Date(),
-      quizIds: tagData.quizIds || [],
+      quizIds: Array.isArray(tagData.quizIds) ? tagData.quizIds.map(id => Number(id)) : [],
+      order: tagData.order ?? this.tags$.value.length
     };
 
     const docRef = await addDoc(this.collectionRef, newTag);
@@ -54,17 +84,20 @@ export class QuizTagsService {
   /** Update an existing tag including quiz assignments */
   async updateTag(tagId: string, tagData: Partial<QuizTag>): Promise<void> {
     const docRef = doc(this.firestore, 'quizTags', tagId);
-    const updatePayload: any = {
-      name: tagData.name,
+    const updatePayload: Partial<QuizTag> = {
+      name: tagData.name?.trim(),
       isActive: tagData.isActive,
-      quizIds: tagData.quizIds || [],
+      quizIds: Array.isArray(tagData.quizIds) ? tagData.quizIds.map(id => Number(id)) : undefined,
+      order: tagData.order
     };
+
+    // Remove undefined fields
+    Object.keys(updatePayload).forEach(key => updatePayload[key as keyof QuizTag] === undefined && delete updatePayload[key as keyof QuizTag]);
 
     await updateDoc(docRef, updatePayload);
 
-    const updatedTags = this.tags$.value.map(t =>
-      t.id === tagId ? { ...t, ...updatePayload } : t
-    );
+    // Update local BehaviorSubject
+    const updatedTags = this.tags$.value.map(t => t.id === tagId ? { ...t, ...updatePayload } : t);
     this.tags$.next(updatedTags);
   }
 
@@ -92,6 +125,19 @@ export class QuizTagsService {
   async getTagById(tagId: string): Promise<QuizTag | undefined> {
     const docRef = doc(this.firestore, 'quizTags', tagId);
     const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as QuizTag) : undefined;
+    if (!docSnap.exists()) return undefined;
+
+    const data = docSnap.data() as QuizTag;
+    return {
+      id: docSnap.id,
+      name: data.name ?? '',
+      isActive: data.isActive ?? true,
+      creationUser: data.creationUser,
+      creationTime: data.creationTime ? new Date(data.creationTime) : new Date(),
+      deletionUser: data.deletionUser,
+      deletionTime: data.deletionTime ? new Date(data.deletionTime) : undefined,
+      quizIds: Array.isArray(data.quizIds) ? data.quizIds.map((id: any) => Number(id)) : [],
+      order: data.order ?? 0
+    };
   }
 }

@@ -36,6 +36,9 @@ import { QuizTag } from '@/shared/models/quizTags.model';
 import { NotifyService } from '@/shared/services/notify.service';
 import { firstValueFrom } from 'rxjs';
 import { MenuItem } from 'primeng/api';
+import { TextareaModule } from 'primeng/textarea';
+import { MenuModule } from 'primeng/menu';
+import { OverlayModule } from 'primeng/overlay';
 
 @Component({
   selector: 'quiz-detail',
@@ -60,36 +63,10 @@ import { MenuItem } from 'primeng/api';
     ProgressSpinnerModule,
     FloatLabelModule,
     FormsModule,
-    SpeedDialModule
+    SpeedDialModule,
+    TextareaModule
   ],
-  templateUrl: './quizDetail.html',
-  styles: [`
-    /* ✅ Ensure SpeedDial button stays inline but menu overlays other elements */
-    ::ng-deep .p-speeddial {
-      position: relative !important;
-      overflow: visible !important;
-      display: flex !important;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* ✅ Make SpeedDial menu items overlay nearby elements (e.g., editors) */
-    ::ng-deep .p-speeddial-action {
-      position: absolute !important;
-      z-index: 50 !important;
-    }
-
-    /* ✅ Optional: ensures Quill editors don’t block overlay clicks */
-    ::ng-deep .ql-container {
-      position: relative;
-      z-index: 0;
-    }
-
-    /* ✅ Center the SpeedDial button horizontally within its flex cell */
-    ::ng-deep .p-speeddial-button {
-      margin: 0 auto !important;
-    }
-  `]
+  templateUrl: './quizDetail.html'
 })
 export class QuizDetailComponent implements OnInit {
   id!: string;
@@ -168,7 +145,7 @@ export class QuizDetailComponent implements OnInit {
       timeless: false,
     }));
 
-    const nextQuizId = await this.quizzesService.getNextQuizId();
+    const nextQuizId = await this.quizzesService.getNextQuizId(QuizTypeEnum.Weekly);
     this.quiz = {
       quizId: nextQuizId,
       isPremium: false,
@@ -176,9 +153,9 @@ export class QuizDetailComponent implements OnInit {
       quizType: QuizTypeEnum.Weekly,
       questions: emptyQuestions,
       theme: {
-        fontColor: '#000000',
-        backgroundColor: '#ffffff',
-        tertiaryColor: '#cccccc',
+        fontColor: '#fbe2df',
+        backgroundColor: '#677c73',
+        tertiaryColor: '#4cfbab',
       },
     };
     this.buildForm(this.quiz);
@@ -202,9 +179,9 @@ export class QuizDetailComponent implements OnInit {
       questionCount: [quiz.questions?.length || 50],
       deploymentDate: [deploymentDate],
       theme: this.fb.group({
-        fontColor: [quiz.theme?.fontColor || '#000000'],
-        backgroundColor: [quiz.theme?.backgroundColor || '#ffffff'],
-        tertiaryColor: [quiz.theme?.tertiaryColor || '#cccccc'],
+        fontColor: [quiz.theme?.fontColor || '#fbe2df'],
+        backgroundColor: [quiz.theme?.backgroundColor || '#677c73'],
+        tertiaryColor: [quiz.theme?.tertiaryColor || '#4cfbab'],
       }),
       questions: this.fb.array(
         (quiz.questions || []).map((q) =>
@@ -225,8 +202,13 @@ export class QuizDetailComponent implements OnInit {
     // Sync SpeedDial menus initially
     this.syncQuestionMenus();
 
-    this.form.get('quizType')?.valueChanges.subscribe((type) => {
-      if (type !== QuizTypeEnum.Collab) this.tabSelected = '0';
+    this.form.get('quizType')?.valueChanges.subscribe(async (newType: QuizTypeEnum) => {
+      // if (!this.id || this.id === '0') { // only for new quizzes
+        const nextId = await this.quizzesService.getNextQuizId(newType);
+        this.form.get('quizId')?.setValue(nextId);
+      // }
+
+      if (newType !== QuizTypeEnum.Collab) this.tabSelected = '0';
     });
 
     this.form.get('questionCount')?.valueChanges.subscribe((count) => {
@@ -246,7 +228,7 @@ export class QuizDetailComponent implements OnInit {
 
   private createQuestionMenu(index: number): MenuItem[] {
     return [
-      { icon: 'pi pi-pencil', command: () => console.log('Edit question', index) },
+      { icon: 'pi pi-pencil', command: () => this.notify.info('Commenting on Quiz Coming Soon!') },
       { icon: 'pi pi-flag', command: () => this.toggleFlag(index) }
     ];
   }
@@ -300,6 +282,10 @@ export class QuizDetailComponent implements OnInit {
 
       if (!formValue.deploymentDate) formValue.deploymentDate = serverTimestamp();
       else if (!(formValue.deploymentDate instanceof Date)) formValue.deploymentDate = new Date(formValue.deploymentDate);
+
+      if (formValue.quizTypeId == QuizTypeEnum.Weekly){
+        this.quiz.quizTitle = String(formValue.quizId);
+      } 
 
       const quizData: Quiz = { ...this.quiz, ...formValue };
 

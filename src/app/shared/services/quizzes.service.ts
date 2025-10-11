@@ -167,19 +167,38 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
         await deleteDoc(quizDoc);
     }
 
-async getNextQuizId(): Promise<number> {
+async getNextQuizId(quizType: QuizTypeEnum): Promise<number> {
   const quizCollection: CollectionReference = collection(this.firestore, this.collectionName);
   const snapshot = await firstValueFrom(collectionData(quizCollection, { idField: 'id' }));
 
+  // Define starting ranges per type
+  let startNumber = 1;
+  switch (quizType) {
+    case QuizTypeEnum.Weekly:
+      startNumber = 1;
+      break;
+    case QuizTypeEnum.FiftyPlus:
+      startNumber = 10000;
+      break;
+    case QuizTypeEnum.Collab:
+      startNumber = 20000;
+      break;
+    case QuizTypeEnum.QuestionType:
+    startNumber = 30000;
+    break;
+  }
+
   if (!snapshot || snapshot.length === 0) {
-    return 1; // start from 1 if no quizzes exist
+    return startNumber;
   }
 
   const quizIds = (snapshot as Quiz[])
+    .filter(q => q.quizType === quizType)      // only consider quizzes of the same type
     .map(q => Number(q.quizId))
-    .filter(id => !isNaN(id));
+    .filter(id => !isNaN(id) && id >= startNumber);
 
-  return quizIds.length === 0 ? 1 : Math.max(...quizIds) + 1;
+  return quizIds.length === 0 ? startNumber : Math.max(...quizIds) + 1;
 }
+
 
 }

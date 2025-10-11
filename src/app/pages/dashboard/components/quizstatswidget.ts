@@ -50,7 +50,7 @@ import { FormsModule } from '@angular/forms';
 
       <!-- Stats Summary -->
       <div *ngIf="!loading && stats?.completedCount" class="mb-6">
-        <!-- [ ]: should not load any stats unless there are completeds -->
+        <!-- [x]: should not load any stats unless there are completeds -->
         <div class="text-lg mb-1"><strong>{{ quiz?.quizTitle || 'Quiz ' + selectedQuizId }}</strong></div>
         <div class="text-muted-color text-sm">
           {{ stats?.attempts }} attempts •

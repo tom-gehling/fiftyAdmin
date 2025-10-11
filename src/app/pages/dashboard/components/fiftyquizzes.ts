@@ -72,7 +72,7 @@ export class FiftyQuizzesDashboardComponent implements OnInit {
     this.tagsWithQuizzes = allTags
       .map(tag => ({
         tag,
-        quizzes: allQuizzes.filter(q => tag.quizIds?.includes(q.quizId.toString()))
+        quizzes: allQuizzes.filter(q => tag.quizIds?.includes(q.quizId))
       }))
       .filter(t => t.quizzes.length > 0);
 
