@@ -93,4 +93,30 @@ export class QuizResultsService {
       return docData(resultDoc, { idField: 'resultId' }) as Observable<QuizResult | undefined>;
     });
   }
+
+    /** 
+   * Get summarized quiz score history for a user.
+   * Returns an array of { quizId, score } objects for completed quizzes only.
+   */
+  async getUserQuizScoreHistory(userId: string): Promise<{ quizId: number; score: number | null }[]> {
+    const q = query(
+      collection(this.firestore, this.collectionName),
+      where('userId', '==', userId),
+      where('status', '==', 'completed'),
+      where('quizId', '<=', 1000)
+    );
+
+    const snapshot = await firstValueFrom(collectionData(q, { idField: 'resultId' }));
+    const results = snapshot as QuizResult[];
+
+    // Convert to { quizId, score }
+    const scores = results.map(r => ({
+      quizId: Number(r.quizId),
+      score: r.score ?? null
+    }));
+
+    // Sort by quizId (useful for chart order)
+    return scores.sort((a, b) => a.quizId - b.quizId);
+  }
+
 }

@@ -10,24 +10,28 @@ import { CommonModule } from '@angular/common';
 import { AsyncPipe } from '@angular/common';
 import { FiftyQuizzesDashboardComponent } from './components/fiftyquizzes';
 import { QuizStatsWidgetComponent } from './components/quizstatswidget';
+import { UserQuizHistoryWidget } from "./components/userquizhistory";
+import { UserSummaryWidget } from "./components/usersummary";
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent],
+    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <!-- Only show stats widget if user is NOT admin -->
             <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async)" />
             <!-- <app-fifty-quizzes-dashboard /> -->
             <!-- [ ]: get fifty + carousel created-->
-            <!-- [ ]: widget for avg score graph across quizzes-->
-            <!-- [ ]: widget for User stats: user name? quizzes completed, avg score, best score -->
+            <!-- [x]: widget for avg score graph across quizzes-->
+            <!-- [x]: widget for User stats: user name? quizzes completed, avg score, best score -->
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
+                <app-user-summary-widget />
                 <app-submissions-wall-widget />
                 <!-- [ ]: fix up height issue on mobile/ keep photos square -->
-                <app-best-selling-widget />
+                 <app-user-quiz-history-widget />
+                <!-- <app-best-selling-widget /> -->
             </div>
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
