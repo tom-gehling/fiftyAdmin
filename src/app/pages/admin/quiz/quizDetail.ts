@@ -196,7 +196,7 @@ export class QuizDetailComponent implements OnInit {
       ),
       notesAbove: [quiz.notesAbove || ''],
       notesBelow: [quiz.notesBelow || ''],
-      imageUrl: [''],
+      imageUrl: [quiz.imageUrl || ''],
     });
 
     // Sync SpeedDial menus initially
@@ -283,12 +283,11 @@ export class QuizDetailComponent implements OnInit {
       if (!formValue.deploymentDate) formValue.deploymentDate = serverTimestamp();
       else if (!(formValue.deploymentDate instanceof Date)) formValue.deploymentDate = new Date(formValue.deploymentDate);
 
-      if (formValue.quizTypeId == QuizTypeEnum.Weekly){
-        this.quiz.quizTitle = String(formValue.quizId);
-      } 
-
       const quizData: Quiz = { ...this.quiz, ...formValue };
-
+      if (quizData.quizType == QuizTypeEnum.Weekly){
+        quizData.quizTitle = 'Quiz ' + String(quizData.quizId);
+      } 
+      console.log(quizData)
       if (this.id && this.id !== '0') {
         await this.quizzesService.updateQuiz(this.id, quizData);
       } else {

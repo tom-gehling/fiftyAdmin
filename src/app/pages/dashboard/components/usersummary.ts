@@ -49,6 +49,8 @@ import { QuizResultsService } from '@/shared/services/quiz-result.service';
           <div class="text-sm text-gray-500 dark:text-gray-400">Following</div>
         </div>
       </div>
+
+      <!-- [ ]: add stats versus all users-->
     </div>
   `
 })

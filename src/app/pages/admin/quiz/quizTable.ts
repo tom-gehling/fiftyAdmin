@@ -45,7 +45,9 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
                     ></button>
                 </div>
             </div>
-
+            <!-- [ ]: use quizTitle instead of Id  -->
+             <!-- [ ]: add sub grouping for quiz types? -->
+              <!-- [ ]: add deployment date as a column -->
             <p-table
                 #quizTable
                 [value]="quizzes"

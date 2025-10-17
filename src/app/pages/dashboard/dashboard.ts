@@ -23,6 +23,7 @@ import { UserSummaryWidget } from "./components/usersummary";
             <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async)" />
             <!-- <app-fifty-quizzes-dashboard /> -->
             <!-- [ ]: get fifty + carousel created-->
+            <!-- [ ]: widget with dataview for all quiz score history-->
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-user-summary-widget />
