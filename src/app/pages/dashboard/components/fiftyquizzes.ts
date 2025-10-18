@@ -37,7 +37,7 @@ interface TagWithQuizzes {
   space-between="12"
   class="w-full !overflow-visible"
   [breakpoints]="{
-    '0': { slidesPerView: 1 },
+    '0': { slidesPerView: 2 },
     '640': { slidesPerView: 2 },
     '1024': { slidesPerView: 3 },
     '1280': { slidesPerView: 'auto' }
