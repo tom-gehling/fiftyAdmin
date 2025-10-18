@@ -13,60 +13,51 @@ export class QuizTagsService {
   private collectionRef = collection(this.firestore, 'quizTags');
 
   private tags$ = new BehaviorSubject<QuizTag[]>([]);
-  public tagsObservable: Observable<QuizTag[]> = this.tags$.asObservable();
 
   constructor() {
     this.loadAllTags();
   }
 
   /** Load all tags into the BehaviorSubject */
-  /** Load all tags into the BehaviorSubject */
-private async loadAllTags() {
-  const snapshot = await getDocs(this.collectionRef);
+  private async loadAllTags() {
+    try {
+      const snapshot = await getDocs(this.collectionRef);
+      const tags: QuizTag[] = snapshot.docs.map(d => {
+        const data = d.data() as QuizTag;
+        return {
+          id: d.id,
+          name: data.name,
+          isActive: data.isActive ?? true,
+          creationUser: data.creationUser,
+          creationTime: data.creationTime
+            ? new Date((data.creationTime as any).seconds * 1000)
+            : new Date(),
+          deletionUser: data.deletionUser,
+          deletionTime: data.deletionTime
+            ? new Date((data.deletionTime as any).seconds * 1000)
+            : undefined,
+          quizIds: Array.isArray(data.quizIds) ? data.quizIds.map(id => Number(id)) : [],
+          order: data.order ?? 0
+        };
+      });
 
-  const tags: QuizTag[] = snapshot.docs.map(d => {
-    const data = d.data() as QuizTag;
+      tags.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      this.tags$.next(tags);
+    } catch (err) {
+      console.error('Failed to load quiz tags', err);
+    }
+  }
 
-    return {
-      id: d.id,
-      name: data.name,
-      isActive: data.isActive ?? true,
-      creationUser: data.creationUser,
-      creationTime: data.creationTime
-        ? (data.creationTime instanceof Date
-            ? data.creationTime
-            : new Date((data.creationTime as any).seconds * 1000))
-        : new Date(),
-      deletionUser: data.deletionUser,
-      deletionTime: data.deletionTime
-        ? (data.deletionTime instanceof Date
-            ? data.deletionTime
-            : new Date((data.deletionTime as any).seconds * 1000))
-        : undefined,
-      quizIds: Array.isArray(data.quizIds) ? data.quizIds.map(id => Number(id)) : [],
-      order: data.order ?? 0
-    };
-  });
-
-  // Sort by order
-  tags.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-  this.tags$.next(tags);
-}
-
-
-  /** Get all tags (excluding deleted) */
+  /** Observable of all active tags */
   getAllTags(): Observable<QuizTag[]> {
-    return this.tagsObservable.pipe(
+    return this.tags$.asObservable().pipe(
       map(tags => tags.filter(t => !t.deletionTime))
     );
   }
 
-  /** Create a new tag with optional quizzes */
+  /** Create a new tag */
   async createTag(tagData: Partial<QuizTag>): Promise<void> {
-    if (!this.auth.isAdmin$.value) {
-      throw new Error('You are not authorized to create tags');
-    }
+    if (!this.auth.isAdmin$.value) throw new Error('Not authorized');
 
     const newTag: QuizTag = {
       name: tagData.name?.trim() || '',
@@ -81,31 +72,24 @@ private async loadAllTags() {
     this.tags$.next([...this.tags$.value, { ...newTag, id: docRef.id }]);
   }
 
-  /** Update an existing tag including quiz assignments */
-  async updateTag(tagId: string, tagData: Partial<QuizTag>): Promise<void> {
+  /** Update an existing tag */
+  async updateTag(tagId: string, tagData: Partial<QuizTag>) {
     const docRef = doc(this.firestore, 'quizTags', tagId);
-    const updatePayload: Partial<QuizTag> = {
+    const payload: Partial<QuizTag> = {
       name: tagData.name?.trim(),
       isActive: tagData.isActive,
       quizIds: Array.isArray(tagData.quizIds) ? tagData.quizIds.map(id => Number(id)) : undefined,
       order: tagData.order
     };
+    Object.keys(payload).forEach(k => payload[k as keyof QuizTag] === undefined && delete payload[k as keyof QuizTag]);
+    await updateDoc(docRef, payload);
 
-    // Remove undefined fields
-    Object.keys(updatePayload).forEach(key => updatePayload[key as keyof QuizTag] === undefined && delete updatePayload[key as keyof QuizTag]);
-
-    await updateDoc(docRef, updatePayload);
-
-    // Update local BehaviorSubject
-    const updatedTags = this.tags$.value.map(t => t.id === tagId ? { ...t, ...updatePayload } : t);
-    this.tags$.next(updatedTags);
+    this.tags$.next(this.tags$.value.map(t => t.id === tagId ? { ...t, ...payload } : t));
   }
 
   /** Soft delete a tag */
-  async deleteTag(tagId: string): Promise<void> {
-    if (!this.auth.isAdmin$.value) {
-      throw new Error('You are not authorized to delete tags');
-    }
+  async deleteTag(tagId: string) {
+    if (!this.auth.isAdmin$.value) throw new Error('Not authorized');
 
     const docRef = doc(this.firestore, 'quizTags', tagId);
     const deletionTime = new Date();
@@ -115,10 +99,9 @@ private async loadAllTags() {
       deletionTime
     });
 
-    const updatedTags = this.tags$.value.map(t =>
+    this.tags$.next(this.tags$.value.map(t =>
       t.id === tagId ? { ...t, deletionUser: this.auth.currentUserId!, deletionTime } : t
-    );
-    this.tags$.next(updatedTags);
+    ));
   }
 
   /** Get a single tag by ID */
@@ -133,10 +116,10 @@ private async loadAllTags() {
       name: data.name ?? '',
       isActive: data.isActive ?? true,
       creationUser: data.creationUser,
-      creationTime: data.creationTime ? new Date(data.creationTime) : new Date(),
+      creationTime: data.creationTime ? new Date((data.creationTime as any).seconds * 1000) : new Date(),
       deletionUser: data.deletionUser,
-      deletionTime: data.deletionTime ? new Date(data.deletionTime) : undefined,
-      quizIds: Array.isArray(data.quizIds) ? data.quizIds.map((id: any) => Number(id)) : [],
+      deletionTime: data.deletionTime ? new Date((data.deletionTime as any).seconds * 1000) : undefined,
+      quizIds: Array.isArray(data.quizIds) ? data.quizIds.map(id => Number(id)) : [],
       order: data.order ?? 0
     };
   }

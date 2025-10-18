@@ -94,10 +94,10 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
 export class QuizCollectionComponent implements OnInit {
   @Input() title: string = 'Quizzes';
   @Input() quizType: 'archives' | 'exclusives' | 'collaborations' | 'questions' = 'archives';
+  @Input() selectedQuizId?: string;
   selectedQuizLocked = false;
   drawerVisible = false;
   quizHeaders: { quizId: string; quizTitle?: string }[] = [];
-  selectedQuizId?: string;
   membershipTier: MembershipTier = MembershipTier.Fifty;
 
   constructor(
@@ -106,28 +106,28 @@ export class QuizCollectionComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Subscribe to membership tier
-    this.membershipService.membership$.subscribe(tier => this.membershipTier = tier);
-    
+  this.membershipService.membership$.subscribe(tier => this.membershipTier = tier);
 
-    let fetchHeaders$: Observable<{ quizId: string; quizTitle?: string }[]>;
-
-    switch (this.quizType) {
-      case 'archives': fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true); break;
-      case 'exclusives': fetchHeaders$ = this.quizzesService.getExclusives(true); break;
-      case 'collaborations': fetchHeaders$ = this.quizzesService.getCollaborations(true); break;
-      case 'questions': fetchHeaders$ = this.quizzesService.getQuestionQuizzes(true); break;
-      default: fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true);
-    }
-
-    fetchHeaders$.subscribe(headers => {
-      this.quizHeaders = headers;
-      if (headers.length) {
-        this.selectQuiz(headers[0].quizId)
-        // this.selectedQuizId = headers[0].quizId;
-      }
-    });
+  let fetchHeaders$: Observable<{ quizId: string; quizTitle?: string }[]>;
+  switch (this.quizType) {
+    case 'archives': fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true); break;
+    case 'exclusives': fetchHeaders$ = this.quizzesService.getExclusives(true); break;
+    case 'collaborations': fetchHeaders$ = this.quizzesService.getCollaborations(true); break;
+    case 'questions': fetchHeaders$ = this.quizzesService.getQuestionQuizzes(true); break;
+    default: fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true);
   }
+
+  fetchHeaders$.subscribe(headers => {
+    this.quizHeaders = headers;
+
+    // Auto-select quiz from route or default to first
+    if (this.selectedQuizId && headers.some(q => q.quizId === this.selectedQuizId)) {
+      this.selectQuiz(this.selectedQuizId);
+    } else if (headers.length) {
+      this.selectQuiz(headers[0].quizId);
+    }
+  });
+}
 
  selectQuiz(id: string) {
   const index = this.quizHeaders.findIndex(q => q.quizId === id);

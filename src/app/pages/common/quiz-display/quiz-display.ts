@@ -44,7 +44,9 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
     </div>
 
     <!-- Answer panel -->
+     <!-- [ ]: apply the same styling transitions to clicks -->
     <div *ngIf="answerRevealed[i]" class="panel answer">
+      <!-- [ ]: colour answer text -->
       <p [innerHTML]="question.answer"></p>
       <div class="flex gap-2 w-full justify-center" *ngIf="!locked">
         <button class="genericButton" [ngClass]="{'correct': answers[i]?.correct === true}" (click)="markAnswer(i, true)">Correct</button>
