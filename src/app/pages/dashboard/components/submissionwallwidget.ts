@@ -95,7 +95,7 @@ export class SubmissionsWallWidget implements AfterViewInit {
     }
     // Desktop = vertical, 3 slides
     else {
-      swiperEl.setAttribute('slides-per-view', '3');
+      swiperEl.setAttribute('slides-per-view', '2');
       swiperEl.setAttribute('direction', 'vertical');
     }
 

@@ -120,6 +120,7 @@ export class QuizStatsWidgetComponent implements OnInit {
     try {
       this.loading = true;
       this.allQuizzes = await firstValueFrom(this.quizzesService.getAllQuizzes());
+      this.allQuizzes.sort((a, b) => Number(b.quizId) - Number(a.quizId));
       const activeQuiz = this.allQuizzes.find(q => q.isActive) || this.allQuizzes[0];
       this.selectedQuizId = activeQuiz?.quizId.toString();
       if (this.selectedQuizId) await this.loadQuizStats(this.selectedQuizId);

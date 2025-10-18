@@ -51,7 +51,6 @@ import { CardModule } from 'primeng/card';
     </div>
   </div>
     <div class="flex justify-between items-center p-2 w-full">
-      <!-- [ ]: fix the spacing of the headers -->
     <div>Name</div>
     <div>Active</div>
     <div>Quizzes Assigned</div>

@@ -9,9 +9,12 @@ import {
     updateDoc,
     deleteDoc,
     Timestamp,
-    CollectionReference
+    CollectionReference,
+    query,
+    where,
+    getDocs
 } from '@angular/fire/firestore';
-import { defer, map, Observable } from 'rxjs';
+import { defer, from, map, Observable } from 'rxjs';
 import { Quiz } from '../models/quiz.model';
 import { QuizTypeEnum } from '../enums/QuizTypeEnum';
 import { firstValueFrom } from 'rxjs';
@@ -57,13 +60,17 @@ export class QuizzesService {
     }
 
     getQuizByQuizId(quizId: string): Observable<Quiz | undefined> {
-        return defer(() => {
-            const quizDocRef = doc(this.firestore, this.collectionName, quizId);
-            return docData(quizDocRef, { idField: 'quizId' }) as Observable<
-                Quiz | undefined>
-            ;
-        });
-    }
+  const quizzesRef = collection(this.firestore, this.collectionName);
+  const q = query(quizzesRef, where('quizId', '==', quizId));
+
+  return from(getDocs(q)).pipe(
+    map(snapshot => {
+      if (snapshot.empty) return undefined;
+      const doc = snapshot.docs[0];
+      return { ...(doc.data() as Quiz), id: doc.id };
+    })
+  );
+}
 
     getActiveQuiz(): Observable<Quiz | undefined> {
   const now = new Date();
@@ -135,6 +142,17 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
   return this.getAllQuizzes().pipe(
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.Collab);
+      return getHeader
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
+        : list;
+    })
+  );
+}
+
+getQuestionQuizzes(getHeader: boolean = false): Observable<any[]> {
+  return this.getAllQuizzes().pipe(
+    map(quizzes => {
+      const list = quizzes.filter(q => q.quizType === QuizTypeEnum.QuestionType);
       return getHeader
         ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
         : list;
