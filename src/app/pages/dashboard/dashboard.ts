@@ -23,13 +23,13 @@ import { RecentQuizzesWidget } from "./components/userrecentquizzes";
         <div class="grid grid-cols-12 gap-8">
             <!-- [x]: fiftyBorder to all widgets -->
             <!-- Only show stats widget if user is NOT admin -->
-            <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async)" />
+            <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" />
             <!-- [x]: widget with dataview for all quiz score history-->
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-user-summary-widget />
                 <app-fifty-quizzes-dashboard />
-                <app-quiz-stats-widget *ngIf="membershipTier == MembershipTier.FiftyGold" />
-                <app-user-quiz-history-widget *ngIf="membershipTier == MembershipTier.FiftyGold" />
+                <app-quiz-stats-widget *ngIf="membershipTier != MembershipTier.Fifty" />
+                <app-user-quiz-history-widget *ngIf="membershipTier != MembershipTier.Fifty" />
                 <!-- <app-best-selling-widget /> -->
             </div>
 
@@ -37,7 +37,7 @@ import { RecentQuizzesWidget } from "./components/userrecentquizzes";
                 
                 
                 <app-submissions-wall-widget />
-                <app-membership-report-widget *ngIf="(auth.isAdmin$ | async)" />
+                <app-membership-report-widget *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" />
                 <!-- <app-notifications-widget /> -->
             </div>
         </div>

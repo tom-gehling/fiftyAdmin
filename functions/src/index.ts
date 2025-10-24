@@ -1,5 +1,6 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 import express from 'express';
 import cors from 'cors';
 
@@ -15,9 +16,11 @@ app.use(express.json());
 // Route: /api/getLatestQuiz
 app.get('/api/getLatestQuiz', async (req, res) => {
   try {
+    const now = Timestamp.fromDate(new Date());
     const snapshot = await db.collection('quizzes')
-      .where('quizType', '==', 1)      // only active quizzes
-      .orderBy('deploymentDate', 'desc')
+      .where('quizType', '==', 1)          // only weekly quizzes
+      .where('deploymentDate', '<=', now)  // only quizzes deployed in the past or now
+      .orderBy('deploymentDate', 'desc')   // most recent first
       .limit(1)
       .get();
 
@@ -28,7 +31,7 @@ app.get('/api/getLatestQuiz', async (req, res) => {
     }
 
     const quiz = snapshot.docs[0].data();
-// [ ]: send the whole quiz object with formatted questions
+// [x]: send the whole quiz object with formatted questions
     const formattedQuiz = {
       ...quiz,
       quiz_id: quiz.quizId,
@@ -135,7 +138,7 @@ app.post('/api/recordQuizSession', async (req, res) => {
   try {
     const { quizId, score } = req.body;
 
-    if (!quizId || score === undefined) {
+    if (!quizId || quizId.trim() === "" || score === undefined) {
       res.status(400).json({ message: 'quizId and score are required' });
       return;
     }

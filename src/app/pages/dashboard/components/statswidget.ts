@@ -4,7 +4,8 @@ import { QuizzesService } from '@/shared/services/quizzes.service';
 import { Quiz } from '@/shared/models/quiz.model';
 import { firstValueFrom } from 'rxjs';
 import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, doc, getDoc } from 'firebase/firestore';
+import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 
 @Component({
   standalone: true,
@@ -32,16 +33,16 @@ import { Timestamp } from 'firebase/firestore';
         <div>
           <span class="block text-muted-color font-medium mb-2">Next Weekly Quiz Status</span>
           <div class="inline-flex gap-3">
-          <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl mt-2">
-            {{ nextQuizReady === null ? 'Yet to be created' : (nextQuizReady ? 'Ready' : 'In Progress') }}
-          </div>
-          <div 
-            class="w-6 h-6 flex items-center justify-center rounded-full border-2 border-green-500"
-            [class.bg-green-500]="nextQuizReady"
-            *ngIf="nextQuizReady !== null"
-          >
-            <i *ngIf="nextQuizReady" class="pi pi-check text-white text-sm"></i>
-          </div>
+            <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl mt-2">
+              {{ nextQuizReady === null ? 'Yet to be created' : (nextQuizReady ? 'Ready' : 'In Progress') }}
+            </div>
+            <div 
+              class="w-6 h-6 flex items-center justify-center rounded-full border-2 border-green-500"
+              [class.bg-green-500]="nextQuizReady"
+              *ngIf="nextQuizReady !== null"
+            >
+              <i *ngIf="nextQuizReady" class="pi pi-check text-white text-sm"></i>
+            </div>
           </div>
         </div>
         <div class="mt-4 text-muted-color text-sm" *ngIf="nextDeployment">
@@ -49,25 +50,21 @@ import { Timestamp } from 'firebase/firestore';
         </div>
       </div>
     </div>
-    <!-- Weekly Quiz Page Views -->
-    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder">
-            <div class="flex justify-between items-center">
-                <div>
-                    <span class="block text-muted-color font-medium mb-2">Weekly Quiz Page Views</span>
-                    <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">{{ pageViews }}</div>
-                </div>
-                <div class="flex items-center justify-center bg-cyan-100 dark:bg-cyan-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                    <i class="pi pi-globe text-cyan-500 text-xl!"></i>
-                </div>
-            </div>
-            <div class="mt-4 text-muted-color text-sm">
-                    Last 30 days
-                </div>
-        </div>
-    </div>
+    <!-- Quiz Sessions -->
 
-    <!-- Member Count -->
+    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
+      <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder">
+        <div>
+          <span class="block text-muted-color font-medium mb-2">Active Quiz Sessions</span>
+          <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
+            {{ totalSessions }}
+          </div>
+        </div>
+        <div class="mt-4 text-muted-color text-sm">
+          Average Score: {{ averageScore | number:'1.0-2' }}
+        </div>
+      </div>
+    </div>
     <div class="col-span-6 lg:col-span-6 xl:col-span-3">
         <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder">
             <div class="flex justify-between items-center">
@@ -85,41 +82,25 @@ import { Timestamp } from 'firebase/firestore';
             </div>
         </div>
     </div>
-
-    <!-- Weekly Submissions -->
-    <!-- <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0 h-full flex flex-col justify-between p-4">
-            <div class="flex justify-between items-center">
-                <div>
-                    <span class="block text-muted-color font-medium mb-2">Submissions This Week</span>
-                    <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">{{ weeklySubmissions }}</div>
-                </div>
-                <div class="flex items-center justify-center bg-purple-100 dark:bg-purple-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                    <i class="pi pi-file text-purple-500 text-xl!"></i>
-                </div>
-            </div>
-        </div>
-    </div> -->
   `
 })
 export class StatsWidget implements OnInit {
   private quizzesService = inject(QuizzesService);
+  private quizStatsService = inject(QuizStatsService);
 
+  activeQuiz: Quiz | null = null;
   nextQuizReady: boolean | null = null;
   nextDeployment: Date | null = null;
 
-  activeQuiz: Quiz | null = null;
-  pageViews = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
+  totalSessions = 0;
+  averageScore = 0;
   memberCount = Math.floor(Math.random() * (4000 - 2000 + 1)) + 2000;
   memberIncrease = Math.floor(Math.random() * (1 - 20 + 1)) + 20;
-  weeklySubmissions = Math.floor(Math.random() * (100 - 300 + 1)) + 300;
 
   async ngOnInit() {
-    // Fetch active weekly quiz from Firestore
     this.activeQuiz = await firstValueFrom(this.quizzesService.getActiveQuiz()) || null;
-
-    // Load next quiz status and deployment date
     await this.loadNextQuizStatus();
+    await this.loadQuizStats();
   }
 
   getDeploymentDate(date: Date | any) {
@@ -153,4 +134,21 @@ export class StatsWidget implements OnInit {
     this.nextQuizReady = !!(nextQuiz.questions?.length);
     this.nextDeployment = nextQuiz.deploymentDate;
   }
+
+
+async loadQuizStats() {
+  if (!this.activeQuiz?.quizId) return;
+
+  try {
+    const stats = await this.quizStatsService.getQuizTotalStats(String(this.activeQuiz.quizId));
+
+
+    // assign totalSessions and averageScore safely
+    this.totalSessions = stats?.totalSessions ?? 0;
+    this.averageScore = stats?.averageScore ?? 0;
+  } catch (error) {
+    console.error('Error loading quiz stats:', error);
+  }
+}
+
 }
