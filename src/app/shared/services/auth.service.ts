@@ -89,16 +89,16 @@ export class AuthService {
   }
 
   /** Anonymous login */
-  async loginAnonymous(): Promise<AppUser> {
-    if (!this.auth.currentUser) {
-      const cred = await signInAnonymously(this.auth);
-      const appUser = await this.ensureUserDocument(cred.user, true);
-      this.user$.next(appUser);
-      return appUser;
-    }
+  // async loginAnonymous(): Promise<AppUser> {
+  //   if (!this.auth.currentUser) {
+  //     const cred = await signInAnonymously(this.auth);
+  //     const appUser = await this.ensureUserDocument(cred.user, true);
+  //     this.user$.next(appUser);
+  //     return appUser;
+  //   }
 
-    return await this.ensureUserDocument(this.auth.currentUser, true);
-  }
+  //   return await this.ensureUserDocument(this.auth.currentUser, true);
+  // }
 
   /** Update display name */
   async updateDisplayName(displayName: string) {
@@ -119,9 +119,9 @@ export class AuthService {
     return this.auth.currentUser?.uid ?? null;
   }
 
-  get isAnonymous(): boolean {
-    return this.auth.currentUser?.isAnonymous ?? true;
-  }
+  // get isAnonymous(): boolean {
+  //   return this.auth.currentUser?.isAnonymous ?? true;
+  // }
 
   /**
    * Ensures the Firestore user document exists and returns AppUser

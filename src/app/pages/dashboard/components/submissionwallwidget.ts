@@ -78,11 +78,11 @@ export class SubmissionsWallWidget implements AfterViewInit {
   submissions: Submission[] = [
     {
       teamName: 'Saturday Night Slay',
-      userId: 'quizmaster_tom',
+      userId: 'jizzy_jizzy_gum_drops',
       location: 'Melbourne',
       score: 42,
       pictureUrl: '/assets/submissions/sub1.jpeg',
-      submittedAt: 'Sat 21 Sep, 8:34pm'
+      submittedAt: 'Fri 24 Oct, 8:34pm'
     },
     {
       teamName: 'Quiz In My Pants',
@@ -90,23 +90,23 @@ export class SubmissionsWallWidget implements AfterViewInit {
       location: 'Sydney',
       score: 38,
       pictureUrl: '/assets/submissions/sub6.jpeg',
-      submittedAt: 'Sat 21 Sep, 8:36pm'
+      submittedAt: 'Thurs 23 Oct, 8:36pm'
     },
     {
       teamName: 'The Fact Hunts',
-      userId: 'trivia_king',
+      userId: 'earl_squirrelson',
       location: 'Brisbane',
       score: 28,
       pictureUrl: '/assets/submissions/sub3.jpeg',
-      submittedAt: 'Sat 21 Sep, 8:38pm'
+      submittedAt: 'Fri 24 Oct, 8:38pm'
     },
     {
       teamName: '35kms',
-      userId: 'smartypants',
+      userId: 'nursulltanTulyakby',
       location: 'Perth',
       score: 42,
       pictureUrl: '/assets/submissions/sub7.jpeg',
-      submittedAt: 'Sat 21 Sep, 8:42pm'
+      submittedAt: 'Wed 22 Oct, 8:42pm'
     },
     {
       teamName: 'Emu Baes',
@@ -114,7 +114,7 @@ export class SubmissionsWallWidget implements AfterViewInit {
       location: 'Adelaide',
       score: 47,
       pictureUrl: '/assets/submissions/sub5.jpeg',
-      submittedAt: 'Sat 21 Sep, 8:50pm'
+      submittedAt: 'Fri 24 Oct, 8:50pm'
     }
   ];
 

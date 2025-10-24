@@ -13,7 +13,7 @@ export enum MembershipTier {
 })
 export class MembershipService {
   // Default tier
-  private membershipSubject = new BehaviorSubject<MembershipTier>(MembershipTier.Fifty);
+  private membershipSubject = new BehaviorSubject<MembershipTier>(MembershipTier.FiftyGold);
 
   // Exposed observable for components to subscribe to
   membership$: Observable<MembershipTier> = this.membershipSubject.asObservable();

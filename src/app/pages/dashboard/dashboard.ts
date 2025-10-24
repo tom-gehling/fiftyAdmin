@@ -13,40 +13,38 @@ import { QuizStatsWidgetComponent } from './components/quizstatswidget';
 import { UserQuizHistoryWidget } from "./components/userquizhistory";
 import { UserSummaryWidget } from "./components/usersummary";
 import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
+import { RecentQuizzesWidget } from "./components/userrecentquizzes";
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget],
+    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget],
     template: `
         <div class="grid grid-cols-12 gap-8">
+            <!-- [x]: fiftyBorder to all widgets -->
             <!-- Only show stats widget if user is NOT admin -->
             <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async)" />
-            
-            
-            <!-- [ ]: get fifty + carousel created-->
-            <!-- [ ]: widget with dataview for all quiz score history-->
-
+            <!-- [x]: widget with dataview for all quiz score history-->
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-user-summary-widget />
                 <app-fifty-quizzes-dashboard />
                 <app-quiz-stats-widget *ngIf="membershipTier == MembershipTier.FiftyGold" />
-                <!-- [ ]: fix up height issue on mobile/ keep photos square -->
-                 <app-user-quiz-history-widget *ngIf="membershipTier == MembershipTier.FiftyGold" />
+                <app-user-quiz-history-widget *ngIf="membershipTier == MembershipTier.FiftyGold" />
                 <!-- <app-best-selling-widget /> -->
             </div>
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 
-                <app-membership-report-widget *ngIf="membershipTier == MembershipTier.FiftyGold" />
+                
                 <app-submissions-wall-widget />
+                <app-membership-report-widget *ngIf="(auth.isAdmin$ | async)" />
                 <!-- <app-notifications-widget /> -->
             </div>
         </div>
     `
 })
 export class Dashboard {
-    membershipTier: MembershipTier = MembershipTier.Fifty;
+    membershipTier: MembershipTier = MembershipTier.FiftyGold;
     MembershipTier = MembershipTier;
     constructor(public auth: AuthService, private membershipService: MembershipService) {}
     ngOnInit() {

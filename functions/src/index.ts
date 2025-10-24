@@ -28,8 +28,9 @@ app.get('/api/getLatestQuiz', async (req, res) => {
     }
 
     const quiz = snapshot.docs[0].data();
-
+// [ ]: send the whole quiz object with formatted questions
     const formattedQuiz = {
+      ...quiz,
       quiz_id: quiz.quizId,
       questions: (quiz.questions || []).map((q: any) => ({
         qNum: q.questionId,

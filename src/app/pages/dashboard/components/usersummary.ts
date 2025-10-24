@@ -5,11 +5,13 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { UserService } from '@/shared/services/user.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
+import { MembershipService } from '@/shared/services/membership.service';
+import { RecentQuizzesWidget } from './userrecentquizzes';
 
 @Component({
   standalone: true,
   selector: 'app-user-summary-widget',
-  imports: [CommonModule],
+  imports: [CommonModule, RecentQuizzesWidget],
   template: `
      <div class="card p-6 mb-6 flex flex-col">
       <!-- Top row: Name on left, Joined on right -->
@@ -21,13 +23,23 @@ import { QuizResultsService } from '@/shared/services/quiz-result.service';
           </span>
           <h2 class="text-2xl font-semibold">{{ displayName || 'Guest User' }}</h2>
         </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <div class="flex flex-col items-end">
+          <div class="text-sm text-gray-500 dark:text-gray-400">
           Joined: {{ joinedAt ? (joinedAt | date: 'mediumDate') : '—' }}
-        </p>
+        </div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+          {{ membershipType }} Member
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          Logins: {{ loginCount }}
+        </div>
+        
+      </div>
+        
       </div>
 
       <div class="flex justify-center">
-        <hr class="w-10/10 border-t border-gray-400 dark:border-gray-600" />
+        <hr class="w-10/10 border-t" style="border-color: var(--fifty-neon-green);"/>
       </div>
 
       <!-- Stats row -->
@@ -49,8 +61,11 @@ import { QuizResultsService } from '@/shared/services/quiz-result.service';
           <div class="text-sm text-gray-500 dark:text-gray-400">Following</div>
         </div>
       </div>
-
-      <!-- [ ]: add stats versus all users-->
+      <div class="flex justify-center">
+        <hr class="w-10/10 border-t" style="border-color: var(--fifty-neon-green);"/>
+      </div>
+       <!-- Insert Recent Quizzes Widget -->
+      <app-recent-quizzes-widget></app-recent-quizzes-widget>
     </div>
   `
 })
@@ -58,6 +73,7 @@ export class UserSummaryWidget implements OnInit {
   private auth = inject(Auth);
   private userService = inject(UserService);
   private quizResultsService = inject(QuizResultsService);
+  private membershipService = inject(MembershipService);
 
   displayName: string | null = null;
   joinedAt: Date | null = null;
@@ -65,6 +81,8 @@ export class UserSummaryWidget implements OnInit {
   averageScore = 0;
   followers = 0;
   following = 0;
+  membershipType: string = '';
+  loginCount: number = 0;
 
   async ngOnInit() {
     onAuthStateChanged(this.auth, async user => {
@@ -73,6 +91,10 @@ export class UserSummaryWidget implements OnInit {
       // Display name
       this.displayName = user.displayName || user.email?.split('@')[0] || 'User';
 
+      this.membershipService.membership$.subscribe(tier => {
+        this.membershipType = tier;
+      });
+
       // Fetch user document from Firestore
       const userDoc = await firstValueFrom(this.userService.getUser(user.uid));
       this.joinedAt = (userDoc?.createdAt as any)?.toDate?.() ?? new Date();
@@ -80,6 +102,9 @@ export class UserSummaryWidget implements OnInit {
       // Followers / Following counts
       this.followers = userDoc?.followersCount ?? 0;
       this.following = userDoc?.followingCount ?? 0;
+
+      this.loginCount = userDoc?.loginCount ?? 0;
+
 
       // Quiz stats
       const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));

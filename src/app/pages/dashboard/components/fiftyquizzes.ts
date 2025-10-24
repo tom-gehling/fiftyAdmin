@@ -24,7 +24,7 @@ interface TagWithQuizzes {
   imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <div class="card w-full flex flex-col gap-10 p-6 bg-surface-0 dark:bg-surface-900 mb-8" *ngIf="tagsWithQuizzes.length">
+    <div class="card w-full flex flex-col gap-10 p-6 bg-surface-0 dark:bg-surface-900 mb-8 fiftyBorder" *ngIf="tagsWithQuizzes.length">
       <ng-container *ngFor="let tagGroup of tagsWithQuizzes">
         <div class="text-2xl font-semibold text-surface-900 dark:text-surface-0 ">
           {{ tagGroup.tag.name }}
@@ -47,10 +47,10 @@ interface TagWithQuizzes {
   <swiper-slide
     *ngFor="let quiz of tagGroup.quizzes"
     (click)="openQuiz(quiz)"
-    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-110 m-4"
+    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-120 m-4"
   >
     <div
-      class="w-[140px] h-[140px] rounded-2xl overflow-hidden shadow-lg border border-gray-200 group-hover:border-primary"
+      class="w-[140px] h-[140px] rounded-2xl overflow-hidden shadow-lg "
     >
       <img
         [src]=" quiz.imageUrl ? ('/assets/logos/'+quiz.imageUrl) : '/assets/logos/aussie.png'"

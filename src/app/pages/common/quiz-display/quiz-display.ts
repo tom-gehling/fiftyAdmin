@@ -9,6 +9,7 @@ import { QuizzesService } from '@/shared/services/quizzes.service';
 import { AuthService } from '@/shared/services/auth.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-quiz-display',
@@ -22,20 +23,20 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 
     <!-- Quiz Container -->
     <div *ngIf="!loading && quiz" class="quizContainer">
-      <div class="quizTitle">{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}</div>
-
       <ng-container *ngIf="locked">
-        <p class="text-center text-gray-300 mb-4">
-          Upgrade to access the full quiz!
+        <p class="text-center text-gray-300 text-lg font-bold mb-4" >
+          Upgrade to Fifty+ and access the full quiz!
         </p>
       </ng-container>
+
+      <div class="quizTitle">{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}</div>
 
       <ng-container *ngFor="let question of quiz.questions; let i = index">
   <div class="question" *ngIf="!locked || i < 3">
     <!-- Question button -->
-    <button class="accordionButton" (click)="toggleQuestion(i)">
+    <button class="accordionButton" [class.active]="questionClicked[i]"  (click)="toggleQuestion(i)">
       <span class="dot" [ngClass]="{'removed': answers[i]?.correct !== null}"></span>
-      <span><b>Q{{ i + 1 }}.</b> <span [innerHTML]="question.question"></span></span>
+      <span><b>Q{{ i + 1 }}. </b> <span [innerHTML]="question.question"></span></span>
     </button>
 
     <!-- Click for answer button -->
@@ -44,9 +45,7 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
     </div>
 
     <!-- Answer panel -->
-     <!-- [ ]: apply the same styling transitions to clicks -->
     <div *ngIf="answerRevealed[i]" class="panel answer">
-      <!-- [ ]: colour answer text -->
       <p [innerHTML]="question.answer"></p>
       <div class="flex gap-2 w-full justify-center" *ngIf="!locked">
         <button class="genericButton" [ngClass]="{'correct': answers[i]?.correct === true}" (click)="markAnswer(i, true)">Correct</button>
@@ -58,7 +57,7 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 
 
       <!-- Score -->
-      <div *ngIf="!locked" class="score">Score: {{ score }} / {{ totalQuestions }}</div>
+      <div *ngIf="!locked" class="score">Score: {{ score }} / {{ answeredQuestions }}</div>
 
       <!-- Reset -->
       <button *ngIf="!locked && isQuizCompleted" class="genericButton" (click)="resetQuiz()">Reset Quiz</button>
@@ -191,10 +190,16 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     private quizService: QuizzesService,
     private quizResultsService: QuizResultsService,
     private authService: AuthService,
-    private elRef: ElementRef 
+    private elRef: ElementRef,
+    private route: ActivatedRoute
   ) {}
 
-  async ngOnInit() {
+   async ngOnInit() {
+    // Check for quizId in URL first
+    const routeQuizId = this.route.snapshot.paramMap.get('quizId');
+    if (routeQuizId) {
+      this.quizId = routeQuizId;
+    }
     await this.loadQuiz();
   }
 
@@ -226,29 +231,25 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     } finally {
       this.loading = false;
     }
+
     this.applyThemeColors();
   }
 
   private applyThemeColors() {
   if (!this.quiz) return;
-  // [ ]: sort out applying themeing to container based on incoming quiz style
 
   const root = this.elRef?.nativeElement as HTMLElement;
     console.log(this.quiz.theme)
   if (this.quiz.theme) {
-    root.style.setProperty('--secondary', this.quiz.theme.backgroundColor || '#677c73');
+    root.style.setProperty('--secondary', this.quiz.theme.backgroundColor || '#18181b');
     root.style.setProperty('--primary', this.quiz.theme.fontColor || '#fbe2df');
     root.style.setProperty('--tertiary', this.quiz.theme.tertiaryColor || '#4cfbab');
-  } else if (this.quiz.quizType == QuizTypeEnum.Weekly) {
-    root.style.setProperty('--secondary', '#677c73'); // main background
+  }
+  if (this.quiz.quizType == QuizTypeEnum.Weekly) {
+    root.style.setProperty('--secondary', '#18181b'); // main background
     root.style.setProperty('--primary', '#fbe2df');   // text
     root.style.setProperty('--tertiary', '#4cfbab');   // accents
-  } else {
-    // fallback defaults
-    root.style.setProperty('--secondary', '#677c73');
-    root.style.setProperty('--primary', '#fbe2df');
-    root.style.setProperty('--tertiary', '#4cfbab');
-  }
+  } 
 }
 
   private async initializeOrResumeQuiz(quiz: Quiz) {
@@ -305,6 +306,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   toggleQuestion(index: number) { this.questionClicked[index] = !this.questionClicked[index]; }
   toggleAnswer(index: number) { this.answerRevealed[index] = !this.answerRevealed[index]; }
   get isQuizCompleted(): boolean { return this.answers.length > 0 && this.answers.every(a => a.correct !== null); }
+  
+  get answeredQuestions(): number {
+    return this.answers.filter(a => a.correct !== null).length;
+  }
 
   async resetQuiz() {
     if (!this.quiz || !this.userId || this.locked) return;

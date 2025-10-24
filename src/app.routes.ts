@@ -18,7 +18,7 @@ import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
 
 export const appRoutes: Routes = [
   // Public area
-  { path: '', redirectTo: '/landing', pathMatch: 'full' },
+  { path: '', redirectTo: '/members', pathMatch: 'full' },
   { path: 'landing', component: Landing },
   { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
 
@@ -28,6 +28,8 @@ export const appRoutes: Routes = [
     component: AppLayout,
     canActivate: [AuthGuard],
     children: [
+      //[x]: landing page should be auth page
+      
       { path: '', redirectTo: '/members', pathMatch: 'full' },
       { path: 'members', component: Dashboard },
 

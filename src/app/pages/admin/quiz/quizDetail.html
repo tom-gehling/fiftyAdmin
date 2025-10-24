@@ -79,7 +79,7 @@
                     <div formArrayName="questions" cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-4 py-3">
                         <div *ngFor="let q of questions.controls; let i = index" [formGroupName]="i" cdkDrag>
                             <!-- Container with shadow -->
-                            <div class="flex flex-row gap-3 items-center p-2 rounded-md shadow hover:shadow-lg transition-shadow">
+                            <div class="flex flex-row gap-3 items-center p-2 rounded-md shadow hover:shadow-lg transition-shadow bg-surface-0 dark:bg-surface-800">
                                 <!-- Left: Number and Flag -->
                                 <div cdkDragHandle class="w-10 flex justify-center items-center text-gray-600 dark:text-gray-300 cursor-move flex-shrink-0 relative gap-1">
                                     <span class="font-bold text-lg">Q{{ i + 1 }}.</span>
@@ -130,6 +130,14 @@
 
                 <!-- Other Tab -->
                 <p-tabpanel value="2">
+                    <div class="mb-6 flex flex-col gap-3">
+                        <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Weekly">
+                            <p-floatlabel class="w-full" variant="in">
+                                <input pInputText type="number" id="quizId" formControlName="quizId" class="w-full" [readOnly]="true" />
+                                <label for="quizId">Quiz Reference</label>
+                            </p-floatlabel>
+                        </div>
+                    </div>
                     <!-- Image Section -->
                     <div class="mb-6" *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
                         <h3 class="font-semibold mb-2">Image</h3>

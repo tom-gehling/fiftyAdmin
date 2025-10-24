@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy, Input, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { ChartModule } from 'primeng/chart';
-import { Subscription } from 'rxjs';
+import { Subscription, combineLatest, firstValueFrom } from 'rxjs';
 import { LayoutService } from '../../../layout/service/layout.service';
 import { Auth } from '@angular/fire/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
+import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -36,6 +37,7 @@ import { CommonModule } from '@angular/common';
 })
 export class UserQuizHistoryWidget implements OnInit, OnDestroy {
   quizScores: { quizId: number; score: number | null }[] = [];
+  siteAverages: { quizId: number; avgScore: number | null }[] = [];
   chartData: any;
   chartOptions: any;
   subscription!: Subscription;
@@ -43,31 +45,48 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
 
   private layoutService = inject(LayoutService);
   private quizResultsService = inject(QuizResultsService);
+  private quizStatsService = inject(QuizStatsService);
   private auth = inject(Auth);
 
   ngOnInit() {
     this.subscription = this.layoutService.configUpdate$.subscribe(() => this.initChart());
 
-    // Watch auth state to load user results dynamically
     onAuthStateChanged(this.auth, async user => {
-      if (user) {
-        this.quizResultsService.getUserResults(user.uid).subscribe(results => {
-          this.quizScores = results
-            .filter(r => r.status === 'completed')
-            .map(r => ({
-              quizId: Number(r.quizId),
-              score: r.score ?? null
-            }))
-            .sort((a, b) => a.quizId - b.quizId);
-
-          this.loading = false;
-          this.initChart();
-        });
-      } else {
+      if (!user) {
         this.quizScores = [];
+        this.siteAverages = [];
         this.loading = false;
         this.initChart();
+        return;
       }
+
+      this.loading = true;
+
+      // Load user quiz results and site-wide averages
+      const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
+      const completedResults = results
+        .filter(r => r.status === 'completed')
+        .sort((a, b) => Number(a.quizId) - Number(b.quizId));
+
+      this.quizScores = completedResults.map(r => ({
+        quizId: Number(r.quizId),
+        score: r.score ?? null
+      }));
+
+      // Get site-wide averages for all completed quizzes
+      const statsObservables = this.quizScores.map(q =>
+        this.quizStatsService.getQuizStats(q.quizId.toString())
+      );
+
+      const statsResults = await firstValueFrom(combineLatest(statsObservables));
+
+      this.siteAverages = statsResults.map((stat, i) => ({
+        quizId: this.quizScores[i].quizId,
+        avgScore: stat?.averageScore ?? null
+      }));
+
+      this.loading = false;
+      this.initChart();
     });
   }
 
@@ -75,24 +94,36 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
     const documentStyle = getComputedStyle(document.documentElement);
     const textColor = documentStyle.getPropertyValue('--text-color');
     const borderColor = documentStyle.getPropertyValue('--surface-border');
-    const textMutedColor = documentStyle.getPropertyValue('--text-color-secondary');
     const primaryColor = documentStyle.getPropertyValue('--p-primary-500');
+    const secondaryColor = documentStyle.getPropertyValue('--p-secondary-500');
 
     const labels = this.quizScores.map(q => `#${q.quizId}`);
-    const data = this.quizScores.map(q => q.score);
+    const userData = this.quizScores.map(q => q.score);
+    const siteData = this.siteAverages.map(q => q.avgScore);
 
     this.chartData = {
       labels,
       datasets: [
         {
-          label: 'Score',
-          data,
+          label: 'Your Score',
+          data: userData,
           borderColor: primaryColor,
           backgroundColor: primaryColor,
           tension: 0.3,
           fill: false,
           pointRadius: 5,
-          pointHoverRadius: 7,
+          pointHoverRadius: 7
+        },
+        {
+          label: 'Members Avg',
+          data: siteData,
+          borderColor: '#fbe2df',
+          backgroundColor: '#fbe2df',
+          tension: 0.3,
+          fill: false,
+          borderDash: [5, 5],
+          pointRadius: 5,
+          pointHoverRadius: 7
         }
       ]
     };
@@ -100,7 +131,7 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
     this.chartOptions = {
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
+        legend: { display: true },
         tooltip: {
           callbacks: {
             label: (context: any) => `Score: ${context.parsed.y}/50`
@@ -109,14 +140,14 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
       },
       scales: {
         x: {
-          title: { display: true, text: 'Quiz', color: textMutedColor },
+          title: { display: true, text: 'Quiz', color: textColor },
           ticks: { color: textColor },
           grid: { color: 'transparent', borderColor: 'transparent' }
         },
         y: {
           min: 0,
           max: 55,
-          title: { display: true, text: 'Score', color: textMutedColor },
+          title: { display: true, text: 'Score', color: textColor },
           ticks: { color: textColor, stepSize: 5 },
           grid: { color: borderColor, borderColor: 'transparent' }
         }

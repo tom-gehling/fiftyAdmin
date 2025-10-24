@@ -54,11 +54,19 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 
       <!-- Table Header -->
       <div class="flex justify-between items-center p-2 w-full">
-        <div>Name</div>
-        <div>Active</div>
-        <div>Quizzes Assigned</div>
-        <div>Actions</div>
-      </div>
+  <!-- Name: always visible -->
+  <div class="flex-1">Name</div>
+
+  <!-- Active: hide on small screens -->
+  <div class="flex-1 hidden sm:flex">Active</div>
+
+  <!-- Quizzes Assigned: hide on small screens -->
+  <div class="flex-1 hidden sm:flex">Quizzes Assigned</div>
+
+  <!-- Actions: always visible -->
+  <div class="flex gap-2">Actions</div>
+</div>
+
 
       <!-- Order List -->
       <p-orderList
@@ -71,14 +79,22 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
       >
         <ng-template let-tag pTemplate="item">
           <div class="flex justify-between items-center p-2 border-gray-200 rounded shadow mb-1 w-full">
-            <div class="flex-1">{{ tag.name }}</div>
-            <div class="flex-1">{{ tag.isActive ? 'Yes' : 'No' }}</div>
-            <div class="flex-1">{{ getQuizTitles(tag) }}</div>
-            <div class="flex gap-2">
-              <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editTag(tag)"></button>
-              <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="deleteTag(tag)"></button>
-            </div>
-          </div>
+  <!-- Name: always visible -->
+  <div class="flex-1">{{ tag.name }}</div>
+
+  <!-- Active: hide on small screens -->
+  <div class="flex-1 hidden sm:flex">{{ tag.isActive ? 'Yes' : 'No' }}</div>
+
+  <!-- Quizzes Assigned: hide on small screens -->
+  <div class="flex-1 hidden sm:flex">{{ getQuizTitles(tag) }}</div>
+
+  <!-- Actions: always visible -->
+  <div class="flex gap-2">
+    <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editTag(tag)"></button>
+    <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="deleteTag(tag)"></button>
+  </div>
+</div>
+
         </ng-template>
       </p-orderList>
 
@@ -185,6 +201,10 @@ export class QuizTagsComponent implements OnInit {
     { value: QuizTypeEnum.Collab, viewValue: 'Collaboration' },
     { value: QuizTypeEnum.QuestionType, viewValue: 'Question-Type' }
   ];
+
+  // [x]: remove quizzes assigned on mobile?
+  // [x]: get sorting working correctly
+
 
   constructor(
     private tagService: QuizTagsService,

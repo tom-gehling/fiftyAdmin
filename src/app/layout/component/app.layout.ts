@@ -15,7 +15,6 @@ import { LayoutService } from '../service/layout.service';
         <app-topbar></app-topbar>
         <app-sidebar></app-sidebar>
         <div class="layout-main-container">
-            <!-- [ ]: sort out padding left issue on mobile -->
             <div class="layout-main">
                 <router-outlet></router-outlet>
             </div>
