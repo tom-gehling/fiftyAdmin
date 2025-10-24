@@ -13,7 +13,7 @@ import { Timestamp } from 'firebase/firestore';
   template: `
     <!-- Active Weekly Quiz -->
     <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0 h-full flex flex-col justify-between p-4">
+      <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder">
         <div>
           <span class="block text-muted-color font-medium mb-2">Active Weekly Quiz</span>
           <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
@@ -28,7 +28,7 @@ import { Timestamp } from 'firebase/firestore';
 
     <!-- Next Weekly Quiz Status -->
     <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0 h-full flex flex-col justify-between p-4">
+      <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder">
         <div>
           <span class="block text-muted-color font-medium mb-2">Next Weekly Quiz Status</span>
           <div class="inline-flex gap-3">
@@ -51,7 +51,7 @@ import { Timestamp } from 'firebase/firestore';
     </div>
     <!-- Weekly Quiz Page Views -->
     <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0 h-full flex flex-col justify-between p-4">
+        <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder">
             <div class="flex justify-between items-center">
                 <div>
                     <span class="block text-muted-color font-medium mb-2">Weekly Quiz Page Views</span>
@@ -69,7 +69,7 @@ import { Timestamp } from 'firebase/firestore';
 
     <!-- Member Count -->
     <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-        <div class="card mb-0 h-full flex flex-col justify-between p-4">
+        <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder">
             <div class="flex justify-between items-center">
                 <div>
                     <span class="block text-muted-color font-medium mb-2">Fifty+ Member Count</span>

@@ -11,7 +11,14 @@
 
 /* 🔥 Custom brand overrides */
 :root {
-  --primary-color: #00695c;      /* exact primary */
+  --primary-color: #677c73;      /* exact primary */
+  --primary-color-text: #ffffff; /* text on primary */
+  --highlight-bg: #282828;       /* secondary/accent */
+  --highlight-text-color: #ffffff;
+}
+
+:root[class*='app-dark'] {
+  --primary-color: #4cfbab;      /* exact primary */
   --primary-color-text: #ffffff; /* text on primary */
   --highlight-bg: #282828;       /* secondary/accent */
   --highlight-text-color: #ffffff;

@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-user-quiz-history-widget',
   imports: [CommonModule, ChartModule],
   template: `
-    <div class="card mb-8 p-4">
+    <div class="card mb-8 p-4 fiftyBorder">
       <div class="font-semibold text-xl mb-4">Weekly Quiz History</div>
 
       <ng-container *ngIf="loading; else chartBlock">

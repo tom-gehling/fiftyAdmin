@@ -16,9 +16,11 @@ app.use(express.json());
 app.get('/api/getLatestQuiz', async (req, res) => {
   try {
     const snapshot = await db.collection('quizzes')
+      .where('quizType', '==', 1)      // only active quizzes
       .orderBy('deploymentDate', 'desc')
       .limit(1)
       .get();
+
 
     if (snapshot.empty) {
       res.status(404).json({ message: 'No quiz found' });
@@ -30,7 +32,7 @@ app.get('/api/getLatestQuiz', async (req, res) => {
     const formattedQuiz = {
       quiz_id: quiz.quizId,
       questions: (quiz.questions || []).map((q: any) => ({
-        qum: q.questionId,
+        qNum: q.questionId,
         qTitle: q.question,
         qAnswer: q.answer
       }))
@@ -127,6 +129,50 @@ app.get('/api/quizStats/:quizId', async (req, res): Promise<void> => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+app.post('/api/recordQuizSession', async (req, res) => {
+  try {
+    const { quizId, score } = req.body;
+
+    if (!quizId || score === undefined) {
+      res.status(400).json({ message: 'quizId and score are required' });
+      return;
+    }
+
+    const statsRef = db.collection('quizTotalStats').doc(quizId);
+
+    await db.runTransaction(async (transaction) => {
+      const statsDoc = await transaction.get(statsRef);
+
+      if (!statsDoc.exists) {
+        // First score for this quiz
+        transaction.set(statsRef, {
+          totalSessions: 1,
+          averageScore: score,
+        });
+      } else {
+        const data = statsDoc.data() || {};
+        const oldTotal = data.totalSessions ?? 0;
+        const newTotal = oldTotal + 1;
+        const newAverage =
+          ((data.averageScore ?? 0) * oldTotal + score) / newTotal;
+
+        transaction.update(statsRef, {
+          totalSessions: newTotal,
+          averageScore: newAverage,
+        });
+      }
+    });
+
+    res.status(200).json({ message: 'Quiz stats updated successfully' });
+  } catch (error) {
+    console.error('Error updating quiz stats:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
 
 
 

@@ -24,21 +24,22 @@ interface TagWithQuizzes {
   imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <div class="w-full flex flex-col gap-10 p-6 bg-neutral-50" *ngIf="tagsWithQuizzes.length">
+    <div class="card w-full flex flex-col gap-10 p-6 bg-surface-0 dark:bg-surface-900 mb-8" *ngIf="tagsWithQuizzes.length">
       <ng-container *ngFor="let tagGroup of tagsWithQuizzes">
-        <div class="text-2xl font-semibold text-gray-800 mb-3">
+        <div class="text-2xl font-semibold text-surface-900 dark:text-surface-0 ">
           {{ tagGroup.tag.name }}
         </div>
 
         <swiper-container
-  navigation="true"
   loop="true"
   grab-cursor="true"
+  mousewheel="true"
+  freemode="true"
   space-between="12"
   class="w-full !overflow-visible"
   [breakpoints]="{
     '0': { slidesPerView: 2 },
-    '640': { slidesPerView: 2 },
+    '640': { slidesPerView: 3 },
     '1024': { slidesPerView: 3 },
     '1280': { slidesPerView: 'auto' }
   }"
@@ -46,18 +47,18 @@ interface TagWithQuizzes {
   <swiper-slide
     *ngFor="let quiz of tagGroup.quizzes"
     (click)="openQuiz(quiz)"
-    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-105"
+    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-110 m-4"
   >
     <div
       class="w-[140px] h-[140px] rounded-2xl overflow-hidden shadow-lg border border-gray-200 group-hover:border-primary"
     >
       <img
-        [src]="quiz.imageUrl || '/assets/logos/aussie.png'"
+        [src]=" quiz.imageUrl ? ('/assets/logos/'+quiz.imageUrl) : '/assets/logos/aussie.png'"
         [alt]="quiz.quizTitle || ('Quiz ' + quiz.quizId)"
         class="w-full h-full object-cover"
       />
     </div>
-    <span class="text-sm text-center mt-2 text-gray-700 font-medium line-clamp-2">
+    <span class="text-sm text-center mt-2 text-surface-900 dark:text-surface-0 font-medium line-clamp-2">
       {{ quiz.quizTitle || ('Quiz ' + quiz.quizId) }}
     </span>
   </swiper-slide>

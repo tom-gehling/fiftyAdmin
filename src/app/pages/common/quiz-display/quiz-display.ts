@@ -173,6 +173,8 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   @Input() locked: boolean = false; // NEW INPUT
   quiz?: Quiz;
 
+  // [ ]: load quiz by active route
+
   // UI state
   score = 0;
   totalQuestions = 0;

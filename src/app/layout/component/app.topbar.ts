@@ -27,7 +27,7 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
     FormsModule
   ],
   template: `
-    <div class="layout-topbar flex justify-between items-center p-2">
+    <div class="layout-topbar flex justify-between items-center p-2 fiftyBorderBottom">
 
       <!-- Left: Logo + Menu Toggle -->
       <div class="flex items-center space-x-2">

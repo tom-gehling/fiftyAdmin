@@ -1,5 +1,9 @@
 :root {
     --surface-ground: var(--p-surface-100);
+    // --surface-ground: #677c73;
     --code-background: var(--p-surface-900);
     --code-color: var(--p-surface-200);
+    --fifty-border: #677c73; /* normal green */
+    --accent-green: #677c73; /* normal green */
+    --accent-green-contrast: #ffffff; /* optional, text on green */
 }

@@ -69,7 +69,7 @@
         <p-tabs class="mt-6 flex-1 flex flex-col" [(value)]="tabSelected">
             <p-tablist>
                 <p-tab value="0">Questions</p-tab>
-                <p-tab *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab" value="1">Color Scheme</p-tab>
+                <p-tab value="1">Color Scheme</p-tab>
                 <p-tab value="2">Other</p-tab>
             </p-tablist>
 
@@ -108,20 +108,20 @@
                 </p-tabpanel>
 
                 <!-- Color Scheme Tab -->
-                <p-tabpanel *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab" value="1">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" formGroupName="theme">
-                        <div class="flex flex-col items-center">
-                            <label for="fontColor" class="font-medium mb-2">Font Color</label>
+                <p-tabpanel value="1">
+                    <div class="grid grid-cols-3 md:grid-cols-3 gap-6" formGroupName="theme">
+                        <div class="flex flex-col justify-start items-center">
+                            <label for="fontColor" class="font-medium mb-2 text-center">Font Color</label>
                             <p-colorPicker id="fontColor" formControlName="fontColor"></p-colorPicker>
                             <span>{{ form.get("theme.fontColor")?.value }}</span>
                         </div>
                         <div class="flex flex-col items-center">
-                            <label for="backgroundColor" class="font-medium mb-2">Background Color</label>
+                            <label for="backgroundColor" class="font-medium mb-2 text-center">Background Color</label>
                             <p-colorPicker id="backgroundColor" formControlName="backgroundColor"></p-colorPicker>
                             <span>{{ form.get("theme.backgroundColor")?.value }}</span>
                         </div>
                         <div class="flex flex-col items-center">
-                            <label for="tertiaryColor" class="font-medium mb-2">Tertiary Color</label>
+                            <label for="tertiaryColor" class="font-medium mb-2 text-center">Tertiary Color</label>
                             <p-colorPicker id="tertiaryColor" formControlName="tertiaryColor"></p-colorPicker>
                             <span>{{ form.get("theme.tertiaryColor")?.value }}</span>
                         </div>
