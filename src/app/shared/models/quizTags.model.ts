@@ -6,5 +6,6 @@ export interface QuizTag {
   deletionUser?: string;   // UID or username of who deleted it
   deletionTime?: Date;     // Timestamp when deleted
   isActive?: boolean; 
-  quizIds?: string[];         // IDs of quizzes assigned to this tag
+  quizIds?: number[];         // IDs of quizzes assigned to this tag
+  order?: number;
 }

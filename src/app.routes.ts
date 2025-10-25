@@ -18,7 +18,7 @@ import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
 
 export const appRoutes: Routes = [
   // Public area
-  { path: '', redirectTo: '/landing', pathMatch: 'full' },
+  { path: '', redirectTo: '/members', pathMatch: 'full' },
   { path: 'landing', component: Landing },
   { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
 
@@ -28,14 +28,25 @@ export const appRoutes: Routes = [
     component: AppLayout,
     canActivate: [AuthGuard],
     children: [
+      //[x]: landing page should be auth page
+      
       { path: '', redirectTo: '/members', pathMatch: 'full' },
       { path: 'members', component: Dashboard },
 
       // Fifty+ pages
-      { path: 'members/archives', component: FiftyPageComponent, data: { type: 'archive', title: 'Archives' } },
-      { path: 'members/exclusives', component: FiftyPageComponent, data: { type: 'exclusive', title: 'Exclusives' } },
-      { path: 'members/collabs', component: FiftyPageComponent, data: { type: 'collaboration', title: 'Collaborations' } },
-      { path: 'members/questionQuizzes', component: FiftyPageComponent, data: { type: 'question', title: 'Question Quizzes' } },
+      // Fifty+ pages
+      { path: 'members/archives', component: FiftyPageComponent, data: { type: 1, title: 'Archives' } },
+      { path: 'members/archives/:quizid', component: FiftyPageComponent, data: { type: 1, title: 'Archives' } },
+
+      { path: 'members/exclusives', component: FiftyPageComponent, data: { type: 2, title: 'Exclusives' } },
+      { path: 'members/exclusives/:quizid', component: FiftyPageComponent, data: { type: 2, title: 'Exclusives' } },
+
+      { path: 'members/collabs', component: FiftyPageComponent, data: { type: 3, title: 'Collaborations' } },
+      { path: 'members/collabs/:quizid', component: FiftyPageComponent, data: { type: 3, title: 'Collaborations' } },
+
+      { path: 'members/questionQuizzes', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes' } },
+      { path: 'members/questionQuizzes/:quizid', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes' } },
+
 
       // Admin-only pages
       {

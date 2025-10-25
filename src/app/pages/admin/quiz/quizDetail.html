@@ -6,9 +6,11 @@
 <p-card *ngIf="form" class="flex flex-col h-full">
     <!-- Top action buttons -->
     <div class="flex items-center justify-between mb-4">
-        <div class="text-2xl font-semibold">Quiz {{ form.get("quizId")?.value || "" }}</div>
+        <div class="text-2xl font-semibold">Quiz: {{ form.get('quizType')?.value == QuizTypeEnum.Weekly ? (form.get("quizId")?.value || "") : (form.get("quizTitle")?.value || "") }}</div>
         <div class="flex gap-2">
-            <button pButton type="button" label="Import" class="p-button-outlined" (click)="openImportDialog()"></button>
+            <div class="hidden lg:flex">
+                <button pButton type="button" label="Import" class="p-button-outlined" (click)="openImportDialog()"></button>
+            </div>
             <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="form.invalid" (click)="saveQuiz()"></button>
             <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancel()"></button>
         </div>
@@ -18,10 +20,17 @@
     <form [formGroup]="form" class="w-full">
         <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4 pt-3">
             <!-- Quiz Id -->
-            <div class="p-field w-full">
+            <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Weekly">
                 <p-floatlabel class="w-full" variant="in">
                     <input pInputText type="number" id="quizId" formControlName="quizId" class="w-full" />
                     <label for="quizId">Quiz Id</label>
+                </p-floatlabel>
+            </div>
+
+            <div class="p-field w-full" *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
+                <p-floatlabel class="w-full" variant="in">
+                    <input pInputText type="text" id="quizTitle" formControlName="quizTitle" class="w-full" />
+                    <label for="quizId">Quiz Name</label>
                 </p-floatlabel>
             </div>
 
@@ -60,7 +69,7 @@
         <p-tabs class="mt-6 flex-1 flex flex-col" [(value)]="tabSelected">
             <p-tablist>
                 <p-tab value="0">Questions</p-tab>
-                <p-tab *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab" value="1">Color Scheme</p-tab>
+                <p-tab value="1">Color Scheme</p-tab>
                 <p-tab value="2">Other</p-tab>
             </p-tablist>
 
@@ -70,10 +79,12 @@
                     <div formArrayName="questions" cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-4 py-3">
                         <div *ngFor="let q of questions.controls; let i = index" [formGroupName]="i" cdkDrag>
                             <!-- Container with shadow -->
-                            <div class="flex flex-row gap-3 items-center p-2 rounded-md shadow hover:shadow-lg transition-shadow">
-                                <!-- Left: Number, vertically centered -->
-                                <div cdkDragHandle class="w-4 sm:w-4 md:w-6 lg:w-8 flex justify-center items-center text-gray-600 dark:text-gray-300 cursor-move flex-shrink-0">
+                            <div class="flex flex-row gap-3 items-center p-2 rounded-md shadow hover:shadow-lg transition-shadow bg-surface-0 dark:bg-surface-800">
+                                <!-- Left: Number and Flag -->
+                                <div cdkDragHandle class="w-10 flex justify-center items-center text-gray-600 dark:text-gray-300 cursor-move flex-shrink-0 relative gap-1">
                                     <span class="font-bold text-lg">Q{{ i + 1 }}.</span>
+                                    <i *ngIf="q.get('timeless')?.value" class="pi pi-flag-fill text-red-300"></i>
+                                    <!-- ✅ shows red flag -->
                                 </div>
 
                                 <!-- Right: Editors -->
@@ -86,26 +97,31 @@
                                         <quill-editor formControlName="answer" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
                                     </div>
                                 </div>
+
+                                <!-- SpeedDial -->
+                                <div class="justify-center">
+                                    <p-speeddial [model]="questionMenus[i]" direction="up" [buttonStyle]="{width: '1.5rem', height: '1.5rem'}" hideOnClickOutside="true"></p-speeddial>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </p-tabpanel>
 
                 <!-- Color Scheme Tab -->
-                <p-tabpanel *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab" value="1">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" formGroupName="theme">
-                        <div class="flex flex-col items-center">
-                            <label for="fontColor" class="font-medium mb-2">Font Color</label>
+                <p-tabpanel value="1">
+                    <div class="grid grid-cols-3 md:grid-cols-3 gap-6" formGroupName="theme">
+                        <div class="flex flex-col justify-start items-center">
+                            <label for="fontColor" class="font-medium mb-2 text-center">Font Color</label>
                             <p-colorPicker id="fontColor" formControlName="fontColor"></p-colorPicker>
                             <span>{{ form.get("theme.fontColor")?.value }}</span>
                         </div>
                         <div class="flex flex-col items-center">
-                            <label for="backgroundColor" class="font-medium mb-2">Background Color</label>
+                            <label for="backgroundColor" class="font-medium mb-2 text-center">Background Color</label>
                             <p-colorPicker id="backgroundColor" formControlName="backgroundColor"></p-colorPicker>
                             <span>{{ form.get("theme.backgroundColor")?.value }}</span>
                         </div>
                         <div class="flex flex-col items-center">
-                            <label for="tertiaryColor" class="font-medium mb-2">Tertiary Color</label>
+                            <label for="tertiaryColor" class="font-medium mb-2 text-center">Tertiary Color</label>
                             <p-colorPicker id="tertiaryColor" formControlName="tertiaryColor"></p-colorPicker>
                             <span>{{ form.get("theme.tertiaryColor")?.value }}</span>
                         </div>
@@ -114,6 +130,14 @@
 
                 <!-- Other Tab -->
                 <p-tabpanel value="2">
+                    <div class="mb-6 flex flex-col gap-3">
+                        <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Weekly">
+                            <p-floatlabel class="w-full" variant="in">
+                                <input pInputText type="number" id="quizId" formControlName="quizId" class="w-full" [readOnly]="true" />
+                                <label for="quizId">Quiz Reference</label>
+                            </p-floatlabel>
+                        </div>
+                    </div>
                     <!-- Image Section -->
                     <div class="mb-6" *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
                         <h3 class="font-semibold mb-2">Image</h3>
@@ -145,8 +169,8 @@
                     <!-- Notes Section -->
                     <div class="mb-6 flex flex-col gap-3">
                         <h3 class="font-semibold mb-2">Notes</h3>
-                        <input pInputText type="text" formControlName="notesAbove" placeholder="Text Above Quiz" class="w-full" />
-                        <input pInputText type="text" formControlName="notesBelow" placeholder="Text Below Quiz" class="w-full" />
+                        <textarea rows="5" pTextarea formControlName="notesAbove" placeholder="Text Above Quiz" [autoResize]="true" class="w-full"></textarea>
+                        <textarea rows="5" pTextarea formControlName="notesBelow" placeholder="Text Below Quiz" [autoResize]="true"></textarea>
                     </div>
                 </p-tabpanel>
             </p-tabpanels>

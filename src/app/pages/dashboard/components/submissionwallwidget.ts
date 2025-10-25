@@ -5,6 +5,7 @@ register();
 
 interface Submission {
   teamName: string;
+  userId: string;
   location: string;
   score: number;
   pictureUrl: string;
@@ -18,58 +19,103 @@ interface Submission {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="col-span-12">
-      <div class="card p-4 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden">
-        <h3 class="text-xl font-bold mb-4 text-gray-900">Submissions Wall</h3>
+      <div class="card gap-2 p-4 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden bg-surface-0 dark:bg-surface-900">
+        <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-surface-0">Submissions Wall</h3>
 
-        <div class="w-full h-[64rem] md:h-[48rem] sm:h-[32rem]">
+        <div class="w-full h-[28rem] md:h-[64rem] lg:h-[48rem]">
           <swiper-container
             id="submissionsSwiper"
             direction="vertical"
             loop="true"
+            freemode="true"
+            grab-cursor="true"
+            mousewheel="true"
             class="w-full h-full"
           >
             <swiper-slide *ngFor="let sub of submissions" class="flex justify-center w-full px-2">
-              <div class="flex flex-col bg-gray-50 rounded-xl shadow-lg overflow-hidden w-full h-full">
+              <div class="flex flex-col bg-surface-100 dark:bg-surface-800 rounded-xl shadow-lg overflow-hidden w-full h-full">
 
                 <!-- Header -->
-                <div class="flex justify-between items-center px-4 py-3 border-b border-gray-200">
-                  <div class="flex flex-col">
-                    <span class="font-bold text-lg text-gray-900">{{ sub.teamName }}</span>
-                    <span class="text-xs text-gray-500">{{ sub.location }}</span>
+                <div class="flex justify-between items-start px-4 py-3 border-b border-gray-200 dark:border-surface-700">
+                  <div class="flex flex-col text-left">
+                    <span class="font-bold text-2xl text-surface-900 dark:text-surface-0 leading-tight">
+                      {{ sub.teamName }}
+                    </span>
+                    <span class="text-xs text-surface-600 dark:text-surface-300">@{{ sub.userId }}</span>
                   </div>
-                  <span class="text-xs text-gray-500">{{ sub.submittedAt }}</span>
+                  <div class="flex flex-col text-right">
+                    <span class="text-xs text-surface-600 dark:text-surface-200">{{ sub.location }}</span>
+                    <span class="text-xs text-surface-600 dark:text-surface-200">{{ sub.submittedAt }}</span>
+                  </div>
+                  
                 </div>
 
-                <!-- Middle: image with padding -->
-                <div class="flex-1 overflow-hidden px-2 pt-2 pb-2">
+                <!-- Middle: image -->
+                <div class="flex-1 overflow-hidden p-2">
                   <img
                     [src]="sub.pictureUrl"
                     alt="{{ sub.teamName }}"
-                    class="w-full h-full object-cover rounded-lg"
+                    class="w-full h-auto object-cover rounded-lg aspect-square"
                   />
                 </div>
 
                 <!-- Footer -->
-                <div class="px-4 py-2 border-t border-gray-200 text-center">
-                  <span class="text-gray-900 font-medium">Score: {{ sub.score }}/50</span>
+                <div class="px-4 py-4 border-t border-gray-200 dark:border-surface-700 text-center">
+                  <span class="text-surface-900 dark:text-surface-0 font-bold text-3xl">
+                    {{ sub.score }}/50
+                  </span>
                 </div>
 
               </div>
             </swiper-slide>
           </swiper-container>
         </div>
-
       </div>
     </div>
   `
 })
 export class SubmissionsWallWidget implements AfterViewInit {
   submissions: Submission[] = [
-    { teamName: 'Saturday Night Slay', location: 'Melbourne', score: 42, pictureUrl: '/assets/submissions/sub1.jpeg', submittedAt: 'Sat 21 Sep, 8:34pm' },
-    { teamName: 'Quiz In My Pants', location: 'Sydney', score: 38, pictureUrl: '/assets/submissions/sub6.jpeg', submittedAt: 'Sat 21 Sep, 8:36pm' },
-    { teamName: 'The Fact Hunts', location: 'Brisbane', score: 28, pictureUrl: '/assets/submissions/sub3.jpeg', submittedAt: 'Sat 21 Sep, 8:38pm' },
-    { teamName: '35kms', location: 'Perth', score: 42, pictureUrl: '/assets/submissions/sub7.jpeg', submittedAt: 'Sat 21 Sep, 8:42pm' },
-    { teamName: 'Emu Baes', location: 'Adelaide', score: 47, pictureUrl: '/assets/submissions/sub5.jpeg', submittedAt: 'Sat 21 Sep, 8:50pm' }
+    {
+      teamName: 'Saturday Night Slay',
+      userId: 'jizzy_jizzy_gum_drops',
+      location: 'Melbourne',
+      score: 42,
+      pictureUrl: '/assets/submissions/sub1.jpeg',
+      submittedAt: 'Fri 24 Oct, 8:34pm'
+    },
+    {
+      teamName: 'Quiz In My Pants',
+      userId: 'jess_the_brain',
+      location: 'Sydney',
+      score: 38,
+      pictureUrl: '/assets/submissions/sub6.jpeg',
+      submittedAt: 'Thurs 23 Oct, 8:36pm'
+    },
+    {
+      teamName: 'The Fact Hunts',
+      userId: 'earl_squirrelson',
+      location: 'Brisbane',
+      score: 28,
+      pictureUrl: '/assets/submissions/sub3.jpeg',
+      submittedAt: 'Fri 24 Oct, 8:38pm'
+    },
+    {
+      teamName: '35kms',
+      userId: 'nursulltanTulyakby',
+      location: 'Perth',
+      score: 42,
+      pictureUrl: '/assets/submissions/sub7.jpeg',
+      submittedAt: 'Wed 22 Oct, 8:42pm'
+    },
+    {
+      teamName: 'Emu Baes',
+      userId: 'emu_baes',
+      location: 'Adelaide',
+      score: 47,
+      pictureUrl: '/assets/submissions/sub5.jpeg',
+      submittedAt: 'Fri 24 Oct, 8:50pm'
+    }
   ];
 
   ngAfterViewInit() {
@@ -90,16 +136,15 @@ export class SubmissionsWallWidget implements AfterViewInit {
     }
     // Tablet = vertical, 2 slides
     else if (width < 1024) {
-      swiperEl.setAttribute('slides-per-view', '2');
+      swiperEl.setAttribute('slides-per-view', '1');
       swiperEl.setAttribute('direction', 'vertical');
     }
-    // Desktop = vertical, 3 slides
+    // Desktop = vertical, 2 slides (more space per slide)
     else {
-      swiperEl.setAttribute('slides-per-view', '3');
+      swiperEl.setAttribute('slides-per-view', '1');
       swiperEl.setAttribute('direction', 'vertical');
     }
 
-    // Refresh swiper after changing attributes
     swiperEl.swiper?.update();
   }
 }

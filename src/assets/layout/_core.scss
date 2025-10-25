@@ -22,3 +22,16 @@ a {
 .layout-wrapper {
     min-height: 100vh;
 }
+
+.fiftyBorder {
+    border: 1px solid var(--primary-color);
+    border-radius: var(--content-border-radius); /* optional */
+    transition: border-color var(--element-transition-duration);
+    box-shadow: 5px 5px 0px 0px;
+}
+
+.fiftyBorderBottom {
+  border-bottom: 2px solid var(--primary-color);
+  transition: border-color var(--element-transition-duration);
+  border-radius: var(--content-border-radius);
+}

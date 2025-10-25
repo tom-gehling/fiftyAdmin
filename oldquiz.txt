@@ -1,0 +1,962 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="Cache-control" content="No-Cache" />
+        <title>The Weekly Fifty</title>
+        <style>
+            :root {
+                --tertiary: #4cfbab;
+                --secondary: #677c73;
+                --primary: #fbe2df !important;
+                --font: Helvetica, Arial, sans-serif !important;
+                --header: 25px !important;
+                --normal: 22px !important;
+                --smaller: 18px !important;
+                --transition: 0.3s !important;
+            }
+
+            #load {
+                color: var(--primary) !important;
+                background-color: var(--secondary) !important;
+                font-family: var(--font) !important;
+                font-size: var(--normal) !important;
+                font-weight: 500 !important;
+                transition: var(--transition) !important;
+                padding-bottom: 10px !important;
+                display: block;
+                justify-content: flex-start !important;
+            }
+
+            .closebtn {
+                color: #4cfbab;
+                margin-bottom: 10px;
+                cursor: pointer;
+            }
+
+            #openBtn {
+                color: #4cfbab;
+                font-size: 60px;
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .logo {
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 30px;
+            }
+
+            .topContainer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .info-button {
+                background-color: var(--secondary) !important;
+                font-family: var(--font) !important;
+                font-size: var(--smaller) !important;
+                font-weight: 500 !important;
+                color: var(--primary) !important;
+                cursor: pointer !important;
+                padding: 15px !important;
+                padding-top: 1% !important;
+                padding-bottom: 1% !important;
+                vertical-align: centre !important;
+                text-align: left !important;
+                width: 100% !important;
+                height: 70% !important;
+                border: none !important;
+                outline: none !important;
+                transition: var(--transition) !important;
+                width: auto !important;
+                margin-right: 10px !important;
+                line-height: 130% !important;
+            }
+
+            .modal {
+                font-family: var(--font);
+                display: none;
+                position: fixed;
+                z-index: 1;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+
+            .modal-content {
+                background-color: white;
+                margin: 15% auto;
+                padding: 20px;
+                font-size: var(--smaller);
+                font-family: var(--font);
+                width: 80%;
+            }
+
+            .close {
+                color: #aaa;
+                float: right;
+                font-size: 38px;
+                font-weight: bold;
+            }
+
+            .close:hover,
+            .close:focus {
+                color: secondary;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+            .info {
+                text-align: center;
+                color: var(--secondary);
+                font-family: var(--font);
+                font-weight: 300 !important;
+                line-height: 200%;
+            }
+
+            .quizTitle {
+                font-size: 38px !important;
+                font-family: var(--font);
+                color: var(--primary);
+                font-weight: 600 !important;
+                text-align: center;
+            }
+
+            .toggleButtonContainerWrapper {
+                font-family: var(--font) !important;
+                display: flex;
+                flex-direction: row;
+                width: 15%;
+                align-items: center;
+                margin-left: auto;
+            }
+
+            .toggleButtonContainer {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                font-size: var(--smaller) !important;
+                font-weight: 100 !important;
+                padding: 5px !important;
+                width: auto !important;
+            }
+
+            .toggleWithValues {
+                display: flex;
+                align-items: center;
+                flex-direction: column;
+            }
+
+            .toggleButton {
+                position: relative;
+                width: 60px !important;
+                height: 24px !important;
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+            }
+
+            .toggleButtonLabel {
+                font-size: 16px;
+                font-weight: 500;
+                text-align: center;
+                padding: 10px;
+                line-height: 130%;
+            }
+
+            .toggleButton input[type='checkbox'] {
+                display: none;
+            }
+
+            .slider {
+                position: absolute;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background-color: var(--primary) !important;
+                border-radius: 24px !important;
+                transition: var(--transition) !important;
+                cursor: pointer !important;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: '' !important;
+                height: 16px !important;
+                width: 16px !important;
+                left: 4px !important;
+                bottom: 4px !important;
+                background-color: var(--secondary) !important;
+                border-radius: 50% !important;
+                transition: var(--transition) !important;
+            }
+
+            input[type='checkbox']:checked + .slider {
+                background-color: var(--primary) !important;
+            }
+
+            input[type='checkbox']:checked + .slider:before {
+                transform: translateX(34px) !important;
+            }
+
+            .quizContainer {
+                width: 100% !important;
+            }
+
+            .quizTitle {
+                font-size: 30px !important;
+                font-family: var(--font);
+                color: var(--primary);
+                font-weight: 600 !important;
+                text-align: center !important;
+                padding: 10px;
+            }
+
+            .quiz {
+                display: none;
+            }
+
+            .quiz.active {
+                display: block;
+            }
+
+            .question {
+                width: auto !important;
+                justify-self: center !important;
+            }
+
+            .accordionButton {
+                color: var(--primary) !important;
+                background-color: var(--secondary) !important;
+                border: none !important;
+                border-radius: 0px !important;
+                text-align: center !important;
+                outline: none !important;
+                width: 100% !important;
+                font-family: var(--font) !important;
+                font-size: var(--header) !important;
+                font-weight: 400 !important;
+                transition: var(--transition) !important;
+                padding: 25px !important;
+                margin-bottom: 20px !important;
+                line-height: 130% !important;
+            }
+
+            .accordionButton.active {
+                color: var(--secondary) !important;
+                background-color: var(--primary) !important;
+            }
+
+            .genericButton {
+                font-family: var(--font) !important;
+                font-weight: 600 !important;
+                color: var(--secondary) !important;
+                background-color: var(--primary) !important;
+                border: 3px solid var(--primary) !important;
+                border-radius: 15px !important;
+                font-size: var(--normal) !important;
+                padding: 15px !important;
+                margin: 5px !important;
+                transition: var(--transition) !important;
+            }
+
+            .genericButton.correct {
+                color: var(--primary) !important;
+                background-color: var(--secondary) !important;
+                border: 3px solid var(--primary) !important;
+            }
+
+            .genericButton.incorrect {
+                color: var(--primary) !important;
+                background-color: var(--secondary) !important;
+                border: 3px solid var(--primary) !important;
+            }
+
+            .genericButton.reveal {
+                background-color: var(--secondary) !important;
+                color: var(--primary) !important;
+                border: 3px solid var(--primary) !important;
+            }
+
+            .dot {
+                height: 10px !important;
+                width: 10px !important;
+                background-color: var(--tertiary) !important;
+                border-radius: 50% !important;
+                display: inline-block;
+                margin-right: 10px !important;
+            }
+
+            .dot.removed {
+                display: none;
+            }
+
+            .panel {
+                font-family: var(--font) !important;
+                display: none;
+                font-size: var(--normal) !important;
+                padding-top: 15px !important;
+                padding-bottom: 15px !important;
+                width: auto !important;
+                text-align: center !important;
+            }
+
+            .panel.active {
+                display: block;
+            }
+
+            .panel.answer {
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .score {
+                font-family: var(--font) !important;
+                color: var(--primary) !important;
+                text-align: center !important;
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .panel.answer ul {
+                padding: 0;
+                margin: 0;
+                line-height: 1;
+            }
+
+            .panel.answer li {
+                margin-top: 10px;
+                margin-bottom: 30px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                list-style-type: '-';
+                width: 100%;
+                word-wrap: break-word;
+            }
+
+            @media only screen and (max-width: 800px) {
+                .toggleButtonContainerWrapper {
+                    width: 20%;
+                }
+            }
+
+            @media only screen and (max-width: 500px) {
+                .toggleButtonContainerWrapper {
+                    width: 30%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="load"></div>
+
+        <script>
+            let quizzes = [
+                ///################################################
+                // ######## PASTE QUESTIONS BETWEEN HERE ##########
+                {
+                    quiz_id: '173',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: 'The Spotify Premium Index tracks the relative monthly price for Spotify in each country. List two of the six countries that are charged the most for Spotify Premium.',
+                            qAnswer: '(Two of)<br /> <ul><li>Denmark</li><li>The United Kingdom</li><li>Norway</li><li>Sweden</li><li>Switzerland</li><li>Liechtenstein</li></ul>'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: "Greta Thunberg was deported by Israeli authorities to Greece last week. In which year was the Swedish activist named <em>Time's Person of the Year</em>, making her the youngest ever recipient.",
+                            qAnswer: '2019'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: 'Released late last week, what is the name of the twelfth studio album by Taylor Swift?',
+                            qAnswer: 'The Life of a Showgirl'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: 'Which Australian marsupial has fingerprints that bear an uncanny resemblance to human fingerprints?',
+                            qAnswer: 'The Koala'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: '$199, $399, or $599 - The EVEDAL floor lamp is currently the most expensive lamp on offer at IKEA. What is its current full price online?',
+                            qAnswer: '$399'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: 'Cameron is set to propose to his girlfriend Rachel. If he were to follow the commonly known guideline, first set by a 1930s marketing campaign, how many months salary should he set aside to cover the cost of the ring?',
+                            qAnswer: '3 months'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: 'Jane Goodall passed away earlier this month. In a Netflix documentary posthumously released, Goodall asserted that "there are people [she] doesn\'t like and would like to put them in one of Elon Musk\'s spaceships". Name two of the four world leaders she would like to boot off the planet.',
+                            qAnswer: '(Two of) Xi Jinping, Donald Trump, Benjamin Netanyahu, or Vladimir Putin'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: 'Heineken, Budweiser or Guinness - which brand of beer ran a popular ad campaign in the 2000s featuring the Macarena?',
+                            qAnswer: 'Heineken'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: 'It took over 10 years to be built - in what decade did the Sydney Opera House officially open?',
+                            qAnswer: "1970's (1973)"
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: 'Bluey, an Australian Cattle Dog born in 1910, holds the record as the oldest verified dog. To the nearest five years, how old was Bluey when she passed away?',
+                            qAnswer: '30 (29 years and 5 months)'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: "They first appeared in a 1980's version of Donkey Kong as Jumpman - by which name do we now know the popular character?",
+                            qAnswer: 'Mario'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: 'Regarding an article written about the 2012 Olympics - complete the BBC headline with a colour: Why wearing ____ could help to win gold.',
+                            qAnswer: 'Red'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: 'Vel Festival - a Hindu festival showcasing the religious and cultural tradition of Hinduism, is most commonly associated with which island nation?',
+                            qAnswer: 'Sri Lanka'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: 'In the National Health Measures Survey, the Vitamin D levels of Australians was measured via a blood test. When results were taken in winter, which state had the highest level of Vitamin D deficiency?',
+                            qAnswer: 'Victoria (49%)'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: 'Name the cast member the following films have in common: <em>Mamma Mia!</em> (2008), <em>Dear John</em> (2010), and <em>Ted 2</em> (2015).',
+                            qAnswer: 'Amanda Seyfried'
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: 'Forearm, calf, or ribs - According to <em>Tattman.com.au</em>, where on the body is the most popular area to get a tattoo?',
+                            qAnswer: 'Forearm'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: "With the translation meaning <em>'to fly'</em>, the shoe brand HOKA takes its name from which indigenous language?",
+                            qAnswer: 'Māori'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: "Yugoslavia, a country that was broken up through war, finished it's name with a 'via' letter sequence. Name either of the two current countries that also feature a 'via' letter sequence to finish their name.",
+                            qAnswer: 'Bolivia or Latvia'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: 'A 2017 study by the ABC tracked the day of birth of every Australian child over a period of ten years. Based on total number of births, which was the most common month of birth?',
+                            qAnswer: 'March'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: 'Which four letter word is defined by Cambridge dictionary as "a long walk, especially in the countryside"?',
+                            qAnswer: 'Hike'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: 'Message Timing or Message Length - which was considered more important by participants in study undertaken by Hinge in 2024?',
+                            qAnswer: 'Message Timing'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: 'When lodging your own tax return, which date is the yearly deadline for Australian taxpayers?',
+                            qAnswer: 'October 31st'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: 'Which European nation is the only country in the world to have a capital city starting with the letter Z?',
+                            qAnswer: 'Croatia (Zagreb)'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: '@thenewclassic is the Instagram handle of which Australian rapper?',
+                            qAnswer: 'Iggy Azalea'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: 'Which is the only continent with <u>no</u> active volcanoes?',
+                            qAnswer: 'Australia'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: "What is Justin Timberlake's most streamed song on Spotify?",
+                            qAnswer: "CAN'T STOP THE FEELING!"
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: "She's become a viral sensation for an incredible bounce between the legs manoeuvre - in which Australian sporting league was Ash Centra the most recent number one draft pick?",
+                            qAnswer: 'AFLW'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: 'According to episode ratings on IMDb, which of the nine seasons of <em>How I Met Your Mother</em> had the highest average rating?',
+                            qAnswer: 'Season Two'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: 'Commonwealth Bank is CBA, while Telstra is TLS. What is the 3 letter ASX code for Woolworths Group?',
+                            qAnswer: 'WOW'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: 'Reece Walsh took home the Clive Churchill medal as best on ground in the NRL Grand Final last week. Out of which unsavory vessel did he film himself drinking from in the weeks prior?',
+                            qAnswer: 'A toilet'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: 'Last week op shops across Melbourne were inundated with leftover props from which now cancelled Australian soap opera?',
+                            qAnswer: '<em>Neighbours</em>'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: 'Had she still been with us, Jane Austen would soon be celebrating her 250th birthday. While Jane never married, she was engaged. How many days did the engagement famously last?',
+                            qAnswer: 'One day'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: "Surprisingly he makes a lot of them - what are 'posts' called on Donald Trump's social media platform <em>Truth Social</em>?",
+                            qAnswer: 'Truths'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: "Late author Virginia Satir famously believed we don't hug enough. According to Virginia, how many hugs do we need a day for 'survival'?",
+                            qAnswer: 'Four'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: '<em>Flumen</em> (Lat.), <em>fleuve</em> (Fre.) and <em>fiume</em> (Ita.) are all foreign translations of which word?',
+                            qAnswer: 'River'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: 'Which blockbuster film series released its final instalment in 2025, marking Tom Cruise’s final appearance as Ethan Hunt?',
+                            qAnswer: '<em>Mission: Impossible</em>'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: 'During the Dutch Golden Age of the 1600s, which flower grew in value so much that at times, it was more valuable than a regular house?',
+                            qAnswer: 'The Tulip'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: 'Name any of the three books Matthew McConaughey has released.',
+                            qAnswer: '(Any of) Greenlights, Just Because or Poems and Prayers'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: 'Who won Artist of the Year at the 2025 MTV Video Music Awards?',
+                            qAnswer: 'Lady Gaga'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: 'As the crow flies, which city is closer to Adelaide - Perth or Brisbane',
+                            qAnswer: 'Brisbane'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: 'Using a three-letter word, complete the following words: ...get, rose..., and ...dies',
+                            qAnswer: 'Bud'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: "According to an article in <em>The Conversation</em>, name any of the three bathroom items you 'shouldn't really share'. ",
+                            qAnswer: '(Any of) razor, towel, or toothbrush.'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: "The AFL's Brownlow medal took place in late September. Victorian teams registered a total of 650 votes - which AFL playing state was responsible for the lowest total vote tally?",
+                            qAnswer: 'Western Australia (West Coast Eagles and Fremantle Dockers with 100 votes combined)'
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: 'It is the most expensive piece of art to ever be sold - which artist is, somewhat questionably, attributed to painting Salvator Mundi?',
+                            qAnswer: 'Leonardo Da Vinci'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: 'Legislation recently passed in South Australia requiring specific public buildings and spaces to have a working AED. The AE stands for Automatic External, what does the D stand for?',
+                            qAnswer: 'Defibrillators'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: "He's about to serve a jail sentence - in 2008, who became the first male rapper to get a star on the Hollywood Walk of Fame?",
+                            qAnswer: 'Sean "Diddy" Combs'
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: "Which Australian state or territory's Royal show is usually held earliest in the calendar year?",
+                            qAnswer: 'ACT (February)'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: 'Which US burger chain, with a two word alliterated name, will be opening its doors down under as a pop up store at the 2026 Australian Open?',
+                            qAnswer: 'Shake Shack'
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: 'To the nearest ten years, how old is Sir Michael Caine?',
+                            qAnswer: '90 (92)'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: "According to WebMD, which of the following <u>isn't</u> a symptom of the common cold? a) hoarse voice b) dry skin c) ear pressure d) fatigued",
+                            qAnswer: 'b) dry skin'
+                        }
+                    ]
+                }
+                //######################################################
+                // #################### AND HERE #######################
+            ];
+
+            function addWeeksToDate(numberOfWeeks, firstQuiz) {
+                var startDate = new Date(firstQuiz);
+                var millisecondsInWeek = 7 * 24 * 60 * 60 * 1000;
+                var totalMillisecondsToAdd = numberOfWeeks * millisecondsInWeek;
+                var resultDate = new Date(startDate.getTime() + totalMillisecondsToAdd);
+                return resultDate;
+            }
+
+            function formatDateAsDDMMYY(date) {
+                var day = date.getDate();
+                var month = date.getMonth() + 1;
+                var year = date.getFullYear();
+
+                day = day < 10 ? '0' + day : day;
+                month = month < 10 ? '0' + month : month;
+                return day + '/' + month + '/' + year;
+            }
+
+            function getDate(numberOfWeeks, firstQuiz) {
+                date = '';
+                date = addWeeksToDate(numberOfWeeks, firstQuiz);
+                return formatDateAsDDMMYY(date);
+            }
+
+            function createTopContainer() {
+                var quizElement = document.getElementById('load');
+                var topContainerDiv = document.createElement('div');
+                topContainerDiv.className = 'topContainer';
+
+                var infoButton = document.createElement('button');
+                infoButton.className = 'info-button';
+                infoButton.id = 'infoBtn';
+                infoButton.innerHTML = '︎First timers<br /><b>click me!</b>';
+                infoButton.onclick = function () {
+                    modal.style.display = 'block';
+                };
+
+                var modalDiv = document.createElement('div');
+                modalDiv.id = 'infoModal';
+                modalDiv.className = 'modal';
+
+                var modalContentDiv = document.createElement('div');
+                modalContentDiv.className = 'modal-content';
+
+                var closeButton = document.createElement('span');
+                closeButton.className = 'close';
+                closeButton.innerHTML = '&times;';
+
+                var infoParagraph = document.createElement('p');
+                infoParagraph.className = 'info';
+                infoParagraph.innerHTML =
+                    "Welcome to the Fifty. <br> First time? Easy. <br> <br> Once you've settled on your answer, click on the question to see if you're correct. Mark accordingly. <br> <br> If you don’t want your answers straight away, no stress. There’s a 'gimme the answers' button down below. Just have a notepad handy, and scroll gently. <br> <br> Happy quizzing! <br> All our love, <br> The Weekly Fifty xx";
+
+                modalContentDiv.appendChild(closeButton);
+                modalContentDiv.appendChild(infoParagraph);
+                modalDiv.appendChild(modalContentDiv);
+
+                var toggleButtonContainerWrapperDiv = document.createElement('div');
+                toggleButtonContainerWrapperDiv.className = 'toggleButtonContainerWrapper';
+
+                var toggleButtonContainerQuestionsDiv = document.createElement('div');
+                toggleButtonContainerQuestionsDiv.className = 'toggleButtonContainer';
+
+                var toggleWithValuesQuestionsDiv = document.createElement('div');
+                toggleWithValuesQuestionsDiv.id = 'quizNightSwitch';
+                toggleWithValuesQuestionsDiv.className = 'toggleWithValues';
+                toggleWithValuesQuestionsDiv.innerHTML =
+                    '<label class="toggleButtonLabel" for="toggleButton">Been To A Quiz Night</label><label class="toggleButton"><input type="checkbox" id="quizNightToggleButton" onchange="toggleQuestions()"><span class="slider"></span></label>';
+
+                toggleButtonContainerQuestionsDiv.appendChild(toggleWithValuesQuestionsDiv);
+
+                toggleButtonContainerWrapperDiv.appendChild(toggleButtonContainerQuestionsDiv);
+                topContainerDiv.appendChild(infoButton);
+                topContainerDiv.appendChild(modalDiv);
+                topContainerDiv.appendChild(toggleButtonContainerWrapperDiv);
+                quizElement.appendChild(topContainerDiv);
+            }
+
+            function createTitle(id, questions) {
+                var quizElement = document.getElementById('load');
+                var title = document.createElement('div');
+                title.className = 'quizTitle';
+                title.innerText = 'Quiz ' + quizzes[0].quiz_id + ' - ' + getDate(quizzes[0].quiz_id, '2022-06-17');
+                quizElement.appendChild(title);
+            }
+
+            function createQuizContainers(id, questions) {
+                var page = document.getElementById('load');
+                var cont = document.createElement('div');
+                cont.className = 'quizContainer';
+                page.appendChild(cont);
+
+                for (let i = 0; i < quizzes.length; i++) {
+                    var quiz = document.createElement('div');
+                    if (i === 0) {
+                        quiz.className = 'quiz active';
+                    } else {
+                        quiz.className = 'quiz';
+                    }
+                    quiz.id = 'quiz_' + (i + 1);
+                    cont.appendChild(quiz);
+                    createQuiz(i, quizzes[i].questions);
+                }
+            }
+
+            function createQuiz(id, questions) {
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < questions.length; i++) {
+                    let idCode = id + 1 + '_' + (i + 1);
+                    var questionDiv = document.createElement('div');
+                    questionDiv.className = 'question';
+                    questionDiv.id = 'clickQuestion_' + idCode;
+
+                    var accordionButton = document.createElement('button');
+                    accordionButton.className = 'accordionButton';
+                    accordionButton.id = 'button_' + idCode;
+
+                    var dotSpan = document.createElement('span');
+                    dotSpan.className = 'dot';
+                    dotSpan.id = 'dot_' + idCode;
+
+                    var dotText = document.createTextNode(' ');
+                    dotSpan.appendChild(dotText);
+
+                    var questionText = document.createElement('span');
+                    questionText.innerHTML = '<b>' + (i + 1) + '. </b>' + questions[i].qTitle;
+                    accordionButton.appendChild(dotSpan);
+                    accordionButton.appendChild(questionText);
+                    accordionButton.onclick = toggleAccordion;
+
+                    var clickPanel = document.createElement('div');
+                    clickPanel.className = 'panel';
+
+                    var answerButton = document.createElement('button');
+                    answerButton.className = 'genericButton';
+                    answerButton.id = 'clickAnswer_' + idCode;
+                    answerButton.textContent = 'Click for answer';
+                    answerButton.onclick = togglePanel;
+
+                    var answerPanel = document.createElement('div');
+                    answerPanel.className = 'panel answer';
+
+                    var answerText = document.createElement('p');
+                    answerText.className = 'answerText';
+                    answerText.innerHTML = questions[i].qAnswer;
+
+                    var correctButton = document.createElement('button');
+                    correctButton.className = 'genericButton';
+                    correctButton.id = 'clickCorrectBtn_' + idCode;
+                    correctButton.textContent = 'Correct';
+                    correctButton.onclick = function () {
+                        disableButton(1, id, i);
+                        incrementScore(1, id, i);
+                        removeDot(id + 1, i + 1);
+                    };
+
+                    var incorrectButton = document.createElement('button');
+                    incorrectButton.className = 'genericButton';
+                    incorrectButton.id = 'clickIncorrectBtn_' + idCode;
+                    incorrectButton.textContent = 'Incorrect';
+                    incorrectButton.onclick = function () {
+                        disableButton(2, id, i);
+                        incrementScore(2, id, i);
+                        removeDot(id + 1, i + 1);
+                    };
+
+                    quiz[id].appendChild(questionDiv);
+                    questionDiv.appendChild(accordionButton);
+                    questionDiv.appendChild(clickPanel);
+                    clickPanel.appendChild(answerButton);
+                    clickPanel.appendChild(answerPanel);
+                    answerPanel.appendChild(answerText);
+                    answerPanel.appendChild(correctButton);
+                    answerPanel.appendChild(incorrectButton);
+                }
+            }
+
+            function shareScore() {
+                const quizNumber = quizzes[0].quiz_id;
+                const scoreElement = document.querySelector('.score');
+                const scoreText = scoreElement ? scoreElement.innerText : 'a mystery score';
+                const scoreMatch = scoreText.match(/\d+/);
+                const score = scoreMatch ? scoreMatch[0] : '??';
+
+                const shareMessage = `The Weekly Fifty\nQuiz ${quizNumber}\nScore:  ${score}/50! 🎉\nTry at https://theweeklyfifty.com`;
+
+                if (navigator.share) {
+                    navigator
+                        .share({
+                            title: 'My Weekly Fifty Score',
+                            text: shareMessage,
+                            url: 'https://theweeklyfifty.com'
+                        })
+                        .catch((err) => console.error('Share failed:', err));
+                } else {
+                    navigator.clipboard.writeText(shareMessage).then(() => {
+                        alert('Score copied to clipboard! You can now paste it anywhere 😊');
+                    });
+                }
+            }
+
+            function createScore() {
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < quizzes.length; i++) {
+                    var scoreDiv = document.createElement('div');
+                    scoreDiv.className = 'score';
+                    scoreDiv.id = 'score_' + (i + 1);
+                    scoreDiv.innerHTML = 'Score: <span id="scoreCount_' + (i + 1) + '">0</span> / <span id="totalCount_' + (i + 1) + '">0</span>';
+                    quiz[i].appendChild(scoreDiv);
+                }
+            }
+
+            function toggleQuestions() {
+                let toggleButton = document.getElementById('quizNightToggleButton');
+                displayQuestions = toggleButton.checked ? 20 : 50;
+
+                let questions = document.getElementsByClassName('question');
+                if (displayQuestions === 20) {
+                    for (var i = 0; i < 30; i++) {
+                        questions[i].style.display = 'none';
+                    }
+                } else {
+                    for (var i = 0; i < 50; i++) {
+                        questions[i].style.display = 'block';
+                    }
+                }
+            }
+
+            function toggleAccordion() {
+                this.classList.toggle('active');
+                var panel = this.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function togglePanel() {
+                this.classList.toggle('reveal');
+                var panel = this.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function disableButton(buttonNum, quiz, pairNum) {
+                var buttonPair = buttons[quiz * 50 + pairNum];
+                var correctButton = buttonPair.correct;
+                var incorrectButton = buttonPair.incorrect;
+
+                if (buttonNum === 1) {
+                    correctButton.disabled = true;
+                    correctButton.classList.add('correct');
+                    incorrectButton.disabled = false;
+                    incorrectButton.classList.remove('incorrect');
+                } else if (buttonNum === 2) {
+                    incorrectButton.disabled = true;
+                    incorrectButton.classList.add('incorrect');
+                    correctButton.disabled = false;
+                    correctButton.classList.remove('correct');
+                }
+            }
+
+            function incrementScore(num, quiz, pairNum) {
+                var buttonIndex = quiz * 50 + pairNum;
+                if (num === 1) {
+                    if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+                        scoreCount[quiz]++;
+                        totalCount[quiz]++;
+                        correctClicked[buttonIndex] = true;
+                    } else if (incorrectClicked[buttonIndex]) {
+                        scoreCount[quiz]++;
+                        correctClicked[buttonIndex] = true;
+                    }
+                } else if (num === 2) {
+                    if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+                        totalCount[quiz]++;
+                        incorrectClicked[buttonIndex] = true;
+                    } else if (correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+                        scoreCount[quiz]--;
+                        incorrectClicked[buttonIndex] = true;
+                    } else if (correctClicked[buttonIndex]) {
+                        scoreCount[quiz]--;
+                        incorrectClicked[buttonIndex] = true;
+                    }
+                }
+                for (let i = 0; i < quizzes.length; i++) {
+                    var score = document.getElementById(`scoreCount_${i + 1}`);
+                    var total = document.getElementById(`totalCount_${i + 1}`);
+                    score.innerText = scoreCount[i];
+                    total.innerText = totalCount[i];
+                }
+            }
+
+            function removeDot(quiz, pairNum) {
+                var dot = document.getElementById(`dot_${quiz}_${pairNum}`);
+                dot.classList.add('removed');
+            }
+
+            function initPage() {
+                createTopContainer();
+                createTitle();
+                createQuizContainers();
+                createScore();
+                for (var i = 0; i < quizzes.length; i++) {
+                    for (var j = 0; j < quizzes[i].questions.length; j++) {
+                        var buttonPair = {
+                            correct: document.getElementById(`clickCorrectBtn_${i + 1}_${j + 1}`),
+                            incorrect: document.getElementById(`clickIncorrectBtn_${i + 1}_${j + 1}`),
+                            dot: document.getElementById(`dot_${i + 1}_${j + 1}`)
+                        };
+                        buttons.push(buttonPair);
+                    }
+                }
+            }
+
+            let scoreCount = Array(quizzes.length).fill(0);
+            let totalCount = Array(quizzes.length).fill(0);
+            var buttons = [];
+            var correctClicked = Array(quizzes.length * 50).fill(false);
+            var incorrectClicked = Array(quizzes.length * 50).fill(false);
+            var dotStatus = Array(quizzes.length * 50).fill('block');
+
+            initPage();
+
+            var modal = document.getElementById('infoModal');
+            var btn = document.getElementById('infoBtn');
+            var span = document.getElementsByClassName('close')[0];
+
+            btn.onclick = function () {
+                modal.style.display = 'block';
+            };
+
+            span.onclick = function () {
+                modal.style.display = 'none';
+            };
+
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+        </script>
+    </body>
+</html>
