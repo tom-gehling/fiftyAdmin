@@ -68,24 +68,24 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
                 {{ totalSessions }}
               </div>
             </div>
-
-          </div>
-          <div class="flex justify-between items-center">
-          <div class="mt-4 text-muted-color text-sm">
-            Avg Score: {{ (averageScore * 50) | number:'1.2-2' }}
-          </div>
-          <button
-              class="flex items-center justify-center text-fifty-neon-green hover:opacity-80 transition-opacity"
+            <button
+              class="flex items-center justify-center hover:opacity-80 transition-opacity self-start"
               (click)="refreshStats()"
               [disabled]="refreshing"
               title="Refresh Stats"
+              style="color: var(--fifty-neon-green)"
             >
               <i
                 class="pi text-xl"
+                style="font-size: 1.5rem;"
                 [ngClass]="refreshing ? 'pi-spin pi-spinner' : 'pi-refresh'"
               ></i>
             </button>
-</div>
+
+          </div>
+          <div class="mt-4 text-muted-color text-sm">
+            Avg Score: {{ (averageScore * 50) | number:'1.2-2' }}
+          </div>
         </ng-container>
       </div>
     </div>
