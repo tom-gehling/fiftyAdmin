@@ -52,6 +52,8 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
     this.subscription = this.layoutService.configUpdate$.subscribe(() => this.initChart());
 
     onAuthStateChanged(this.auth, async user => {
+      this.loading = true;
+
       if (!user) {
         this.quizScores = [];
         this.siteAverages = [];
@@ -60,33 +62,52 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
         return;
       }
 
-      this.loading = true;
+      try {
+        const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
+        if (!results || !results.length) {
+          this.quizScores = [];
+          this.siteAverages = [];
+          this.loading = false;
+          this.initChart();
+          return;
+        }
 
-      // Load user quiz results and site-wide averages
-      const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
-      const completedResults = results
-        .filter(r => r.status === 'completed')
-        .sort((a, b) => Number(a.quizId) - Number(b.quizId));
+        const completedResults = results
+          .filter(r => r.status === 'completed')
+          .sort((a, b) => Number(a.quizId) - Number(b.quizId));
 
-      this.quizScores = completedResults.map(r => ({
-        quizId: Number(r.quizId),
-        score: r.score ?? null
-      }));
+        if (!completedResults.length) {
+          this.quizScores = [];
+          this.siteAverages = [];
+          this.loading = false;
+          this.initChart();
+          return;
+        }
 
-      // Get site-wide averages for all completed quizzes
-      const statsObservables = this.quizScores.map(q =>
-        this.quizStatsService.getQuizStats(q.quizId.toString())
-      );
+        this.quizScores = completedResults.map(r => ({
+          quizId: Number(r.quizId),
+          score: r.score ?? null
+        }));
 
-      const statsResults = await firstValueFrom(combineLatest(statsObservables));
+        // Load averages for all completed quizzes
+        const statsObservables = this.quizScores.map(q =>
+          this.quizStatsService.getQuizStats(q.quizId.toString())
+        );
 
-      this.siteAverages = statsResults.map((stat, i) => ({
-        quizId: this.quizScores[i].quizId,
-        avgScore: stat?.averageScore ?? null
-      }));
+        const statsResults = await firstValueFrom(combineLatest(statsObservables));
 
-      this.loading = false;
-      this.initChart();
+        this.siteAverages = statsResults.map((stat, i) => ({
+          quizId: this.quizScores[i].quizId,
+          avgScore: stat?.averageScore ?? null
+        }));
+      } catch (err) {
+        console.error('Error loading quiz history', err);
+        this.quizScores = [];
+        this.siteAverages = [];
+      } finally {
+        this.loading = false;
+        this.initChart();
+      }
     });
   }
 
@@ -95,7 +116,6 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
     const textColor = documentStyle.getPropertyValue('--text-color');
     const borderColor = documentStyle.getPropertyValue('--surface-border');
     const primaryColor = documentStyle.getPropertyValue('--p-primary-500');
-    const secondaryColor = documentStyle.getPropertyValue('--p-secondary-500');
 
     const labels = this.quizScores.map(q => `#${q.quizId}`);
     const userData = this.quizScores.map(q => q.score);

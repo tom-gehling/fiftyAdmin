@@ -62,4 +62,12 @@ export class QuizStatsService {
       return { averageScore: 0, totalSessions: 0 };
     }
   }
+
+   /** Fetch aggregated stats (from your new Express route) */
+  async getQuizAggregates(quizId: string): Promise<any> {
+    const url = `${this.baseUrl}/quizAggregates/${quizId}`;
+    return await firstValueFrom(this.http.get<any>(url));
+  }
 }
+
+

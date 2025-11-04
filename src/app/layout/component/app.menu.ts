@@ -44,6 +44,7 @@ export class AppMenu {
         const adminMenu: MenuItem = {
             label: 'Admin',
             items: [
+                { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/members/admin/stats'] },
                 { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/members/admin/quizzes'] },
                 { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/members/admin/quizTags'] }
             ]
