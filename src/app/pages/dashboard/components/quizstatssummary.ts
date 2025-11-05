@@ -119,9 +119,32 @@ declare const google: any;
     ></p-select>
   </div>
   <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
-    <p-chart type="line" [data]="hourlyChartData" [options]="hourlyChartOptions" class="w-full h-72 md:h-96"></p-chart>
+    <p-chart 
+      type="bar"
+      [data]="hourlyChartData" 
+      [options]="hourlyChartOptions" 
+      class="w-full h-72 md:h-96"
+    ></p-chart>
   </ng-container>
 </div>
+
+<!-- QUESTION PERFORMANCE CHART -->
+<div class="card mb-4 p-4 fiftyBorder w-full">
+  <div class="flex justify-between items-center mb-2">
+    <span class="block text-surface-0 font-medium text-xl">Question Performance</span>
+  </div>
+
+  <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
+    <p-chart
+      type="line"
+      [data]="questionChartData"
+      [options]="questionChartOptions"
+      class="w-full h-72 md:h-96"
+    ></p-chart>
+  </ng-container>
+</div>
+
+
 
 <!-- EASIEST HARDEST QUESTIONS -->
 <div class="card mb-4 p-4 fiftyBorder w-full">
@@ -277,27 +300,40 @@ export class QuizStatsSummaryComponent implements OnInit {
     setTimeout(() => {
       // Question Accuracy Chart
       this.questionChartData = {
-        labels: this.stats.questionAccuracy.map((_: any, i: number) => `Q${i + 1}`),
-        datasets: [{
-          label: 'Correct Rate (%)',
-          data: this.stats.questionAccuracy.map((q: any) => q.correctRate * 100),
-          backgroundColor: this.documentStyle.getPropertyValue('--p-primary-300'),
-          barThickness: 32,
-          borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
-          borderSkipped: false
-        }]
-      };
+  labels: this.stats.questionAccuracy.map((_: any, i: number) => `Q${i + 1}`),
+  datasets: [{
+    label: 'Correct Rate (%)',
+    data: this.stats.questionAccuracy.map((q: any) => q.correctRate * 100),
+    borderColor: this.documentStyle.getPropertyValue('--p-primary-300'),
+    tension: 0.35,
+    pointRadius: 3,
+    pointBackgroundColor: this.documentStyle.getPropertyValue('--p-primary-300'),
+    fill: true
+  }]
+};
+
       this.questionChartOptions = {
-        maintainAspectRatio: false,
-        aspectRatio: 0.8,
-        beginAtZero: true, 
-        max: 100, // <--- force 0-100
-        plugins: { legend: { labels: { color: this.textColor } } },
-        scales: {
-          x: { stacked: true, ticks: { color: this.textMutedColor }, grid: { color: 'transparent', borderColor: 'transparent' } },
-          y: { stacked: true, title: { display: true, text: 'Percentage' }, beginAtZero: true, ticks: { color: this.textMutedColor }, grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false } }
-        }
-      };
+  maintainAspectRatio: false,
+  aspectRatio: 0.8,
+  plugins: { 
+    legend: { labels: { color: this.textColor } },
+    tooltip: { mode: 'index', intersect: false }
+  },
+  scales: {
+    x: {
+      ticks: { color: this.textMutedColor },
+      grid: { color: 'transparent', borderColor: 'transparent' }
+    },
+    y: {
+      max: 100,
+      beginAtZero: true,
+      title: { display: true, text: 'Percentage', color: this.textMutedColor },
+      ticks: { color: this.textMutedColor },
+      grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
+    }
+  }
+};
+
 
       if (this.stats.completedCount > 0) {
         const questionMap = new Map(
@@ -356,58 +392,57 @@ export class QuizStatsSummaryComponent implements OnInit {
   }
 
   this.hourlyChartData = {
-    labels: hourlyLabels,
-    datasets: [{
-      label: 'Submissions',
-      data: hourlyCounts,
-      borderColor: this.fiftyNeonGreen,
-      tension: 0.3,
-      fill: false
-    }]
-  };
+  labels: hourlyLabels,
+  datasets: [{
+    label: 'Submissions',
+    data: hourlyCounts,
+    backgroundColor: this.fiftyNeonGreen,
+    borderRadius: 4,
+    borderSkipped: false
+  }]
+};
+
 
   this.hourlyChartOptions = {
-    responsive: true,
+  responsive: true,
+  plugins: {
+    legend: { labels: { color: this.textColor } },
     tooltip: {
-  callbacks: {
-    title: (tooltipItems: TooltipItem<'line'>[]) => {
-      const index = tooltipItems[0].dataIndex;
-      const label = this.hourlyChartData.labels[index];
-      const d = new Date(label);
-      return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.getHours() % 12 || 12} `;
-    },
-    label: (tooltipItem: TooltipItem<'line'>) => {
-      return `Submissions: ${tooltipItem.formattedValue}`;
-    }
-  }
-},
-
-    scales: {
-      y: {
-        beginAtZero: true,
-        title: { display: true, text: 'Count', color: this.textMutedColor },
-        ticks: { color: this.textMutedColor },
-        grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
-      },
-      x: {
-        title: { display: true, text: 'Hour', color: this.textMutedColor },
-        ticks: {
-          color: this.textMutedColor,
-          callback: (_value: any, index: number) => {
-            // Only show every 5th label
-            if (index % 2 !== 0) return '';
-            const d = new Date(this.hourlyChartData.labels[index]);
-            // Format as dd/MM hh a
-            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.getHours() % 12 || 12} ${d.getHours() >= 12 ? 'PM' : 'AM'}`;
-          }
+      callbacks: {
+        title: (tooltipItems: TooltipItem<'bar'>[]) => {
+          const index = tooltipItems[0].dataIndex;
+          const label = this.hourlyChartData.labels[index];
+          const d = new Date(label);
+          return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.getHours() % 12 || 12}${d.getHours() >= 12 ? 'PM' : 'AM'}`;
         },
-        grid: { color: 'transparent', borderColor: 'transparent' }
+        label: (tooltipItem: TooltipItem<'bar'>) => `Submissions: ${tooltipItem.formattedValue}`
       }
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      title: { display: true, text: 'Count', color: this.textMutedColor },
+      ticks: { color: this.textMutedColor },
+      grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
     },
-    maintainAspectRatio: false,
-    aspectRatio: 0.8
-  };
-}
+    x: {
+      title: { display: true, text: 'Hour', color: this.textMutedColor },
+      ticks: {
+        color: this.textMutedColor,
+        callback: (_value: any, index: number) => {
+          if (index % 2 !== 0) return '';
+          const d = new Date(this.hourlyChartData.labels[index]);
+          return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.getHours() % 12 || 12}${d.getHours() >= 12 ? 'PM' : 'AM'}`;
+        }
+      },
+      grid: { color: 'transparent', borderColor: 'transparent' }
+    }
+  },
+  maintainAspectRatio: false,
+  aspectRatio: 0.8
+};
+  }
 
   onHourRangeChange() {
     if (!this.stats) return;
