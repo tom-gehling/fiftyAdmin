@@ -15,6 +15,7 @@ import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 // Fifty+ pages
 import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
+import { StatsDashboard } from '@/pages/dashboard/statsDashboard';
 
 export const appRoutes: Routes = [
   // Public area
@@ -53,6 +54,7 @@ export const appRoutes: Routes = [
         path: 'members/admin',
         canActivate: [AdminGuard],
         children: [
+          { path: 'stats', component: StatsDashboard },
           { path: 'quizzes', component: QuizTableComponent },
           { path: 'quizzes/:id', component: QuizDetailComponent },
           { path: 'quizTags', component: QuizTagsComponent },
