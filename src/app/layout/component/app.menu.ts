@@ -46,7 +46,8 @@ export class AppMenu {
             items: [
                 { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/members/admin/stats'] },
                 { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/members/admin/quizzes'] },
-                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/members/admin/quizTags'] }
+                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/members/admin/quizTags'] },
+                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/members/admin/venues'] }
             ]
         };
 

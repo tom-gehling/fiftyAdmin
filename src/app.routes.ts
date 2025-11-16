@@ -16,6 +16,7 @@ import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
 import { StatsDashboard } from '@/pages/dashboard/statsDashboard';
+import { VenuesComponent } from '@/pages/admin/venues/venues';
 
 export const appRoutes: Routes = [
   // Public area
@@ -58,6 +59,7 @@ export const appRoutes: Routes = [
           { path: 'quizzes', component: QuizTableComponent },
           { path: 'quizzes/:id', component: QuizDetailComponent },
           { path: 'quizTags', component: QuizTagsComponent },
+          { path: 'venues', component: VenuesComponent }
         ]
       }
     ]
