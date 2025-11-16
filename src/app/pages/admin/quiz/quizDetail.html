@@ -8,11 +8,16 @@
     <div class="flex items-center justify-between mb-4">
         <div class="text-2xl font-semibold">Quiz: {{ form.get('quizType')?.value == QuizTypeEnum.Weekly ? (form.get("quizId")?.value || "") : (form.get("quizTitle")?.value || "") }}</div>
         <div class="flex gap-2">
-            <div class="hidden lg:flex">
+            <p-menu #moreMenu [model]="extraMenuItems" popup="true"></p-menu>
+            <button pButton type="button" label="Preview" class="p-button-outlined" (click)="previewQuiz()"></button>
+            <div class="hidden lg:flex flex gap-2">
                 <button pButton type="button" label="Import" class="p-button-outlined" (click)="openImportDialog()"></button>
             </div>
             <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="form.invalid" (click)="saveQuiz()"></button>
             <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancel()"></button>
+            <div class="hidden lg:flex flex gap-2">
+                <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button p-button-text bg-surface-0 dark:bg-surface-800 hover:bg-surface-100" (click)="moreMenu.toggle($event)"></button>
+            </div>
         </div>
     </div>
 
