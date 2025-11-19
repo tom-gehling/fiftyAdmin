@@ -1,8 +1,10 @@
 import { onRequest } from 'firebase-functions/v2/https';
+import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import { FieldValue } from "firebase-admin/firestore";
 
 const luxon = require('luxon')
 
@@ -189,6 +191,7 @@ app.post('/api/recordQuizSession', async (req: Request, res: Response): Promise<
 app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void> => {
   try {
     const { quizId, userId } = req.body;
+
     if (!quizId) {
       res.status(400).json({ message: 'quizId is required' });
       return;
@@ -196,9 +199,46 @@ app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void>
 
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
 
-    const docRef = await db.collection('quizResults').add({
+    let dbUserId: string | null = null;
+
+    if (userId) {
+      const usersCol = db.collection('users');
+      const existingSnap = await usersCol
+        .where('externalQuizId', '==', userId)
+        .limit(1)
+        .get();
+
+      if (!existingSnap.empty) {
+        // User already exists → reuse it
+        dbUserId = existingSnap.docs[0].id;
+      } else {
+        // No user → create placeholder
+        const placeholderRef = await usersCol.add({
+          createdAt: new Date(),
+          isAnon: true,
+          isMember: false,
+          isAdmin: false,
+          loginCount: 1,
+          followers: [],
+          following: [],
+          externalQuizId: userId,
+          email: null,
+          displayName: null,
+          photoUrl: null,
+          lastLoginAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // Use doc ID as uid
+        await placeholderRef.update({ uid: placeholderRef.id });
+        dbUserId = placeholderRef.id;
+      }
+    }
+
+    // Create the quizResult session
+    const quizResultRef = await db.collection('quizResults').add({
       quizId,
-      userId: userId || null,
+      userId: dbUserId,  // null if no userId provided
       status: 'in_progress',
       startedAt: new Date(),
       completedAt: null,
@@ -210,12 +250,13 @@ app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void>
       userAgent: req.get('user-agent') || 'unknown'
     });
 
-    res.status(200).json({ sessionId: docRef.id });
+    res.status(200).json({ sessionId: quizResultRef.id });
   } catch (error) {
     console.error('Error starting quiz:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 // ===============================
 // /api/logQuizFinish
@@ -344,6 +385,297 @@ app.get('/api/quizAggregates/:quizId', async (req: Request, res: Response): Prom
   } catch (error) {
     console.error('Error generating quiz aggregates:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+// ---- Types for aggregates ----
+// interface QuestionStat {
+//   correct: number;
+//   total: number;
+// }
+
+
+export const quizStarted = onDocumentCreated(
+  "quizResults/{sessionId}",
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+
+    const quizId = data.quizId;
+    if (!quizId) return;
+
+    // Increment inProgressCount
+    const aggRef = db.collection("quizAggregates").doc(String(quizId));
+    const aggDoc = await aggRef.get();
+    if (!aggDoc.exists) {
+      await aggRef.set({
+        inProgressCount: 0,
+        completedCount: 0,
+        abandonedCount: 0,
+        totalScore: 0,
+        totalTime: 0,
+        hourlyCounts: {},
+        locationCounts: {},
+        questionStats: {},
+        sequentialQuestionTimes: [],
+        maxScore: 0,
+        minScore: 0,
+        validStatsCount: 0,
+        updatedAt: new Date()
+      });
+
+    }
+
+    // Now increment
+    await aggRef.update({
+      inProgressCount: FieldValue.increment(1),
+  updatedAt: new Date(),
+    });
+
+
+    console.log(`⬆️ In-progress incremented for quiz ${quizId}`);
+  }
+);
+
+// ---- Firestore trigger ----
+export const quizFinished = onDocumentUpdated(
+  "quizResults/{sessionId}",
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after) return;
+    if (before?.completedAt) return; // Only process newly completed quizzes
+
+    const quizId = after.quizId;
+    if (!quizId) return;
+
+    const aggRef = db.collection("quizAggregates").doc(String(quizId));
+
+    // Load existing aggregate (or initialize)
+    const aggDoc = await aggRef.get();
+    const agg: any = aggDoc.exists
+      ? aggDoc.data()
+      : {
+          completedCount: 0,
+          inProgressCount: 0,
+          abandonedCount: 0,
+          totalScore: 0,
+          totalTime: 0,
+          hourlyCounts: {},
+          locationCounts: {},
+          questionStats: {},
+          sequentialQuestionTimes: [],
+          maxScore: Number.NEGATIVE_INFINITY,
+          minScore: Number.POSITIVE_INFINITY,
+          validStatsCount: 0,
+        };
+
+    const data = after;
+    const startedAt = data.startedAt?.toDate?.() ?? new Date(data.startedAt);
+    const completedAt = data.completedAt?.toDate?.() ?? new Date(data.completedAt);
+    const answers = data.answers || [];
+    const score = data.score ?? 0;
+
+    // --- Update raw aggregates ---
+    agg.completedCount = (agg.completedCount || 0) + 1;
+    agg.inProgressCount = (agg.inProgressCount || 0) - 1;
+    agg.totalScore = (agg.totalScore || 0) + score;
+
+    let duration = (completedAt.getTime() - startedAt.getTime()) / 1000;
+    if (duration > 3 * 60 * 60) duration = 3 * 60 * 60;
+    agg.totalTime = (agg.totalTime || 0) + duration;
+
+    // Hourly counts
+    const startedAdelaide = luxon.DateTime.fromJSDate(startedAt).setZone("Australia/Adelaide");
+    const hourKey = startedAdelaide.toFormat("yyyy-MM-dd HH");
+    agg.hourlyCounts = agg.hourlyCounts || {};
+    agg.hourlyCounts[hourKey] = (agg.hourlyCounts[hourKey] || 0) + 1;
+
+    // Location counts placeholder
+    const locKey = "Unknown - Unknown";
+    agg.locationCounts = agg.locationCounts || {};
+    agg.locationCounts[locKey] = (agg.locationCounts[locKey] || 0) + 1;
+
+    // Question stats
+    agg.questionStats = agg.questionStats || {};
+    for (const ans of answers) {
+      const qid = String(ans.questionId);
+      if (!agg.questionStats[qid]) agg.questionStats[qid] = { correct: 0, total: 0 };
+      agg.questionStats[qid].total++;
+      if (ans.correct) agg.questionStats[qid].correct++;
+    }
+
+    // Sequential question times
+    const sorted = [...answers]
+      .filter((a: any) => a.timestamp)
+      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    agg.sequentialQuestionTimes = agg.sequentialQuestionTimes || [];
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = new Date(sorted[i - 1].timestamp).getTime();
+      const curr = new Date(sorted[i].timestamp).getTime();
+      const diffSec = (curr - prev) / 1000;
+      if (diffSec > 0 && diffSec <= 10 * 60) {
+        agg.sequentialQuestionTimes.push({
+          questionId: String(sorted[i - 1].questionId),
+          diffSec,
+        });
+      }
+    }
+
+    // Min/max scores
+    agg.maxScore = agg.maxScore !== undefined ? Math.max(agg.maxScore, score) : score;
+    agg.minScore = agg.minScore !== undefined ? Math.min(agg.minScore, score) : score;
+
+    // Valid stats count
+    agg.validStatsCount = (agg.validStatsCount || 0) + 1;
+
+    // --- Derived metrics ---
+    // Average time between questions
+    agg.avgTimeBetweenQuestions = agg.sequentialQuestionTimes.length
+      ? agg.sequentialQuestionTimes.reduce(
+          (a: number, b: { questionId: string; diffSec: number }) => a + b.diffSec,
+          0
+        ) / agg.sequentialQuestionTimes.length
+      : 0;
+
+    // Average time between by question
+    const perQuestion: Record<string, { total: number; count: number }> = {};
+    for (const entry of agg.sequentialQuestionTimes) {
+      if (!perQuestion[entry.questionId]) perQuestion[entry.questionId] = { total: 0, count: 0 };
+      perQuestion[entry.questionId].total += entry.diffSec;
+      perQuestion[entry.questionId].count++;
+    }
+    const avgTimeBetweenByQuestion = Object.entries(perQuestion).map(
+      ([qid, { total, count }]) => ({
+        questionId: qid,
+        avgDiffSec: total / count,
+      })
+    );
+
+    // Question accuracy
+    const questionAccuracy = Object.entries(agg.questionStats as Record<string, { total: number; correct: number }>).map(
+      ([qid, stat]) => ({
+        questionId: qid,
+        totalAttempts: stat.total,
+        correctCount: stat.correct,
+        correctRate: stat.total > 0 ? stat.correct / stat.total : 0,
+      })
+    );
+
+    // Hardest/easiest questions
+    const hardestQuestions = [...questionAccuracy]
+      .sort((a, b) => a.correctRate - b.correctRate)
+      .slice(0, 5);
+    const easiestQuestions = [...questionAccuracy]
+      .sort((a, b) => b.correctRate - a.correctRate)
+      .slice(0, 5);
+
+    // Average score & time
+    const averageScore = agg.validStatsCount > 0 ? agg.totalScore / agg.validStatsCount : 0;
+    const averageTime = agg.validStatsCount > 0 ? agg.totalTime / agg.validStatsCount : 0;
+
+    // --- Merge into Firestore ---
+    await aggRef.set(
+      {
+        ...agg,
+        averageScore,
+        averageTime,
+        questionAccuracy,
+        hardestQuestions,
+        easiestQuestions,
+        avgTimeBetweenByQuestion,
+        updatedAt: new Date(),
+      },
+      { merge: true }
+    );
+
+    console.log(`✅ Aggregates incrementally updated for quiz ${quizId}`);
+  }
+);
+
+
+app.post('/api/updateAbandonedCount', async (req: Request, res: Response) => {
+  try {
+    const { quizId } = req.body;
+
+    if (!quizId) {
+      res.status(400).json({ message: 'quizId is required.' });
+      return;
+    }
+
+    const now = new Date();
+    const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+
+    // Query in-progress results older than 3 hours
+    const snapshot = await db.collection('quizResults')
+      .where('quizId', '==', quizId)
+      .where('status', '==', 'in_progress')
+      .where('startedAt', '<=', threeHoursAgo)
+      .get();
+
+    if (snapshot.empty) {
+      res.status(200).json({ message: `No abandoned sessions for quiz ${quizId}.`, abandonedCount: 0 });
+      return;
+    }
+
+    const abandonedCount = snapshot.size;
+
+    const aggRef = db.collection('quizAggregates').doc(String(quizId));
+
+    // Initialize if needed
+    const aggDoc = await aggRef.get();
+    if (aggDoc.exists) {
+      // Increment abandonedCount
+      await aggRef.update({
+        abandonedCount: admin.firestore.FieldValue.increment(abandonedCount),
+        updatedAt: new Date()
+      });
+     
+    }
+
+    res.status(200).json({
+      message: `Updated abandoned count for quiz ${quizId}.`,
+      abandonedCount
+    });
+
+  } catch (err) {
+    console.error('Error updating abandoned count:', err);
+    res.status(500).json({ message: 'Internal server error', error: err });
+  }
+});
+
+
+app.post('/api/updateUserEmail', async (req: Request, res: Response) => {
+  try {
+    const { externalQuizId, email } = req.body;
+
+    if (!externalQuizId || !email) {
+      res.status(400).json({ message: 'externalQuizId and email are required.' });
+      return;
+    }
+
+    // Find the quizResult associated with the externalQuizId
+    const snapshot = await db.collection('users')
+      .where('externalQuizId', '==', externalQuizId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      res.status(404).json({ message: `No user found for externalQuizId ${externalQuizId}.` });
+      return;
+    }
+
+    const userDoc = snapshot.docs[0];
+      await userDoc.ref.update({
+        email,
+        updatedAt: new Date()
+      });
+
+    res.status(200).json({ message: `User ${externalQuizId} updated with email ${email}.` });
+
+  } catch (err) {
+    console.error('Error updating user email:', err);
+    res.status(500).json({ message: 'Internal server error', error: err });
   }
 });
 
