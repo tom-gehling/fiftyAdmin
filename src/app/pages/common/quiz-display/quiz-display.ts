@@ -4,12 +4,12 @@ import { firstValueFrom } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import { Quiz } from '@/shared/models/quiz.model';
-import { QuizAnswer } from '@/shared/models/quizResult.model';
-import { QuizzesService } from '@/shared/services/quizzes.service';
-import { AuthService } from '@/shared/services/auth.service';
-import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
+import { QuizzesService } from '@/shared/services/quizzes.service';
+import { QuizResultsService } from '@/shared/services/quiz-result.service';
+import { AuthService } from '@/shared/services/auth.service';
 import { ActivatedRoute } from '@angular/router';
+import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-quiz-display',
@@ -18,49 +18,85 @@ import { ActivatedRoute } from '@angular/router';
   template: `
     <!-- Loading Spinner -->
     <div *ngIf="loading" class="flex items-center justify-center h-96">
-      <p-progressSpinner styleClass="w-16 h-16" strokeWidth="1" animationDuration=".5s"></p-progressSpinner>
+      <p-progressSpinner class="w-16 h-16" strokeWidth="1" animationDuration=".5s"></p-progressSpinner>
     </div>
 
     <!-- Quiz Container -->
     <div *ngIf="!loading && quiz" class="quizContainer">
+
+      <!-- Locked message -->
       <ng-container *ngIf="locked">
-        <p class="text-center text-gray-300 text-lg font-bold mb-4" >
+        <p class="text-center text-gray-300 text-lg font-bold mb-4">
           Upgrade to Fifty+ and access the full quiz!
         </p>
       </ng-container>
 
+      <!-- Title -->
       <div class="quizTitle">{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}</div>
 
-      <ng-container *ngFor="let question of quiz.questions; let i = index">
-  <div class="question" *ngIf="!locked || i < 3">
-    <!-- Question button -->
-    <button class="accordionButton" [class.active]="questionClicked[i]"  (click)="toggleQuestion(i)">
-      <span class="dot" [ngClass]="{'removed': answers[i]?.correct !== null}"></span>
-      <span><b>Q{{ i + 1 }}. </b> <span [innerHTML]="question.question"></span></span>
-    </button>
+      <!-- Questions -->
+      <ng-container *ngFor="let q of quiz.questions; let i = index">
+        <div class="question" *ngIf="!locked || i < 3">
 
-    <!-- Click for answer button -->
-    <div *ngIf="questionClicked[i]" class="flex justify-center my-2">
-      <button class="genericButton reveal" (click)="toggleAnswer(i)">Click for answer</button>
-    </div>
+          <!-- Question button -->
+          <button
+            class="accordionButton"
+            [class.active]="questionClicked[i]"
+            (click)="toggleQuestion(i)"
+          >
+            <span class="dot" [ngClass]="{ removed: answers[i]?.correct !== null }"></span>
+            <span class="questionText"><b>Q{{ i + 1 }}. </b> <span [innerHTML]="q.question"></span></span>
+          </button>
 
-    <!-- Answer panel -->
-    <div *ngIf="answerRevealed[i]" class="panel answer">
-      <p [innerHTML]="question.answer"></p>
-      <div class="flex gap-2 w-full justify-center" *ngIf="!locked">
-        <button class="genericButton" [ngClass]="{'correct': answers[i]?.correct === true}" (click)="markAnswer(i, true)">Correct</button>
-        <button class="genericButton" [ngClass]="{'incorrect': answers[i]?.correct === false}" (click)="markAnswer(i, false)">Incorrect</button>
-      </div>
-    </div>
-  </div>
-</ng-container>
+          <!-- "Click for answer" -->
+          <div *ngIf="questionClicked[i]" class="flex justify-center my-2">
+            <button class="genericButton reveal" (click)="toggleAnswer(i)">
+              Click for answer
+            </button>
+          </div>
 
+          <!-- Answer & buttons -->
+          <div *ngIf="answerRevealed[i]" class="panel answer">
+            <p [innerHTML]="q.answer"></p>
 
-      <!-- Score -->
-      <div *ngIf="!locked" class="score">Score: {{ score }} / {{ answeredQuestions }}</div>
+            <ng-container *ngIf="!locked">
+              <div class="flex gap-2 w-full justify-center">
+                <button
+                  class="genericButton"
+                  [ngClass]="{ correct: answers[i]?.correct === true }"
+                  (click)="markAnswer(i, true)"
+                >
+                  Correct
+                </button>
+                <button
+                  class="genericButton"
+                  [ngClass]="{ incorrect: answers[i]?.correct === false }"
+                  (click)="markAnswer(i, false)"
+                >
+                  Incorrect
+                </button>
+              </div>
+            </ng-container>
+          </div>
 
-      <!-- Reset -->
-      <button *ngIf="!locked && isQuizCompleted" class="genericButton" (click)="resetQuiz()">Reset Quiz</button>
+        </div>
+      </ng-container>
+
+      <!-- Score & Reset -->
+      <ng-container *ngIf="!locked && !previewMode">
+        <div class="score">
+          Score: {{ score }} / {{ answeredQuestions }}
+        </div>
+
+        <button
+          *ngIf="isQuizCompleted"
+          class="genericButton"
+          (click)="resetQuiz()"
+        >
+          Reset Quiz
+        </button>
+      </ng-container>
+
     </div>
   `,
   styles: `
@@ -79,78 +115,73 @@ import { ActivatedRoute } from '@angular/router';
 
     .quizContainer {
       width: 100%;
-      font-family: var(--font);
       padding: 20px;
       border-radius: 15px;
+      font-family: var(--font);
       background-color: var(--secondary);
       color: var(--primary);
     }
 
     .quizTitle {
+      text-align: center;
+      padding: 10px;
       font-size: 30px;
       font-weight: 600;
       color: var(--primary);
-      text-align: center;
-      padding: 10px;
     }
 
     .accordionButton {
-      color: var(--primary);
-      background-color: var(--secondary);
-      border: none;
       width: 100%;
-      font-size: var(--header);
-      font-weight: 400;
+      border: none;
       padding: 25px;
       margin-bottom: 20px;
-      line-height: 130%;
+      font-size: var(--header);
+      font-weight: 400;
       text-align: center;
+      line-height: 130%;
+      color: var(--primary);
+      background-color: var(--secondary);
       transition: var(--transition);
     }
 
     .accordionButton.active {
-      color: var(--secondary);
       background-color: var(--primary);
+      color: var(--secondary);
     }
 
     .genericButton {
-      font-family: var(--font);
-      font-weight: 600;
-      color: var(--secondary);
-      background-color: var(--primary);
-      border: 3px solid var(--primary);
-      border-radius: 15px;
-      font-size: var(--normal);
-      padding: 15px;
       margin: 5px;
+      padding: 15px;
+      font-size: var(--normal);
+      font-weight: 600;
+      border-radius: 15px;
+      border: 3px solid var(--primary);
+      background-color: var(--primary);
+      color: var(--secondary);
       transition: var(--transition);
+      font-family: var(--font);
     }
 
-    .genericButton.correct {
-      color: var(--primary);
-      background-color: var(--secondary);
-    }
-
+    .genericButton.correct,
     .genericButton.incorrect {
-      color: var(--primary);
       background-color: var(--secondary);
+      color: var(--primary);
     }
 
     .dot {
-      height: 10px;
       width: 10px;
-      background-color: var(--tertiary);
-      border-radius: 50%;
-      display: inline-block;
+      height: 10px;
       margin-right: 10px;
+      display: inline-block;
+      border-radius: 50%;
+      background-color: var(--tertiary);
     }
 
     .panel {
-      display: block;
-      font-size: var(--normal);
       padding: 15px 0;
       width: auto;
       text-align: center;
+      font-size: var(--normal);
     }
 
     .panel.answer {
@@ -159,47 +190,64 @@ import { ActivatedRoute } from '@angular/router';
     }
 
     .score {
-      color: var(--primary);
+      margin-top: 20px;
       text-align: center;
       font-size: var(--header);
       font-weight: 800;
-      margin-top: 20px;
+      color: var(--primary);
     }
   `
 })
 export class QuizDisplayComponent implements OnInit, OnChanges {
+
   @Input() quizId?: string;
-  @Input() locked: boolean = false; // NEW INPUT
-  quiz?: Quiz;
+  @Input() quiz?: Quiz;          // for preview mode
+  @Input() locked = false;       // restricts to 3 questions
+  @Input() previewMode = false;  // no Firestore, no results
 
-  // [ ]: load quiz by active route
+  loading = true;
 
-  // UI state
+  // Quiz state
   score = 0;
   totalQuestions = 0;
+
   answers: { correct: boolean | null }[] = [];
   questionClicked: boolean[] = [];
   answerRevealed: boolean[] = [];
 
-  // Firestore tracking
-  resultId?: string;
   userId?: string;
-  loading = true;
+  resultId?: string;
 
   constructor(
     private quizService: QuizzesService,
     private quizResultsService: QuizResultsService,
     private authService: AuthService,
     private elRef: ElementRef,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    public config: DynamicDialogConfig
   ) {}
 
-   async ngOnInit() {
-    // Check for quizId in URL first
-    const routeQuizId = this.route.snapshot.paramMap.get('quizId');
-    if (routeQuizId) {
-      this.quizId = routeQuizId;
+  // ---------------------------------------------
+  // INIT
+  // ---------------------------------------------
+  async ngOnInit() {
+    if (this.config?.data?.quiz) {
+      this.quiz = this.config.data.quiz;
     }
+    this.previewMode = !!this.config?.data?.previewMode;
+    this.locked = !!this.config?.data?.locked;
+
+    if (this.previewMode && this.quiz) {
+      this.loading = false;
+      this.initializeOrResumeQuiz(this.quiz);
+      this.applyThemeColors();
+      return;
+    }
+
+    // quizId may come from route
+    const routeId = this.route.snapshot.paramMap.get('quizId');
+    if (routeId) this.quizId = routeId;
+
     await this.loadQuiz();
   }
 
@@ -209,6 +257,9 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     }
   }
 
+  // ---------------------------------------------
+  // LOAD QUIZ
+  // ---------------------------------------------
   private async loadQuiz() {
     this.loading = true;
     this.quiz = undefined;
@@ -217,17 +268,14 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
       await firstValueFrom(this.authService.initialized$);
       this.userId = this.authService.currentUserId ?? undefined;
 
-      if (!this.quizId) {
-        this.loading = false;
-        return;
-      }
+      if (!this.quizId) return;
 
-      const quizToLoad = await firstValueFrom(this.quizService.getQuizByQuizId(this.quizId));
-      if (quizToLoad) {
-        await this.initializeOrResumeQuiz(quizToLoad);
+      const loaded = await firstValueFrom(this.quizService.getQuizByQuizId(this.quizId));
+      if (loaded) {
+        await this.initializeOrResumeQuiz(loaded);
       }
     } catch (err) {
-      console.error('Error during load', err);
+      console.error('Error during loadQuiz()', err);
     } finally {
       this.loading = false;
     }
@@ -235,49 +283,54 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     this.applyThemeColors();
   }
 
+  // ---------------------------------------------
+  // THEME
+  // ---------------------------------------------
   private applyThemeColors() {
-  if (!this.quiz) return;
+    if (!this.quiz) return;
 
-  const root = this.elRef?.nativeElement as HTMLElement;
-    console.log(this.quiz.theme)
-  if (this.quiz.theme) {
-    root.style.setProperty('--secondary', this.quiz.theme.backgroundColor || '#18181b');
-    root.style.setProperty('--primary', this.quiz.theme.fontColor || '#fbe2df');
-    root.style.setProperty('--tertiary', this.quiz.theme.tertiaryColor || '#4cfbab');
+    const root = this.elRef.nativeElement as HTMLElement;
+
+    if (this.quiz.theme) {
+      root.style.setProperty('--secondary', this.quiz.theme.backgroundColor || '#18181b');
+      root.style.setProperty('--primary', this.quiz.theme.fontColor || '#fbe2df');
+      root.style.setProperty('--tertiary', this.quiz.theme.tertiaryColor || '#4cfbab');
+    }
+
+    // if (this.quiz.quizType === QuizTypeEnum.Weekly) {
+    //   root.style.setProperty('--secondary', '#18181b');
+    //   root.style.setProperty('--primary', '#fbe2df');
+    //   root.style.setProperty('--tertiary', '#4cfbab');
+    // }
   }
-  if (this.quiz.quizType == QuizTypeEnum.Weekly) {
-    root.style.setProperty('--secondary', '#18181b'); // main background
-    root.style.setProperty('--primary', '#fbe2df');   // text
-    root.style.setProperty('--tertiary', '#4cfbab');   // accents
-  } 
-}
 
+  // ---------------------------------------------
+  // SESSION INITIALIZATION
+  // ---------------------------------------------
   private async initializeOrResumeQuiz(quiz: Quiz) {
     this.quiz = quiz;
 
-    // Only first 3 questions if locked
-    const questionsToUse = this.locked ? quiz.questions.slice(0, 3) : quiz.questions;
-    this.totalQuestions = questionsToUse.length;
+    const questions = this.locked ? quiz.questions.slice(0, 3) : quiz.questions;
+    this.totalQuestions = questions.length;
 
-    // Reset local state
     this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
     this.questionClicked = Array.from({ length: this.totalQuestions }, () => false);
     this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
     this.score = 0;
 
-    if (this.locked || !this.userId) return; // Do NOT create result session if locked
+    if (this.locked || !this.userId || this.previewMode) return;
 
-    const results = await firstValueFrom(this.quizResultsService.getUserResults(this.userId));
-    const quizResults = results.filter(r => r.quizId === quiz.quizId.toString());
+    const allResults = await firstValueFrom(this.quizResultsService.getUserResults(this.userId));
+    const quizResults = allResults.filter(r => r.quizId === quiz.quizId.toString());
 
     const inProgress = quizResults.find(r => r.status === 'in_progress');
     if (inProgress) {
       this.resultId = inProgress.resultId;
       inProgress.answers.forEach(a => {
-        const idx = questionsToUse.findIndex(q => q.questionId === a.questionId);
-        if (idx > -1) this.answers[idx] = { correct: a.correct ?? null };
+        const idx = questions.findIndex(q => q.questionId === a.questionId);
+        if (idx !== -1) this.answers[idx] = { correct: a.correct ?? null };
       });
-      this.score = this.answers.filter(a => a.correct === true).length;
+      this.score = this.answers.filter(a => a.correct).length;
       return;
     }
 
@@ -288,73 +341,88 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     if (completed) {
       this.resultId = completed.resultId;
       completed.answers.forEach(a => {
-        const idx = questionsToUse.findIndex(q => q.questionId === a.questionId);
-        if (idx > -1) this.answers[idx] = { correct: a.correct ?? null };
+        const idx = questions.findIndex(q => q.questionId === a.questionId);
+        if (idx !== -1) this.answers[idx] = { correct: a.correct ?? null };
       });
-      this.score = this.answers.filter(a => a.correct === true).length;
+      this.score = this.answers.filter(a => a.correct).length;
       return;
     }
 
-    // Only create a new result if not locked
     this.resultId = await this.quizResultsService.createResult(
       quiz.quizId.toString(),
-      this.userId!,
+      this.userId,
       this.totalQuestions
     );
   }
 
-  toggleQuestion(index: number) { this.questionClicked[index] = !this.questionClicked[index]; }
-  toggleAnswer(index: number) { this.answerRevealed[index] = !this.answerRevealed[index]; }
-  get isQuizCompleted(): boolean { return this.answers.length > 0 && this.answers.every(a => a.correct !== null); }
-  
+  // ---------------------------------------------
+  // UI HELPERS
+  // ---------------------------------------------
+  toggleQuestion(i: number) {
+    this.questionClicked[i] = !this.questionClicked[i];
+  }
+
+  toggleAnswer(i: number) {
+    this.answerRevealed[i] = !this.answerRevealed[i];
+  }
+
+  get isQuizCompleted(): boolean {
+    return this.answers.every(a => a.correct !== null);
+  }
+
   get answeredQuestions(): number {
     return this.answers.filter(a => a.correct !== null).length;
   }
 
+  // ---------------------------------------------
+  // RESET
+  // ---------------------------------------------
   async resetQuiz() {
     if (!this.quiz || !this.userId || this.locked) return;
+
     try {
       this.resultId = await this.quizResultsService.createResult(
         this.quiz.quizId.toString(),
         this.userId,
         this.totalQuestions
       );
-      this.score = 0;
+
       this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
       this.questionClicked = Array.from({ length: this.totalQuestions }, () => false);
       this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
+      this.score = 0;
+
     } catch (err) {
       console.error('Failed to reset quiz', err);
     }
   }
 
-  async markAnswer(index: number, correct: boolean) {
-    if (!this.quiz || this.locked) return;
+  // ---------------------------------------------
+  // MARK ANSWER
+  // ---------------------------------------------
+  async markAnswer(i: number, correct: boolean) {
+    if (!this.quiz || this.locked || this.previewMode) return;
 
-    const previous = this.answers[index]?.correct ?? null;
+    const previous = this.answers[i].correct;
 
-    if (previous === true && correct === false) {
-      this.score = Math.max(0, this.score - 1);
-    } else if ((previous === null || previous === false) && correct === true) {
-      this.score++;
-    }
+    if (previous === true && !correct) this.score--;
+    else if ((previous === null || previous === false) && correct) this.score++;
 
-    this.answers[index] = { correct };
+    this.answers[i].correct = correct;
 
     if (this.resultId && this.userId) {
-      const answer = {
-        questionId: this.quiz.questions[index].questionId,
-        correct,
-        clickedAt: new Date()
-      };
       try {
-        await this.quizResultsService.addAnswer(this.resultId, answer);
+        await this.quizResultsService.addAnswer(this.resultId, {
+          questionId: this.quiz.questions[i].questionId,
+          correct,
+          clickedAt: new Date()
+        });
       } catch (err) {
         console.error('Failed to persist answer', err);
       }
     }
 
-    if (this.answers.every(a => a.correct !== null) && this.resultId) {
+    if (this.isQuizCompleted && this.resultId) {
       try {
         await this.quizResultsService.completeResult(this.resultId);
       } catch (err) {

@@ -39,6 +39,7 @@ import { MenuItem } from 'primeng/api';
 import { TextareaModule } from 'primeng/textarea';
 import { MenuModule } from 'primeng/menu';
 import { OverlayModule } from 'primeng/overlay';
+import { QuizDisplayComponent } from '@/pages/common/quiz-display/quiz-display';
 
 @Component({
   selector: 'quiz-detail',
@@ -64,7 +65,8 @@ import { OverlayModule } from 'primeng/overlay';
     FloatLabelModule,
     FormsModule,
     SpeedDialModule,
-    TextareaModule
+    TextareaModule,
+    MenuModule
   ],
   templateUrl: './quizDetail.html'
 })
@@ -104,6 +106,8 @@ export class QuizDetailComponent implements OnInit {
     'yearly-22022.png','yeswequiz.png'
   ];
 
+  extraMenuItems: MenuItem[] = [];
+
   private removedQuestionsBackup: any[] = [];
   logoDialogVisible: boolean = false;
 
@@ -120,6 +124,18 @@ export class QuizDetailComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+     this.extraMenuItems = [
+      {
+        label: 'Export Detailed JSON',
+        icon: 'pi pi-file',
+        command: () => this.exportJson()
+      },
+      {
+        label: 'Export Simple JSON',
+        icon: 'pi pi-file',
+        command: () => this.exportJson(true)
+      }
+    ];
     // Load tags
     this.quizTagService.getAllTags().subscribe(tags => {
       this.availableTags = tags;
@@ -350,6 +366,81 @@ export class QuizDetailComponent implements OnInit {
     const control = this.questions.at(index);
     control.get('timeless')?.setValue(!control.get('timeless')?.value);
   }
+
+  previewQuiz(): void {
+  if (!this.form) return;
+
+  // Build a preview quiz object from the form
+  const previewQuiz: Quiz = {
+    ...this.form.value,
+    questions: this.questions.value,
+    theme: { ...this.form.get('theme')?.value }
+  };
+
+  console.log(previewQuiz)
+
+  const ref: DynamicDialogRef = this.dialogService.open(QuizDisplayComponent, {
+   showHeader: false,           // no title
+    width: '85%',              // fill entire modal
+    height: '100%',
+    modal: true,
+    dismissableMask: true,
+    contentStyle: { 
+      padding: '0',            // remove inner padding
+      height: '100%',
+      overflow: 'auto',
+      'scrollbar-width': 'none', // Firefox
+      // padding: '0.5rem',        // leave a little space inside for the rounded corners      // scroll inside this inner container
+    borderRadius: '1rem',
+    backgroundColor: previewQuiz.theme?.backgroundColor,   
+    },
+    baseZIndex: 10000,          // make sure it’s on top
+    data: { quiz: previewQuiz, previewMode: true, locked: false },
+    focusTrap: false
+  });
+
+ref.onClose.subscribe((result) => {
+  // optional: handle anything after dialog closes
+});
+}
+
+exportJson(simple: boolean = false): void {
+  if (!this.form) return;
+
+  // Build the quiz object from the form
+  let quizData: any = {
+    ...this.form.value,
+    questions: this.questions.value,
+    theme: { ...this.form.get('theme')?.value }
+  };
+
+  if (simple) {
+    // Map to simplified structure
+    quizData = {
+      quizId: quizData.quizId,
+      questions: (quizData.questions || []).map((q: any) => ({
+        qNum: q.questionId,
+        qTitle: q.question,
+        qAnswer: q.answer
+      }))
+    };
+  }
+
+  const jsonString = JSON.stringify(quizData, null, 2); // pretty print
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const url = window.URL.createObjectURL(blob);
+
+  // Create a temporary link and click it to download
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Quiz-${quizData.quizId}.json`;
+  a.click();
+
+  // Cleanup
+  window.URL.revokeObjectURL(url);
+}
+
+
 
   showLogoDialog(): void { this.logoDialogVisible = true; }
   selectLogoFromDialog(logo: string): void { this.form.get('imageUrl')?.setValue(logo); this.logoDialogVisible = false; }
