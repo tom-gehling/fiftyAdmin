@@ -48,7 +48,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var admin = require("firebase-admin");
 var path = require("path");
 var luxon = require('luxon');
-var serviceAccount = require(path.join(__dirname, 'adminSDK.json'));
+var serviceAccount = require(path.join(__dirname, '../secrets/adminSDK.json'));
 try {
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
@@ -67,9 +67,9 @@ function buildQuizAggregates() {
             switch (_s.label) {
                 case 0:
                     _s.trys.push([0, 2, , 3]);
-                    console.log('Loading quizResults for quizId 177...');
+                    console.log('Loading quizResults for quizId 180...');
                     return [4 /*yield*/, db.collection('quizResults')
-                            .where('quizId', '==', "177")
+                            .where('quizId', '==', "180")
                             .get()];
                 case 1:
                     snapshot = _s.sent();
@@ -86,7 +86,7 @@ function buildQuizAggregates() {
                         try {
                             data = doc.data();
                             quizId = data['quizId'];
-                            if (quizId !== "177")
+                            if (quizId !== "180")
                                 continue;
                             if (!aggregates[quizId]) {
                                 aggregates[quizId] = {
@@ -252,11 +252,14 @@ function buildQuizAggregates() {
                             validStatsCount: agg.validStatsCount,
                             updatedAt: new Date()
                         });
+                        console.log(averageScore);
+                        console.log(hardestQuestions);
+                        console.log(easiestQuestions);
                     }
                     return [4 /*yield*/, batch.commit()];
                 case 5:
                     _s.sent();
-                    console.log("\u2705 Wrote ".concat(Object.keys(aggregates).length, " quiz aggregates for quizId 177."));
+                    console.log("\u2705 Wrote ".concat(Object.keys(aggregates).length, " quiz aggregates for quizId 180."));
                     return [3 /*break*/, 7];
                 case 6:
                     err_2 = _s.sent();

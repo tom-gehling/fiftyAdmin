@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 import * as path from 'path';
 const luxon = require('luxon');
 
-const serviceAccount = require(path.join(__dirname, 'adminSDK.json'));
+const serviceAccount = require(path.join(__dirname, '../secrets/adminSDK.json'));
 
 try {
   admin.initializeApp({
@@ -18,9 +18,9 @@ const db = admin.firestore();
 async function buildQuizAggregates() {
   let snapshot;
   try {
-    console.log('Loading quizResults for quizId 177...');
+    console.log('Loading quizResults for quizId 180...');
     snapshot = await db.collection('quizResults')
-      .where('quizId', '==', "177")
+      .where('quizId', '==', "180")
       .get();
     console.log(`Found ${snapshot.size} results`);
   } catch (err) {
@@ -34,7 +34,7 @@ async function buildQuizAggregates() {
     try {
       const data = doc.data() as any;
       const quizId = data['quizId'];
-      if (quizId !== "177") continue;
+      if (quizId !== "180") continue;
 
       if (!aggregates[quizId]) {
         aggregates[quizId] = {
@@ -206,10 +206,13 @@ async function buildQuizAggregates() {
         validStatsCount: agg.validStatsCount,
         updatedAt: new Date()
       });
+      console.log(averageScore)
+      console.log(hardestQuestions)
+      console.log(easiestQuestions)
     }
 
     await batch.commit();
-    console.log(`✅ Wrote ${Object.keys(aggregates).length} quiz aggregates for quizId 177.`);
+    console.log(`✅ Wrote ${Object.keys(aggregates).length} quiz aggregates for quizId 180.`);
   } catch (err) {
     console.error('❌ Failed to write aggregates to Firestore:', err);
   }
