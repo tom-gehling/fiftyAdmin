@@ -15,7 +15,7 @@ export class AdminGuard implements CanActivate {
       switchMap(() => this.auth.isAdmin$), // return admin status
       take(1),
       map(isAdmin => {
-        if (!isAdmin) this.router.navigate(['/members']); // redirect if not admin
+        if (!isAdmin) this.router.navigate(['/fiftyPlus']); // redirect if not admin
         return !!isAdmin;
       })
     );

@@ -48,9 +48,6 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
   <!-- Right: Actions -->
   <div class="ml-auto flex items-center gap-2">
     <!-- Dark Mode Toggle -->
-    <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
-      <i class="pi" [ngClass]="{'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme()}"></i>
-    </button>
 
     <!-- Profile Menu -->
     <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>

@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnInit, Optional, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -198,7 +198,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
   `
 })
-export class QuizDisplayComponent implements OnInit, OnChanges {
+export class QuizDisplayComponent implements OnInit {
 
   @Input() quizId?: string;
   @Input() quiz?: Quiz;          // for preview mode
@@ -224,38 +224,60 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     private authService: AuthService,
     private elRef: ElementRef,
     private route: ActivatedRoute,
-    public config: DynamicDialogConfig
+    @Optional() public config: DynamicDialogConfig
   ) {}
 
   // ---------------------------------------------
   // INIT
   // ---------------------------------------------
   async ngOnInit() {
-    if (this.config?.data?.quiz) {
-      this.quiz = this.config.data.quiz;
-    }
-    this.previewMode = !!this.config?.data?.previewMode;
-    this.locked = !!this.config?.data?.locked;
-
-    if (this.previewMode && this.quiz) {
-      this.loading = false;
-      this.initializeOrResumeQuiz(this.quiz);
-      this.applyThemeColors();
-      return;
-    }
-
-    // quizId may come from route
-    const routeId = this.route.snapshot.paramMap.get('quizId');
-    if (routeId) this.quizId = routeId;
-
-    await this.loadQuiz();
+  // 1️⃣ Use quiz passed via DynamicDialogConfig or Input
+  if (this.config?.data?.quiz) {
+    this.quiz = this.config.data.quiz;
   }
 
-  async ngOnChanges(changes: SimpleChanges) {
-    if (changes['quizId'] && !changes['quizId'].firstChange) {
-      await this.loadQuiz();
-    }
+  this.previewMode = !!this.config?.data?.previewMode || this.previewMode;
+  this.locked = !!this.config?.data?.locked || this.locked;
+
+  // 2️⃣ If quiz already exists, initialize state immediately
+  if (this.quiz) {
+    this.initializeQuizState(this.quiz);
+    this.applyThemeColors();
+    this.loading = false;
+    return;
   }
+
+  // 3️⃣ Otherwise, try to load quiz by Input or route
+  const routeId = this.route.snapshot.paramMap.get('quizId');
+  if (routeId) this.quizId = routeId;
+
+  if (!this.quizId) {
+    console.warn('QuizDisplayComponent: no quizId provided and no quiz input');
+    this.loading = false;
+    return;
+  }
+
+  await this.loadQuiz();
+}
+
+// ---------------------------------------------
+// Separate helper to initialize quiz arrays
+// ---------------------------------------------
+private initializeQuizState(quiz: Quiz) {
+  const questions = this.locked ? quiz.questions.slice(0, 3) : quiz.questions;
+  this.totalQuestions = questions.length;
+
+  this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
+  this.questionClicked = Array.from({ length: this.totalQuestions }, () => false);
+  this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
+  this.score = 0;
+
+  // If not previewMode, attempt to resume previous result
+  if (!this.previewMode && this.userId) {
+    this.initializeOrResumeQuiz(quiz); // optional: can await inside ngOnInit if desired
+  }
+}
+
 
   // ---------------------------------------------
   // LOAD QUIZ
