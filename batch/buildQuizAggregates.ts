@@ -18,9 +18,9 @@ const db = admin.firestore();
 async function buildQuizAggregates() {
   let snapshot;
   try {
-    console.log('Loading quizResults for quizId 178...');
+    console.log('Loading quizResults for quizId 180...');
     snapshot = await db.collection('quizResults')
-      .where('quizId', '==', "178")
+      .where('quizId', '==', "180")
       .get();
     console.log(`Found ${snapshot.size} results`);
   } catch (err) {
@@ -34,7 +34,7 @@ async function buildQuizAggregates() {
     try {
       const data = doc.data() as any;
       const quizId = data['quizId'];
-      if (quizId !== "178") continue;
+      if (quizId !== "180") continue;
 
       if (!aggregates[quizId]) {
         aggregates[quizId] = {
@@ -167,8 +167,8 @@ async function buildQuizAggregates() {
     const batch = db.batch();
 
     for (const [quizId, agg] of Object.entries(aggregates)) {
-      console.log('Sequential:', agg.sequentialQuestionTimes);
-      console.log('Per-question avg:', agg.avgTimeBetweenByQuestion);
+      // console.log('Sequential:', agg.sequentialQuestionTimes);
+      // console.log('Per-question avg:', agg.avgTimeBetweenByQuestion);
 
       const averageScore = agg.validStatsCount > 0 ? agg.totalScore / agg.validStatsCount : 0;
       const averageTime = agg.validStatsCount > 0 ? agg.totalTime / agg.validStatsCount : 0;
@@ -184,6 +184,9 @@ async function buildQuizAggregates() {
       const easiestQuestions = [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
 
       const docRef = db.collection('quizAggregates').doc(String(quizId));
+      console.log('Avg Score: ', averageScore);
+      console.log('Easiest Questions: ', easiestQuestions);
+      console.log('Hardest Questions: ', hardestQuestions);
       batch.set(docRef, {
         quizId,
         completedCount: agg.completedCount,
@@ -209,7 +212,7 @@ async function buildQuizAggregates() {
     }
 
     await batch.commit();
-    console.log(`✅ Wrote ${Object.keys(aggregates).length} quiz aggregates for quizId 178.`);
+    console.log(`✅ Wrote ${Object.keys(aggregates).length} quiz aggregates for quizId 180.`);
   } catch (err) {
     console.error('❌ Failed to write aggregates to Firestore:', err);
   }

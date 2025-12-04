@@ -67,9 +67,9 @@ function buildQuizAggregates() {
             switch (_s.label) {
                 case 0:
                     _s.trys.push([0, 2, , 3]);
-                    console.log('Loading quizResults for quizId 178...');
+                    console.log('Loading quizResults for quizId 180...');
                     return [4 /*yield*/, db.collection('quizResults')
-                            .where('quizId', '==', "178")
+                            .where('quizId', '==', "180")
                             .get()];
                 case 1:
                     snapshot = _s.sent();
@@ -86,7 +86,7 @@ function buildQuizAggregates() {
                         try {
                             data = doc.data();
                             quizId = data['quizId'];
-                            if (quizId !== "178")
+                            if (quizId !== "180")
                                 continue;
                             if (!aggregates[quizId]) {
                                 aggregates[quizId] = {
@@ -214,8 +214,6 @@ function buildQuizAggregates() {
                     batch = db.batch();
                     for (_g = 0, _h = Object.entries(aggregates); _g < _h.length; _g++) {
                         _j = _h[_g], quizId = _j[0], agg = _j[1];
-                        console.log('Sequential:', agg.sequentialQuestionTimes);
-                        console.log('Per-question avg:', agg.avgTimeBetweenByQuestion);
                         averageScore = agg.validStatsCount > 0 ? agg.totalScore / agg.validStatsCount : 0;
                         averageTime = agg.validStatsCount > 0 ? agg.totalTime / agg.validStatsCount : 0;
                         questionAccuracy = Object.entries(agg.questionStats).map(function (_a) {
@@ -230,6 +228,9 @@ function buildQuizAggregates() {
                         hardestQuestions = __spreadArray([], questionAccuracy, true).sort(function (a, b) { return a.correctRate - b.correctRate; }).slice(0, 5);
                         easiestQuestions = __spreadArray([], questionAccuracy, true).sort(function (a, b) { return b.correctRate - a.correctRate; }).slice(0, 5);
                         docRef = db.collection('quizAggregates').doc(String(quizId));
+                        console.log('Avg Score: ', averageScore);
+                        console.log('Easiest Questions: ', easiestQuestions);
+                        console.log('Hardest Questions: ', hardestQuestions);
                         batch.set(docRef, {
                             quizId: quizId,
                             completedCount: agg.completedCount,
@@ -256,7 +257,7 @@ function buildQuizAggregates() {
                     return [4 /*yield*/, batch.commit()];
                 case 5:
                     _s.sent();
-                    console.log("\u2705 Wrote ".concat(Object.keys(aggregates).length, " quiz aggregates for quizId 178."));
+                    console.log("\u2705 Wrote ".concat(Object.keys(aggregates).length, " quiz aggregates for quizId 180."));
                     return [3 /*break*/, 7];
                 case 6:
                     err_2 = _s.sent();
