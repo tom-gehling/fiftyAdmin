@@ -206,7 +206,7 @@ declare const google: any;
 <div class="card mb-4 p-4 fiftyBorder w-full">
   <div class="flex justify-between items-center mb-2">
     <span class="block text-surface-0 font-medium text-xl">
-      Average Thinking Time Between Questions
+      Average Thinking Time
     </span>
   </div>
 
