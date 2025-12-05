@@ -28,7 +28,7 @@ import { RecentQuizzesWidget } from "./components/userrecentquizzes";
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-user-summary-widget />
                 <app-fifty-quizzes-dashboard />
-                <app-quiz-stats-widget *ngIf="membershipTier != MembershipTier.Fifty" />
+                <!-- <app-quiz-stats-widget *ngIf="membershipTier != MembershipTier.Fifty" /> -->
                 <app-user-quiz-history-widget *ngIf="membershipTier != MembershipTier.Fifty" />
                 <!-- <app-best-selling-widget /> -->
             </div>
@@ -37,7 +37,7 @@ import { RecentQuizzesWidget } from "./components/userrecentquizzes";
                 
                 
                 <app-submissions-wall-widget />
-                <app-membership-report-widget *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" />
+                <!-- <app-membership-report-widget *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" /> -->
                 <!-- <app-notifications-widget /> -->
             </div>
         </div>
