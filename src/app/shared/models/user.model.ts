@@ -1,8 +1,8 @@
 export interface AppUser {
-  uid: string;
-  email: string;
-  displayName?: string;
-  photoUrl?: string;
+  uid?: string;
+  email: string | null;
+  displayName: string | null;
+  photoUrl: string | null;
   createdAt: Date;
   isAdmin?: boolean;
   isMember: boolean;
@@ -10,15 +10,19 @@ export interface AppUser {
   followers: string[];
   following: string[];
   loginCount: number;
+
+  // Extra fields for placeholders / external integration
+  externalQuizId?: string; // links the user to external quiz system
+  lastLoginAt?: Date;      // track last login
+  updatedAt?: Date;        // last profile update
 }
 
-// Subcollection: following
+// Subcollection interfaces remain the same
 export interface UserFollowing {
   followedUid: string;
   followedAt: Date;
 }
 
-// Subcollection: followers (optional if you want reverse lookup)
 export interface UserFollower {
   followerUid: string;
   followedAt: Date;

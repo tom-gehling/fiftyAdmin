@@ -292,7 +292,7 @@ export class QuizStatsSummaryComponent implements OnInit {
 
   private async loadStats(quizId?: string) {
     if (!quizId) return;
-    this.stats = await this.quizStatsService.getQuizAggregates(quizId);
+    this.stats = await this.quizStatsService.getQuizAggregatesFirestore(quizId);
     if (!this.stats) return;
 
     this.averageTimeHHMMSS = this.formatSecondsToHHMMSS(this.stats.averageTime || 0);

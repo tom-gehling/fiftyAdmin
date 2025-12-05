@@ -68,6 +68,25 @@ export class QuizStatsService {
     const url = `${this.baseUrl}/quizAggregates/${quizId}`;
     return await firstValueFrom(this.http.get<any>(url));
   }
+
+  /** Fetch a quizAggregates document from Firestore by quizId */
+async getQuizAggregatesFirestore(quizId: string): Promise<any> {
+  try {
+    const docRef = doc(this.firestore, 'quizAggregates', quizId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.warn(`No quizAggregates found for quizId: ${quizId}`);
+      return null;
+    }
+
+    return docSnap.data();
+  } catch (error) {
+    console.error('Error fetching quizAggregates from Firestore:', error);
+    return null;
+  }
+}
+
 }
 
 
