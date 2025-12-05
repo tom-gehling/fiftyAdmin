@@ -202,6 +202,25 @@ declare const google: any;
   </ng-container>
 </div>
 
+<!-- AVERAGE THINKING TIME GRAPH -->
+<div class="card mb-4 p-4 fiftyBorder w-full">
+  <div class="flex justify-between items-center mb-2">
+    <span class="block text-surface-0 font-medium text-xl">
+      Average Thinking Time Between Questions
+    </span>
+  </div>
+
+  <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
+    <p-chart
+      type="line"
+      [data]="thinkingTimeChartData"
+      [options]="thinkingTimeChartOptions"
+      class="w-full h-72 md:h-96"
+    ></p-chart>
+  </ng-container>
+</div>
+
+
 <!-- LOCATION CHARTS -->
 <!-- <div class="flex flex-col md:flex-row gap-4 mb-4"> -->
   <!-- Submissions by City -->
@@ -227,8 +246,7 @@ declare const google: any;
     </ng-container>
   </div>
 </div> -->
-
-  `
+`
 })
 export class QuizStatsSummaryComponent implements OnInit {
   currentQuiz?: Quiz;
@@ -254,7 +272,8 @@ export class QuizStatsSummaryComponent implements OnInit {
   quizIds: { label: string; value: string }[] = [];
   selectedDateRange: Date[] = [new Date(), new Date()]; // default to today
 
-
+  thinkingTimeChartData: any;
+  thinkingTimeChartOptions: any;
 
   hardestQuestions: { number: number; question: string; correctRate: number }[] = [];
   easiestQuestions: { number: number; question: string; correctRate: number }[] = [];
@@ -394,6 +413,53 @@ export class QuizStatsSummaryComponent implements OnInit {
       // Generate initial hourly chart based on selectedHourRange
       this.generateHourlyChartForRange(new Date(), new Date());
 
+     // THINKING TIME GRAPH
+console.log(this.stats);
+
+const thinkingTimes = this.stats.avgTimeBetweenByQuestion || [];
+
+// Map labels and values from objects
+const questionLabels = thinkingTimes.map((x: { questionId: string; avgDiffSec: number }) => `Q${x.questionId}`);
+const avgTimes = thinkingTimes.map((x: { questionId: string; avgDiffSec: number }) => x.avgDiffSec);
+
+this.thinkingTimeChartData = {
+  labels: questionLabels,
+  datasets: [
+    {
+      label: 'Seconds',
+      data: avgTimes,
+      borderColor: this.documentStyle.getPropertyValue('--p-primary-300'),
+      pointBackgroundColor: this.documentStyle.getPropertyValue('--p-primary-300'),
+      tension: 0.35,
+      fill: true
+    }
+  ]
+};
+
+this.thinkingTimeChartOptions = {
+  maintainAspectRatio: false,
+  aspectRatio: 0.8,
+  plugins: {
+    legend: { labels: { color: this.textColor } },
+    tooltip: { mode: 'index', intersect: false }
+  },
+  scales: {
+    x: {
+      title: { display: true, text: 'Question', color: this.textMutedColor },
+      ticks: { color: this.textMutedColor },
+      grid: { color: 'transparent', borderColor: 'transparent' }
+    },
+    y: {
+      beginAtZero: true,
+      title: { display: true, text: 'Seconds', color: this.textMutedColor },
+      ticks: { color: this.textMutedColor },
+      grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
+    }
+  }
+};
+
+
+
       // City Pie Chart
       const cities = Object.keys(this.stats.locationCounts || {});
       const cityCounts = cities.map(c => this.stats.locationCounts[c]);
@@ -505,7 +571,14 @@ export class QuizStatsSummaryComponent implements OnInit {
   }
 
   getQuestionHtml(q: any): SafeHtml {
-    const combined = `${q.number}. ${q.question}`;
+    let question = q.question;
+
+    // Strip HTML tags at the start
+    question = question.replace(/^(\s*<[^>]+>)+/, '');
+    // Strip HTML tags at the end
+    question = question.replace(/(<[^>]+>\s*)+$/, '');
+
+    const combined = `${q.number}. ${question}`;
     return this.sanitizer.bypassSecurityTrustHtml(combined);
   }
 
