@@ -10,7 +10,7 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
     imports: [AppMenu, FormsModule, SelectButtonModule],
     template: `
     <div class="layout-sidebar flex flex-col p-2">
-    <div class="flex justify-center mt-8 mb-4">
+    <!-- <div class="flex justify-center mt-8 mb-4">
         <div class="mb-4">
         <p-selectButton 
         [options]="membershipOptions" 
@@ -22,11 +22,11 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
         ></p-selectButton>
     </div>
 
-    </div>
+    </div> -->
     <!-- Membership Select -->
     
 
-    <!-- Menu -->
+   
     <app-menu></app-menu>
     </div>
 
@@ -34,12 +34,12 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
     `
 })
 export class AppSidebar implements OnInit {
-    selectedMembership: MembershipTier = MembershipTier.Fifty;
-    membershipOptions = [
-        { label: 'Basic', value: MembershipTier.Fifty },
-        { label: 'Premium', value: MembershipTier.FiftyGold },
-        { label: 'Admin', value: MembershipTier.Admin },
-    ];
+    selectedMembership: MembershipTier = MembershipTier.Admin;
+    // membershipOptions = [
+    //     { label: 'Basic', value: MembershipTier.Fifty },
+    //     { label: 'Premium', value: MembershipTier.FiftyGold },
+    //     { label: 'Admin', value: MembershipTier.Admin },
+    // ];
 
     constructor(public el: ElementRef, private membershipService: MembershipService) {}
 

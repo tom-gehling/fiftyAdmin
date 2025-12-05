@@ -209,6 +209,9 @@ async function buildQuizAggregates() {
         validStatsCount: agg.validStatsCount,
         updatedAt: new Date()
       });
+      console.log(averageScore)
+      console.log(hardestQuestions)
+      console.log(easiestQuestions)
     }
 
     await batch.commit();

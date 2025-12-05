@@ -12,25 +12,37 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectModule } from 'primeng/select';
 
 import type { TooltipItem } from 'chart.js';
+import { DatePickerModule } from 'primeng/datepicker';
 
 declare const google: any;
 
 @Component({
   standalone: true,
   selector: 'app-quiz-stats-summary',
-  imports: [CommonModule, FormsModule, ChartModule, SelectModule, ProgressBarModule],
+  imports: [CommonModule, FormsModule, ChartModule, SelectModule, ProgressBarModule, DatePickerModule],
   template: `
   <div class="mb-2 flex items-center">
   <!-- Left spacer -->
-  <div class="flex-1"></div>
 
+  <div class="flex-1 flex justify-start">
+   <p-select 
+  [(ngModel)]="selectedQuizId" 
+  [options]="quizIds" 
+  optionLabel="label" 
+  optionValue="value"
+  (onChange)="refreshStats()"
+  placeholder="Select Quiz"
+  class="w-60 md:w-auto"
+></p-select>
+  </div>
   <!-- Title centered -->
   <h1 class="text-4xl md:text-6xl font-bold text-surface-900 dark:text-surface-0 text-center mt-1">
-    {{currentQuiz?.quizTitle}}
+    {{getQuizName()}}
   </h1>
 
   <!-- Refresh button at the end -->
   <div class="flex-1 flex justify-end">
+    
     <button
       class="flex items-center justify-center hover:opacity-80 transition-opacity"
       (click)="refreshStats()"
@@ -109,14 +121,23 @@ declare const google: any;
 <div class="card mb-4 p-4 fiftyBorder w-full">
   <div class="flex justify-between items-center mb-2">
     <span class="block text-surface-0 font-medium text-xl">Hourly Submissions</span>
-    <p-select 
+    <p-datepicker
+  [(ngModel)]="selectedDateRange"
+  (onSelect)="onDateRangeChange()"
+  selectionMode="range"
+  dateFormat="dd/mm/yy"
+  showIcon="true"
+  placeholder="Select date range"
+  class="w-auto">
+</p-datepicker>
+    <!-- <p-select 
       [(ngModel)]="selectedHourRange" 
       [options]="hourRangeOptions" 
       optionLabel="label" 
       optionValue="value" 
       (onChange)="onHourRangeChange()"
       class="w-40 md:w-auto"
-    ></p-select>
+    ></p-select> -->
   </div>
   <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
     <p-chart 
@@ -181,10 +202,29 @@ declare const google: any;
   </ng-container>
 </div>
 
+<!-- AVERAGE THINKING TIME GRAPH -->
+<div class="card mb-4 p-4 fiftyBorder w-full">
+  <div class="flex justify-between items-center mb-2">
+    <span class="block text-surface-0 font-medium text-xl">
+      Average Thinking Time
+    </span>
+  </div>
+
+  <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
+    <p-chart
+      type="line"
+      [data]="thinkingTimeChartData"
+      [options]="thinkingTimeChartOptions"
+      class="w-full h-72 md:h-96"
+    ></p-chart>
+  </ng-container>
+</div>
+
+
 <!-- LOCATION CHARTS -->
-<div class="flex flex-col md:flex-row gap-4 mb-4">
+<!-- <div class="flex flex-col md:flex-row gap-4 mb-4"> -->
   <!-- Submissions by City -->
-  <div class="flex-1 flex flex-col card p-4 fiftyBorder min-h-[22rem]">
+  <!-- <div class="flex-1 flex flex-col card p-4 fiftyBorder min-h-[22rem]">
     <span class="block text-surface-0 font-medium mb-2 text-xl">Submissions by City</span>
     <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
       <div class="flex-grow flex items-center justify-center">
@@ -196,23 +236,17 @@ declare const google: any;
         ></p-chart>
       </div>
     </ng-container>
-  </div>
+  </div> -->
 
   <!-- Submissions by Country -->
-  <div class="flex-1 flex flex-col card p-4 fiftyBorder min-h-[22rem]">
+  <!-- <div class="flex-1 flex flex-col card p-4 fiftyBorder min-h-[22rem]">
     <span class="block text-surface-0 font-medium mb-2 text-xl">Submissions by Country</span>
     <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
       <div id="geo_chart" class="flex-grow w-full h-full"></div>
     </ng-container>
   </div>
-</div>
-
-
-
-
-
-
-  `
+</div> -->
+`
 })
 export class QuizStatsSummaryComponent implements OnInit {
   currentQuiz?: Quiz;
@@ -235,6 +269,11 @@ export class QuizStatsSummaryComponent implements OnInit {
   textMutedColor: any;
   bgSurface: any;
   fiftyNeonGreen: any;
+  quizIds: { label: string; value: string }[] = [];
+  selectedDateRange: Date[] = [new Date(), new Date()]; // default to today
+
+  thinkingTimeChartData: any;
+  thinkingTimeChartOptions: any;
 
   hardestQuestions: { number: number; question: string; correctRate: number }[] = [];
   easiestQuestions: { number: number; question: string; correctRate: number }[] = [];
@@ -243,7 +282,7 @@ export class QuizStatsSummaryComponent implements OnInit {
     { label: 'Last 1 Day', value: 1 },
     { label: 'Last 3 Days', value: 3 },
     { label: 'Last 5 Days', value: 5 },
-    { label: 'Last 7 Days', value: 7 }
+    { label: 'Last Week', value: 7 }
   ];
   selectedHourRange = 3;
 
@@ -256,30 +295,40 @@ export class QuizStatsSummaryComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    this.loading = true;
-    
+  this.loading = true;
 
-    this.documentStyle = getComputedStyle(document.documentElement);
-    this.textColor = this.documentStyle.getPropertyValue('--text-color');
-    this.borderColor = this.documentStyle.getPropertyValue('--surface-border');
-    this.textMutedColor = this.documentStyle.getPropertyValue('--text-color-secondary');
-    this.bgSurface = this.documentStyle.getPropertyValue('--p-surface-800');
-    this.fiftyNeonGreen = this.documentStyle.getPropertyValue('--fifty-neon-green');
+  this.documentStyle = getComputedStyle(document.documentElement);
+  this.textColor = this.documentStyle.getPropertyValue('--text-color');
+  this.borderColor = this.documentStyle.getPropertyValue('--surface-border');
+  this.textMutedColor = this.documentStyle.getPropertyValue('--text-color-secondary');
+  this.bgSurface = this.documentStyle.getPropertyValue('--p-surface-800');
+  this.fiftyNeonGreen = this.documentStyle.getPropertyValue('--fifty-neon-green');
 
-    // Load quiz + stats
-    this.currentQuiz = await firstValueFrom(this.quizzesService.getActiveQuiz());
-    this.selectedQuizId = this.currentQuiz?.quizId.toString();
-    console.log(this.currentQuiz);
+  // 1. Get active quiz
+  this.currentQuiz = await firstValueFrom(this.quizzesService.getActiveQuiz());
+  const activeQuizId = this.currentQuiz?.quizId.toString();
 
-    await Promise.all([
-      this.loadStats(this.selectedQuizId),
-      this.loadGoogleCharts()
-    ]);
+  // 2. Get all quiz IDs from quizAggregates
+  const docIds = await this.quizStatsService.getAllQuizAggregateIds();
+  this.quizIds = docIds.map(id => ({ label: 'Quiz ' + id, value: id }));
 
-    setTimeout(() => this.drawGeoChart(), 800);
+  // 3. Default selected quiz
+  this.selectedQuizId = activeQuizId || this.quizIds[0]?.value;
 
-    this.loading = false;
+  await Promise.all([
+    this.loadStats(this.selectedQuizId),
+    this.loadGoogleCharts()
+  ]);
+
+  setTimeout(() => this.drawGeoChart(), 800);
+  this.loading = false;
+}
+
+  getQuizName(){
+    let quiz = this.quizIds.filter(x => x.value == this.selectedQuizId)
+    return quiz[0]?.label
   }
+
 
   private loadGoogleCharts(): Promise<void> {
     if (this.googleChartsPromise) return this.googleChartsPromise;
@@ -292,7 +341,7 @@ export class QuizStatsSummaryComponent implements OnInit {
 
   private async loadStats(quizId?: string) {
     if (!quizId) return;
-    this.stats = await this.quizStatsService.getQuizAggregates(quizId);
+    this.stats = await this.quizStatsService.getQuizAggregatesFirestore(quizId);
     if (!this.stats) return;
 
     this.averageTimeHHMMSS = this.formatSecondsToHHMMSS(this.stats.averageTime || 0);
@@ -362,7 +411,54 @@ export class QuizStatsSummaryComponent implements OnInit {
       }
 
       // Generate initial hourly chart based on selectedHourRange
-      this.generateHourlyChart(this.selectedHourRange);
+      this.generateHourlyChartForRange(new Date(), new Date());
+
+     // THINKING TIME GRAPH
+console.log(this.stats);
+
+const thinkingTimes = this.stats.avgTimeBetweenByQuestion || [];
+
+// Map labels and values from objects
+const questionLabels = thinkingTimes.map((x: { questionId: string; avgDiffSec: number }) => `Q${x.questionId}`);
+const avgTimes = thinkingTimes.map((x: { questionId: string; avgDiffSec: number }) => x.avgDiffSec);
+
+this.thinkingTimeChartData = {
+  labels: questionLabels,
+  datasets: [
+    {
+      label: 'Seconds',
+      data: avgTimes,
+      borderColor: this.documentStyle.getPropertyValue('--p-primary-300'),
+      pointBackgroundColor: this.documentStyle.getPropertyValue('--p-primary-300'),
+      tension: 0.35,
+      fill: true
+    }
+  ]
+};
+
+this.thinkingTimeChartOptions = {
+  maintainAspectRatio: false,
+  aspectRatio: 0.8,
+  plugins: {
+    legend: { labels: { color: this.textColor } },
+    tooltip: { mode: 'index', intersect: false }
+  },
+  scales: {
+    x: {
+      title: { display: true, text: 'Question', color: this.textMutedColor },
+      ticks: { color: this.textMutedColor },
+      grid: { color: 'transparent', borderColor: 'transparent' }
+    },
+    y: {
+      beginAtZero: true,
+      title: { display: true, text: 'Seconds', color: this.textMutedColor },
+      ticks: { color: this.textMutedColor },
+      grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
+    }
+  }
+};
+
+
 
       // City Pie Chart
       const cities = Object.keys(this.stats.locationCounts || {});
@@ -375,79 +471,74 @@ export class QuizStatsSummaryComponent implements OnInit {
     }, 300);
   }
 
-  private generateHourlyChart(days: number) {
+  private generateHourlyChartForRange(startDate: Date, endDate: Date) {
   if (!this.stats?.hourlyCounts) return;
 
-  const now = new Date();
   const hourlyLabels: string[] = [];
   const hourlyCounts: number[] = [];
-  const totalHours = days * 24;
 
-  for (let i = totalHours - 1; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * 60 * 60 * 1000);
-    hourlyLabels.push(d.toISOString()); // store ISO, we'll format in ticks
-    hourlyCounts.push(this.stats.hourlyCounts[
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}`
-    ] ?? 0);
+  const current = new Date(startDate);
+  while (current <= endDate) {
+    for (let hour = 0; hour < 24; hour++) {
+      const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2,'0')}-${String(current.getDate()).padStart(2,'0')} ${String(hour).padStart(2,'0')}`;
+      hourlyLabels.push(`${String(current.getDate()).padStart(2,'0')}/${String(current.getMonth() + 1).padStart(2,'0')} ${hour}:00`);
+      hourlyCounts.push(this.stats.hourlyCounts[key] ?? 0);
+    }
+    current.setDate(current.getDate() + 1);
   }
 
   this.hourlyChartData = {
-  labels: hourlyLabels,
-  datasets: [{
-    label: 'Submissions',
-    data: hourlyCounts,
-    backgroundColor: this.fiftyNeonGreen,
-    borderRadius: 4,
-    borderSkipped: false
-  }]
-};
-
+    labels: hourlyLabels,
+    datasets: [{
+      label: 'Submissions',
+      data: hourlyCounts,
+      backgroundColor: this.fiftyNeonGreen,
+      borderRadius: 4,
+      borderSkipped: false
+    }]
+  };
 
   this.hourlyChartOptions = {
-  responsive: true,
-  plugins: {
-    legend: { labels: { color: this.textColor } },
-    tooltip: {
-      callbacks: {
-        title: (tooltipItems: TooltipItem<'bar'>[]) => {
-          const index = tooltipItems[0].dataIndex;
-          const label = this.hourlyChartData.labels[index];
-          const d = new Date(label);
-          return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.getHours() % 12 || 12}${d.getHours() >= 12 ? 'PM' : 'AM'}`;
-        },
-        label: (tooltipItem: TooltipItem<'bar'>) => `Submissions: ${tooltipItem.formattedValue}`
-      }
-    }
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      title: { display: true, text: 'Count', color: this.textMutedColor },
-      ticks: { color: this.textMutedColor },
-      grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
-    },
-    x: {
-      title: { display: true, text: 'Hour', color: this.textMutedColor },
-      ticks: {
-        color: this.textMutedColor,
-        callback: (_value: any, index: number) => {
-          if (index % 2 !== 0) return '';
-          const d = new Date(this.hourlyChartData.labels[index]);
-          return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${d.getHours() % 12 || 12}${d.getHours() >= 12 ? 'PM' : 'AM'}`;
+    responsive: true,
+    plugins: {
+      legend: { labels: { color: this.textColor } },
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem: TooltipItem<'bar'>) => `Submissions: ${tooltipItem.formattedValue}`
         }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: 'Count', color: this.textMutedColor },
+        ticks: { color: this.textMutedColor },
+        grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
       },
-      grid: { color: 'transparent', borderColor: 'transparent' }
-    }
-  },
-  maintainAspectRatio: false,
-  aspectRatio: 0.8
-};
-  }
+      x: {
+        title: { display: true, text: 'Date/Hour', color: this.textMutedColor },
+        ticks: { color: this.textMutedColor },
+        grid: { color: 'transparent', borderColor: 'transparent' }
+      }
+    },
+    maintainAspectRatio: false,
+    aspectRatio: 0.8
+  };
+}
 
-  onHourRangeChange() {
-    if (!this.stats) return;
-    this.generateHourlyChart(this.selectedHourRange);
-  }
+
+  // onHourRangeChange() {
+  //   if (!this.stats) return;
+  //   this.generateHourlyChart(this.selectedHourRange);
+  // }
+
+  onDateRangeChange() {
+  if (!this.stats || !this.selectedDateRange || this.selectedDateRange.length !== 2) return;
+
+  const [startDate, endDate] = this.selectedDateRange;
+  this.generateHourlyChartForRange(startDate, endDate);
+}
+
 
   private drawGeoChart() {
     if (!this.stats?.locationCounts) return;
@@ -480,7 +571,14 @@ export class QuizStatsSummaryComponent implements OnInit {
   }
 
   getQuestionHtml(q: any): SafeHtml {
-    const combined = `${q.number}. ${q.question}`;
+    let question = q.question;
+
+    // Strip HTML tags at the start
+    question = question.replace(/^(\s*<[^>]+>)+/, '');
+    // Strip HTML tags at the end
+    question = question.replace(/(<[^>]+>\s*)+$/, '');
+
+    const combined = `${q.number}. ${question}`;
     return this.sanitizer.bypassSecurityTrustHtml(combined);
   }
 

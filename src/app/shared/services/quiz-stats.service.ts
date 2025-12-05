@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { Firestore, doc, getDoc } from '@angular/fire/firestore';
+import { Firestore, doc, getDoc, collection, getDocs } from '@angular/fire/firestore';
 
 export interface QuestionAccuracy {
   questionId: string;
@@ -43,9 +43,7 @@ export class QuizStatsService {
   async getQuizTotalStats(quizId: string): Promise<QuizTotalStats> {
     try {
       const docRef = doc(this.firestore, 'quizTotalStats', quizId);
-      
       const docSnap = await getDoc(docRef);
-      console.log(docSnap)
 
       if (!docSnap.exists()) {
         return { averageScore: 0, totalSessions: 0 };
@@ -56,18 +54,45 @@ export class QuizStatsService {
         averageScore: data.averageScore ?? 0,
         totalSessions: data.totalSessions ?? 0,
       };
-
     } catch (error) {
       console.error('Error fetching quizTotalStats from Firestore:', error);
       return { averageScore: 0, totalSessions: 0 };
     }
   }
 
-   /** Fetch aggregated stats (from your new Express route) */
+  /** Fetch aggregated stats (from your API route) */
   async getQuizAggregates(quizId: string): Promise<any> {
     const url = `${this.baseUrl}/quizAggregates/${quizId}`;
     return await firstValueFrom(this.http.get<any>(url));
   }
+
+  /** Fetch a quizAggregates document from Firestore by quizId */
+  async getQuizAggregatesFirestore(quizId: string): Promise<any> {
+    try {
+      const docRef = doc(this.firestore, 'quizAggregates', quizId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        console.warn(`No quizAggregates found for quizId: ${quizId}`);
+        return null;
+      }
+
+      return docSnap.data();
+    } catch (error) {
+      console.error('Error fetching quizAggregates from Firestore:', error);
+      return null;
+    }
+  }
+
+  /** Get all document IDs from quizAggregates */
+  async getAllQuizAggregateIds(): Promise<string[]> {
+    try {
+      const colRef = collection(this.firestore, 'quizAggregates');
+      const snapshot = await getDocs(colRef);
+      return snapshot.docs.map(doc => doc.id);
+    } catch (error) {
+      console.error('Error fetching quizAggregate IDs:', error);
+      return [];
+    }
+  }
 }
-
-
