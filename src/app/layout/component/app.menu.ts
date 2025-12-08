@@ -37,27 +37,27 @@ export class AppMenu {
         // Home / Dashboard
         const homeMenu: MenuItem = {
             label: 'Home',
-            items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/members'] }]
+            items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/fiftyPlus'] }]
         };
 
         // Admin section
         const adminMenu: MenuItem = {
             label: 'Admin',
             items: [
-                { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/members/admin/stats'] },
-                { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/members/admin/quizzes'] },
-                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/members/admin/quizTags'] }
+                { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats'] },
+                { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/fiftyPlus/admin/quizzes'] },
+                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] }
             ]
         };
 
-        // Fifty+ section (all members/admin)
+        // Fifty+ section (all fiftyPlus/admin)
         const fiftyPlusMenu: MenuItem = {
             label: 'Fifty+',
             items: [
-                { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/members/archives'] },
-                { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/members/exclusives'] },
-                { label: 'Collaborations', icon: 'pi pi-fw pi-users', routerLink: ['/members/collabs'] },
-                { label: 'Question Quizzes', icon: 'pi pi-fw pi-list', routerLink: ['/members/questionQuizzes'] }
+                { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/archives'] },
+                { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
+                { label: 'Collaborations', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/collabs'] },
+                { label: 'Question Quizzes', icon: 'pi pi-fw pi-list', routerLink: ['/fiftyPlus/questionQuizzes'] }
             ]
         };
 

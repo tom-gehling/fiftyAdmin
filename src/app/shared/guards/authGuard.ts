@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
       take(1),
       map(user => {
         const allowed = !!user && !user.isAnon;
-        if (!allowed) this.router.navigate(['/auth/login']); // redirect if not allowed
+        if (!allowed) this.router.navigate(['/login']); // redirect if not allowed
         return allowed;
       })
     );

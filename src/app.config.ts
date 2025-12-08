@@ -11,6 +11,7 @@ import { providePrimeNG } from 'primeng/config';
 import { appRoutes } from './app.routes';
 import { DialogService } from 'primeng/dynamicdialog';
 import { MessageService } from 'primeng/api';
+import { getStorage, provideStorage } from '@angular/fire/storage';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -29,6 +30,7 @@ export const appConfig: ApplicationConfig = {
                 measurementId: 'G-G0GB39G4F3',
             })
         ),
+        provideStorage(() => getStorage()),
         provideAnalytics(() => getAnalytics()),
         provideAuth(() => getAuth()),
         provideFirestore(() => getFirestore()),

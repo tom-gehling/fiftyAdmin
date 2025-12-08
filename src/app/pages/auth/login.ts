@@ -92,11 +92,11 @@ export class Login {
       const isMember = await firstValueFrom(this.auth.isMember$);
 
       if (isAdmin) {
-        this.router.navigate(['/members']);
+        this.router.navigate(['/fiftyPlus']);
       } else if (isMember) {
-        this.router.navigate(['/members']);
+        this.router.navigate(['/fiftyPlus']);
       } else {
-        this.router.navigate(['/landing']); // fallback for non-members
+        this.router.navigate(['/landing']); // fallback for non-fiftyPlus
       }
     } catch (err: any) {
       this.error = err.message ?? 'Login failed';

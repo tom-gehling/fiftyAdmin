@@ -37,6 +37,7 @@ import { WeeklyQuizPage } from '@/pages/public/quiz';
 import { FindAVenuePage } from '@/pages/public/findavenue';
 import { FiftyShopPage } from '@/pages/public/fiftyshop';
 import { ContactUsPage } from '@/pages/public/contactus';
+import { Login } from '@/pages/auth/login';
 
 export const appRoutes: Routes = [
 
@@ -50,7 +51,7 @@ export const appRoutes: Routes = [
   { path: 'fiftyshop', component: FiftyShopPage },
   { path: 'contact-us', component: ContactUsPage },
 
-  { path: 'login', component: Landing },
+  { path: 'login', component: Login },
   { path: 'signup', component: Landing },
 
   // User public → protected crossover

@@ -99,11 +99,11 @@ export class FiftyQuizzesDashboardComponent implements OnInit {
   }
 
   openQuiz(quiz: Quiz) {
-    let baseRoute = '/members/archives';
+    let baseRoute = '/fiftyPlus/archives';
     switch (quiz.quizType) {
-      case QuizTypeEnum.FiftyPlus: baseRoute = '/members/exclusives'; break;
-      case QuizTypeEnum.Collab: baseRoute = '/members/collabs'; break;
-      case QuizTypeEnum.QuestionType: baseRoute = '/members/questionQuizzes'; break;
+      case QuizTypeEnum.FiftyPlus: baseRoute = '/fiftyPlus/exclusives'; break;
+      case QuizTypeEnum.Collab: baseRoute = '/fiftyPlus/collabs'; break;
+      case QuizTypeEnum.QuestionType: baseRoute = '/fiftyPlus/questionQuizzes'; break;
     }
     this.router.navigate([`${baseRoute}/${quiz.quizId}`]);
   }
