@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
     <!-- Navbar -->
     <nav class="navbar">
       <div class="auth-buttons">
-        <button class="auth-btn">LOGIN / SIGN UP</button>
+        <button class="auth-btn" (click)="test()">LOGIN / SIGN UP</button>
       </div>
     </nav>
 
@@ -199,4 +199,14 @@ import { CommonModule } from '@angular/common';
 
   `]
 })
-export class HomePage {}
+export class HomePage implements OnInit {
+
+  constructor(private router: Router) {}
+
+  async ngOnInit() {}
+
+  test(){
+    this.router.navigate(['/login']);
+  }
+
+}
