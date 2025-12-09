@@ -80,7 +80,7 @@ app.get('/api/getQuizArchiveHeaders', async (req: Request, res: Response): Promi
 });
 
 // ===============================
-// /api/getQuizArchiveHeaders
+// /api/getQuizByQuizId
 // ===============================
 
 app.get('/api/getQuizByQuizId', async (req: Request, res: Response): Promise<void> => {
@@ -121,8 +121,6 @@ app.get('/api/getQuizByQuizId', async (req: Request, res: Response): Promise<voi
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
-
 
 
 // ===============================
@@ -239,6 +237,7 @@ app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void>
           photoUrl: null,
           lastLoginAt: new Date(),
           updatedAt: new Date(),
+          origin: 'Weekly'
         });
 
         // Use doc ID as uid
@@ -296,6 +295,7 @@ app.post('/api/logQuizFinish', async (req: Request, res: Response): Promise<void
   }
 });
 
+// ---- Firestore trigger ----
 export const quizStarted = onDocumentCreated(
   "quizResults/{sessionId}",
   async (event) => {
@@ -496,6 +496,112 @@ export const quizFinished = onDocumentUpdated(
 );
 
 
+app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { quizId, emailAddress } = req.body;
+
+    if (!quizId) {
+      res.status(400).json({ message: 'quizId is required' });
+      return;
+    }
+
+    console.log('email:' ,emailAddress)
+
+    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
+    let dbUserId: string | null = null;
+
+    if (emailAddress) {
+      const usersCol = db.collection('users');
+      const existingSnap = await usersCol
+        .where('email', '==', emailAddress)
+        .limit(1)
+        .get();
+
+        console.log('exists: ',existingSnap)
+
+      if (!existingSnap.empty) {
+        // User exists → increment login count
+        const userDoc = existingSnap.docs[0];
+        dbUserId = userDoc.id;
+        await userDoc.ref.update({
+          loginCount: (userDoc.data().loginCount || 0) + 1,
+          lastLoginAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else {
+        // User doesn't exist → create new user
+        const newUserRef = await usersCol.add({
+          createdAt: new Date(),
+          isAnon: false,
+          isMember: true,
+          isAdmin: false,
+          loginCount: 1,
+          followers: [],
+          following: [],
+          email: emailAddress,
+          displayName: null,
+          photoUrl: null,
+          lastLoginAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // Set uid field to doc ID
+        await newUserRef.update({ uid: newUserRef.id });
+        dbUserId = newUserRef.id;
+      }
+    }
+
+    // Create quiz session in quizResults
+    const quizResultRef = await db.collection('quizResults').add({
+      quizId,
+      userId: dbUserId,
+      status: 'in_progress',
+      startedAt: new Date(),
+      completedAt: null,
+      score: null,
+      total: null,
+      answers: [],
+      ip,
+      geo: null,
+      userAgent: req.get('user-agent') || 'unknown',
+    });
+
+    res.status(200).json({ sessionId: quizResultRef.id });
+  } catch (error) {
+    console.error('Error starting FiftyPlus quiz:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+// ===============================
+// /api/logQuizFinish
+// ===============================
+app.post('/api/logFiftyPlusQuizFinish', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { sessionId, score, total, answers } = req.body;
+    if (!sessionId || score === undefined || !answers) {
+      res.status(400).json({ message: 'sessionId, score, and answers are required' });
+      return;
+    }
+
+    await db.collection('quizResults').doc(sessionId).update({
+      completedAt: new Date(),
+      status: 'completed',
+      score,
+      total,
+      answers
+    });
+
+    res.status(200).json({ message: 'Quiz result saved successfully' });
+  } catch (error) {
+    console.error('Error finishing quiz:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 app.post('/api/updateUserEmail', async (req: Request, res: Response) => {
   try {
     const { externalQuizId, email } = req.body;
@@ -527,37 +633,6 @@ app.post('/api/updateUserEmail', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('Error updating user email:', err);
     res.status(500).json({ message: 'Internal server error', error: err });
-  }
-});
-
-export async function createTestQuiz() {
-  const quizId = "test_quiz_" + Date.now();
-
-  const quizData = {
-    quizId,
-    quizType: 1,
-    title: "Test Quiz",
-    deploymentDate: Timestamp.fromDate(new Date()),
-    questionCount: 3,
-    questions: [
-      { questionId: 1, question: "What is 2 + 2?", answer: "4" },
-      { questionId: 2, question: "What colour is the sky?", answer: "Blue" },
-      { questionId: 3, question: "What sound does a dog make?", answer: "Woof" }
-    ]
-  };
-
-  await db.collection("quizzes").doc(quizId).set(quizData);
-
-  return quizData;
-}
-
-app.post('/api/createTestQuiz', async (req, res) => {
-  try {
-    const quiz = await createTestQuiz();
-    res.status(200).json({ message: "Test quiz created", quiz });
-  } catch (err) {
-    console.error("Error creating test quiz:", err);
-    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
