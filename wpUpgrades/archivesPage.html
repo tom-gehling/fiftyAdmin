@@ -1,0 +1,530 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            :root {
+                --green: #4cfbab;
+                --black: #282828;
+                --pink: #fbe2df !important;
+                --correct: rgb(0, 215, 0) !important;
+                --incorrect: red !important;
+                --font: Helvetica, Arial, sans-serif !important;
+                --header: 25px !important;
+                --normal: 22px !important;
+                --smaller: 18px !important;
+                --transition: 0.3s !important;
+            }
+
+            body {
+                background-color: #282828;
+            }
+
+            #load {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                font-family: var(--font) !important;
+                font-size: var(--normal) !important;
+                font-weight: 500 !important;
+                transition: var(--transition) !important;
+                padding-bottom: 10px !important;
+                display: flex;
+                justify-content: flex-start !important;
+            }
+
+            .navBar {
+                height: 100%;
+                width: 0;
+                position: fixed;
+                z-index: 1;
+                left: 0;
+                top: 0;
+                background-color: rgb(0, 0, 0);
+                background-color: rgba(0, 0, 0, 0.9);
+                overflow-x: hidden;
+                transition: 0.5s;
+            }
+
+            .navBarContent {
+                position: relative;
+                top: 1%;
+                width: 90%;
+                text-align: left;
+                padding: 10px;
+                margin-top: 10%;
+            }
+
+            .navTabs {
+                border: none !important;
+                background-color: var(--black) !important;
+                color: var(--pink) !important;
+                width: 70% !important;
+                height: 60px !important;
+                margin-bottom: 10px !important;
+                padding: 10px !important;
+                font-size: 18px !important;
+                display: block;
+                border-radius: 5px !important;
+            }
+
+            .navBar .navTabs {
+                padding: 8px;
+                text-decoration: none;
+                font-size: 36px;
+                color: #818181;
+                display: block;
+                transition: 0.3s;
+            }
+
+            .navBar .active {
+                color: var(--black) !important;
+                background-color: var(--green) !important;
+                width: 80% !important;
+                transition: 300ms !important;
+            }
+
+            .navBar .navTabs:hover,
+            .navBar .navTabs:focus {
+                color: var(--black) !important;
+                background-color: var(--green) !important;
+                width: 80% !important;
+                transition: 300ms !important;
+            }
+
+            .navBar .closebtn {
+                position: sticky;
+                top: 5px;
+                bottom: 5px;
+                left: 90%;
+                font-size: 60px;
+                cursor: pointer;
+            }
+
+            @media screen and (max-height: 450px) {
+                .navBar .navTabs {
+                    font-size: 20px;
+                }
+                .navBar .closebtn {
+                    font-size: 40px;
+                    top: 15px;
+                }
+            }
+
+            .quizContainer {
+                width: 100% !important;
+            }
+
+            .quizTitle {
+                font-size: 48px !important;
+                font-family: var(--font);
+                color: var(--pink);
+                font-weight: 600 !important;
+                text-align: center;
+            }
+
+            .quiz {
+                display: none;
+            }
+
+            .quiz.active {
+                display: block;
+            }
+
+            .question {
+                width: auto !important;
+                justify-self: center !important;
+            }
+
+            .accordionButton {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: none !important;
+                border-radius: 0px !important;
+                text-align: center !important;
+                outline: none !important;
+                width: 100% !important;
+                font-family: var(--font) !important;
+                font-size: var(--header) !important;
+                font-weight: 400 !important;
+                transition: var(--transition) !important;
+                padding: 25px !important;
+                margin-bottom: 20px !important;
+                line-height: 130% !important;
+            }
+
+            .accordionButton.active {
+                color: var(--black) !important;
+                background-color: var(--pink) !important;
+            }
+
+            .genericButton {
+                font-family: var(--font) !important;
+                font-weight: 600 !important;
+                color: var(--black) !important;
+                background-color: var(--pink) !important;
+                border: 3px solid var(--pink) !important;
+                border-radius: 15px !important;
+                font-size: var(--normal) !important;
+                padding: 15px !important;
+                margin: 5px !important;
+                transition: var(--transition) !important;
+            }
+
+            .genericButton.correct {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .genericButton.incorrect {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .genericButton.reveal {
+                background-color: var(--black) !important;
+                color: var(--pink) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .dot {
+                height: 10px !important;
+                width: 10px !important;
+                background-color: var(--green) !important;
+                border-radius: 50% !important;
+                display: inline-block;
+                margin-right: 10px !important;
+                border: 1px solid #282828;
+            }
+
+            .dot.removed {
+                display: none;
+            }
+
+            .panel {
+                font-family: var(--font) !important;
+                display: none;
+                font-size: var(--normal) !important;
+                padding-top: 15px !important;
+                padding-bottom: 15px !important;
+                width: auto !important;
+                text-align: center !important;
+            }
+
+            .panel.active {
+                display: block;
+            }
+
+            .panel.answer {
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .score {
+                font-family: var(--font) !important;
+                color: var(--green) !important;
+                text-align: center !important;
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .closebtn {
+                color: #4cfbab;
+                margin-bottom: 10px;
+                cursor: pointer;
+            }
+
+            #openBtn {
+                color: #4cfbab;
+                font-size: 60px;
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .pagination {
+                display: flex;
+                list-style-type: none;
+                justify-content: center;
+                width: auto;
+                padding: 10px;
+                margin: 0;
+            }
+
+            .page-item {
+                margin: 5px;
+                font-family: var(--font) !important;
+                font-size: 12px !important;
+                color: var(--green) !important;
+                padding: 8px 12px;
+                border: 1px solid #ccc;
+                border-radius: 5px !important;
+                cursor: pointer;
+            }
+
+            .page-item:hover {
+                background-color: #818181 !important;
+                text-decoration: underline;
+            }
+
+            .page-link {
+                font-family: var(--font) !important;
+                font-size: 12px !important;
+                color: var(--green) !important;
+                padding: 5px !important;
+                text-decoration: none;
+                color: inherit;
+            }
+
+            .page-item.activePage {
+                background-color: v#818181 !important;
+                color: var(--black) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="openBtn" onclick="openNav()">&equiv;</div>
+        <div class="navBar" id="navBar">
+            <span class="closebtn" onclick="closeNav()">&times;</span>
+        </div>
+
+        <div id="load"></div>
+
+        <script>
+            let quizzes = []; // will hold full quiz data
+            let quizHeaders = []; // will hold just header info
+            let pg = {
+                num: 1,
+                startDate: '2022-06-10',
+                startQuiz: 1
+            };
+
+            let scoreCount = 0;
+            let totalCount = 0;
+            const buttons = [];
+            const correctClicked = [];
+            const incorrectClicked = [];
+            const dotStatus = [];
+
+            // Fetch quiz headers for the page
+            async function fetchQuizHeaders() {
+                try {
+                    const res = await fetch('http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/api/getQuizArchiveHeaders');
+                    if (!res.ok) throw new Error('Failed to fetch headers');
+                    quizHeaders = await res.json();
+                    console.log(quizHeaders);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            // Fetch full quiz data by quizId
+            async function fetchQuizById(quizId) {
+                try {
+                    const res = await fetch(`http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/api/getQuizByQuizId?quizId=${quizId}`);
+                    if (!res.ok) throw new Error(`Failed to fetch quiz ${quizId}`);
+                    return await res.json();
+                } catch (err) {
+                    console.error(err);
+                    return null;
+                }
+            }
+
+            function addWeeksToDate(numberOfWeeks, firstQuiz) {
+                const startDate = new Date(firstQuiz);
+                const millisecondsInWeek = 7 * 24 * 60 * 60 * 1000;
+                return new Date(startDate.getTime() + numberOfWeeks * millisecondsInWeek);
+            }
+
+            function formatDateAsDDMMYY(date) {
+                let day = date.getDate();
+                let month = date.getMonth() + 1;
+                let year = date.getFullYear() % 100;
+                day = day < 10 ? '0' + day : day;
+                month = month < 10 ? '0' + month : month;
+                return `${day}/${month}/${year}`;
+            }
+
+            function getDate(numberOfWeeks, firstQuiz) {
+                return formatDateAsDDMMYY(addWeeksToDate(numberOfWeeks, firstQuiz));
+            }
+
+            // Create navigation tabs
+            async function createTabs() {
+                const cont = document.getElementById('navBar');
+                await fetchQuizHeaders();
+
+                for (let i = 0; i < quizHeaders.length; i++) {
+                    const tab = document.createElement('button');
+                    tab.className = i === 0 ? 'navTabs active' : 'navTabs';
+                    tab.id = 'tab_' + (i + pg.startQuiz);
+                    tab.innerText = '#' + quizHeaders[i].quizId + ' - ' + getDate(i, pg.startDate);
+
+                    tab.addEventListener('click', async () => {
+                        await loadQuiz(i);
+                        setActiveTab(i);
+                    });
+
+                    cont.appendChild(tab);
+                }
+            }
+
+            // Set the active tab styling
+            function setActiveTab(index) {
+                const tabs = document.getElementsByClassName('navTabs');
+                for (let i = 0; i < tabs.length; i++) {
+                    if (i === index) tabs[i].classList.add('active');
+                    else tabs[i].classList.remove('active');
+                }
+            }
+
+            // Load a single quiz into the container
+            async function loadQuiz(index) {
+                var page = document.getElementById('load');
+                page.innerHTML = '';
+                const tabs = document.getElementsByClassName('navTabs');
+                var container = document.createElement('div');
+                container.className = 'quizContainer';
+                page.appendChild(container);
+
+                // Fetch quiz if not cached
+                if (!quizzes[index]) {
+                    quizzes[index] = await fetchQuizById(quizHeaders[index].quizId);
+                }
+
+                const quizData = quizzes[index];
+
+                // Reset state
+                scoreCount = 0;
+                totalCount = 0;
+                buttons.length = 0;
+                correctClicked.length = 0;
+                incorrectClicked.length = 0;
+                dotStatus.length = 0;
+
+                // Quiz title
+                const title = document.createElement('h2');
+                title.className = 'quizTitle';
+                title.innerText = 'Quiz ' + quizData.quiz_id + ' - ' + getDate(index, pg.startDate);
+                container.appendChild(title);
+
+                // Create questions
+                quizData.questions.forEach((q, i) => {
+                    const idCode = i + 1;
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'question';
+                    questionDiv.id = 'question_' + idCode;
+
+                    const accordionButton = document.createElement('button');
+                    accordionButton.className = 'accordionButton';
+                    accordionButton.id = 'button_' + idCode;
+                    accordionButton.innerHTML = `<span class="dot" id="dot_${idCode}"></span> <b>${i + 1}.</b> ${q.qTitle}`;
+                    accordionButton.onclick = () => toggleAccordion(accordionButton);
+
+                    const clickPanel = document.createElement('div');
+                    clickPanel.className = 'panel';
+
+                    const answerButton = document.createElement('button');
+                    answerButton.className = 'genericButton';
+                    answerButton.textContent = 'Click for answer';
+                    answerButton.onclick = () => togglePanel(answerButton);
+
+                    const answerPanel = document.createElement('div');
+                    answerPanel.className = 'panel answer';
+                    answerPanel.innerHTML = `<p>${q.qAnswer}</p>`;
+
+                    const correctBtn = document.createElement('button');
+                    correctBtn.className = 'genericButton';
+                    correctBtn.textContent = 'Correct';
+                    correctBtn.onclick = () => markAnswer(idCode, true);
+
+                    const incorrectBtn = document.createElement('button');
+                    incorrectBtn.className = 'genericButton';
+                    incorrectBtn.textContent = 'Incorrect';
+                    incorrectBtn.onclick = () => markAnswer(idCode, false);
+
+                    answerPanel.appendChild(correctBtn);
+                    answerPanel.appendChild(incorrectBtn);
+                    clickPanel.appendChild(answerButton);
+                    clickPanel.appendChild(answerPanel);
+
+                    questionDiv.appendChild(accordionButton);
+                    questionDiv.appendChild(clickPanel);
+                    container.appendChild(questionDiv);
+
+                    buttons[idCode] = {
+                        correct: correctBtn,
+                        incorrect: incorrectBtn,
+                        dot: document.getElementById(`dot_${idCode}`)
+                    };
+                });
+
+                // Score display
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'score';
+                scoreDiv.id = 'scoreDisplay';
+                scoreDiv.innerText = `Score: 0 / ${quizData.questions.length}`;
+                container.appendChild(scoreDiv);
+            }
+
+            // Toggle accordion
+            function toggleAccordion(button) {
+                button.classList.toggle('active');
+                const panel = button.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            // Toggle answer panel
+            function togglePanel(button) {
+                button.classList.toggle('reveal');
+                const panel = button.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            // Mark an answer correct/incorrect
+            function markAnswer(idCode, correct) {
+                const btnPair = buttons[idCode];
+
+                if (correct) {
+                    btnPair.correct.disabled = true;
+                    btnPair.correct.classList.add('correct');
+                    btnPair.incorrect.disabled = false;
+                    btnPair.incorrect.classList.remove('incorrect');
+                    if (!correctClicked[idCode]) scoreCount++;
+                    correctClicked[idCode] = true;
+                    incorrectClicked[idCode] = false;
+                } else {
+                    btnPair.incorrect.disabled = true;
+                    btnPair.incorrect.classList.add('incorrect');
+                    btnPair.correct.disabled = false;
+                    btnPair.correct.classList.remove('correct');
+                    if (!incorrectClicked[idCode]) totalCount++;
+                    incorrectClicked[idCode] = true;
+                    correctClicked[idCode] = false;
+                }
+
+                // Remove dot
+                if (btnPair.dot) btnPair.dot.classList.add('removed');
+
+                // Update score
+                const scoreDiv = document.getElementById('scoreDisplay');
+                scoreDiv.innerText = `Score: ${scoreCount} / ${scoreCount + Object.keys(correctClicked).filter((k) => correctClicked[k]).length + Object.keys(incorrectClicked).filter((k) => incorrectClicked[k]).length}`;
+            }
+
+            // Initialize page
+            async function initPage() {
+                await createTabs();
+                if (quizHeaders.length) await loadQuiz(0); // load first quiz
+            }
+
+            initPage();
+
+            function openNav() {
+                document.getElementById('navBar').style.width = '70%';
+            }
+
+            function closeNav() {
+                document.getElementById('navBar').style.width = '0%';
+            }
+        </script>
+    </body>
+</html>

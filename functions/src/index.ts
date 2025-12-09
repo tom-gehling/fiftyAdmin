@@ -82,6 +82,80 @@ app.get('/api/getLatestQuiz', async (req: Request, res: Response): Promise<void>
 });
 
 // ===============================
+// /api/getQuizArchiveHeaders
+// ===============================
+
+app.get('/api/getQuizArchiveHeaders', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const snapshot = await db.collection('quizzes')
+      .where('quizType', '==', 1)
+      .orderBy('deploymentDate', 'desc')
+      .get();
+
+    const quizzes = snapshot.docs.map(doc => {
+      const q = doc.data();
+
+      return {
+        quizId: q.quizId,
+        quizNumber: `Quiz ${q.quizId}`,
+        deploymentDate: q.deploymentDate?.toDate() ?? null
+      };
+    });
+
+    res.status(200).json(quizzes);
+  } catch (error) {
+    console.error('Error fetching archive list:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ===============================
+// /api/getQuizArchiveHeaders
+// ===============================
+
+app.get('/api/getQuizByQuizId', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const quizId = req.query.quizId as string;
+
+    if (!quizId || quizId.trim() === "") {
+      
+      res.status(400).json({ error: 'quizId is required' });
+      return;
+    }
+
+    const snapshot = await db.collection('quizzes')
+      .where('quizId', '==', quizId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      res.status(404).json({ message: 'Quiz not found' });
+      return;
+    }
+
+    const quiz = snapshot.docs[0].data();
+
+    const formattedQuiz = {
+      ...quiz,
+      quiz_id: quiz.quizId,
+      questions: (quiz.questions || []).map((q: any) => ({
+        qNum: q.questionId,
+        qTitle: q.question,
+        qAnswer: q.answer
+      }))
+    };
+
+    res.status(200).json(formattedQuiz);
+  } catch (error) {
+    console.error('Error fetching quiz:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+
+// ===============================
 // /api/quizStats/:quizId
 // ===============================
 app.get('/api/quizStats/:quizId', async (req: Request, res: Response): Promise<void> => {
@@ -678,6 +752,38 @@ app.post('/api/updateUserEmail', async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error', error: err });
   }
 });
+
+export async function createTestQuiz() {
+  const quizId = "test_quiz_" + Date.now();
+
+  const quizData = {
+    quizId,
+    quizType: 1,
+    title: "Test Quiz",
+    deploymentDate: Timestamp.fromDate(new Date()),
+    questionCount: 3,
+    questions: [
+      { questionId: 1, question: "What is 2 + 2?", answer: "4" },
+      { questionId: 2, question: "What colour is the sky?", answer: "Blue" },
+      { questionId: 3, question: "What sound does a dog make?", answer: "Woof" }
+    ]
+  };
+
+  await db.collection("quizzes").doc(quizId).set(quizData);
+
+  return quizData;
+}
+
+app.post('/api/createTestQuiz', async (req, res) => {
+  try {
+    const quiz = await createTestQuiz();
+    res.status(200).json({ message: "Test quiz created", quiz });
+  } catch (err) {
+    console.error("Error creating test quiz:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 // ===============================
 // Export Firebase Function

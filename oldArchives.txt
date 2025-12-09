@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      :root {
+        --green: #4cfbab;
+        --black: #282828;
+        --pink: #fbe2df !important;
+        --correct: rgb(0, 215, 0) !important;
+        --incorrect: red !important;
+        --font: Helvetica, Arial, sans-serif !important;
+        --header: 25px !important;
+        --normal: 22px !important;
+        --smaller: 18px !important;
+        --transition: 0.3s !important;
+      }
+
+      body {
+        background-color: #282828;
+      }
+
+      #load {
+        color: var(--pink) !important;
+        background-color: var(--black) !important;
+        font-family: var(--font) !important;
+        font-size: var(--normal) !important;
+        font-weight: 500 !important;
+        transition: var(--transition) !important;
+        padding-bottom: 10px !important;
+        display: flex;
+        justify-content: flex-start !important;
+      }
+
+      .navBar {
+        height: 100%;
+        width: 0;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.9);
+        overflow-x: hidden;
+        transition: 0.5s;
+      }
+
+      .navBarContent {
+        position: relative;
+        top: 1%;
+        width: 90%;
+        text-align: left;
+        padding: 10px;
+        margin-top: 10%;
+      }
+
+      .navTabs {
+        border: none !important;
+        background-color: var(--black) !important;
+        color: var(--pink) !important;
+        width: 70% !important;
+        height: 60px !important;
+        margin-bottom: 10px !important;
+        padding: 10px !important;
+        font-size: 18px !important;
+        display: block;
+        border-radius: 5px !important;
+      }
+
+      .navBar .navTabs {
+        padding: 8px;
+        text-decoration: none;
+        font-size: 36px;
+        color: #818181;
+        display: block;
+        transition: 0.3s;
+      }
+
+      .navBar .active {
+        color: var(--black) !important;
+        background-color: var(--green) !important;
+        width: 80% !important;
+        transition: 300ms !important;
+      }
+
+      .navBar .navTabs:hover,
+      .navBar .navTabs:focus {
+        color: var(--black) !important;
+        background-color: var(--green) !important;
+        width: 80% !important;
+        transition: 300ms !important;
+      }
+
+      .navBar .closebtn {
+        position: sticky;
+        top: 5px;
+        bottom: 5px;
+        left: 90%;
+        font-size: 60px;
+        cursor: pointer;
+      }
+
+      @media screen and (max-height: 450px) {
+        .navBar .navTabs {
+          font-size: 20px;
+        }
+        .navBar .closebtn {
+          font-size: 40px;
+          top: 15px;
+        }
+      }
+
+      .quizContainer {
+        width: 100% !important;
+      }
+
+      .quizTitle {
+        font-size: 48px !important;
+        font-family: var(--font);
+        color: var(--pink);
+        font-weight: 600 !important;
+        text-align: center;
+      }
+
+      .quiz {
+        display: none;
+      }
+
+      .quiz.active {
+        display: block;
+      }
+
+      .question {
+        width: auto !important;
+        justify-self: center !important;
+      }
+
+      .accordionButton {
+        color: var(--pink) !important;
+        background-color: var(--black) !important;
+        border: none !important;
+        border-radius: 0px !important;
+        text-align: center !important;
+        outline: none !important;
+        width: 100% !important;
+        font-family: var(--font) !important;
+        font-size: var(--header) !important;
+        font-weight: 400 !important;
+        transition: var(--transition) !important;
+        padding: 25px !important;
+        margin-bottom: 20px !important;
+        line-height: 130% !important;
+      }
+
+      .accordionButton.active {
+        color: var(--black) !important;
+        background-color: var(--pink) !important;
+      }
+
+      .genericButton {
+        font-family: var(--font) !important;
+        font-weight: 600 !important;
+        color: var(--black) !important;
+        background-color: var(--pink) !important;
+        border: 3px solid var(--pink) !important;
+        border-radius: 15px !important;
+        font-size: var(--normal) !important;
+        padding: 15px !important;
+        margin: 5px !important;
+        transition: var(--transition) !important;
+      }
+
+      .genericButton.correct {
+        color: var(--pink) !important;
+        background-color: var(--black) !important;
+        border: 3px solid var(--pink) !important;
+      }
+
+      .genericButton.incorrect {
+        color: var(--pink) !important;
+        background-color: var(--black) !important;
+        border: 3px solid var(--pink) !important;
+      }
+
+      .genericButton.reveal {
+        background-color: var(--black) !important;
+        color: var(--pink) !important;
+        border: 3px solid var(--pink) !important;
+      }
+
+      .dot {
+        height: 10px !important;
+        width: 10px !important;
+        background-color: var(--green) !important;
+        border-radius: 50% !important;
+        display: inline-block;
+        margin-right: 10px !important;
+        border: 1px solid #282828;
+      }
+
+      .dot.removed {
+        display: none;
+      }
+
+      .panel {
+        font-family: var(--font) !important;
+        display: none;
+        font-size: var(--normal) !important;
+        padding-top: 15px !important;
+        padding-bottom: 15px !important;
+        width: auto !important;
+        text-align: center !important;
+      }
+
+      .panel.active {
+        display: block;
+      }
+
+      .panel.answer {
+        font-size: var(--header) !important;
+        font-weight: 800 !important;
+      }
+
+      .score {
+        font-family: var(--font) !important;
+        color: var(--green) !important;
+        text-align: center !important;
+        font-size: var(--header) !important;
+        font-weight: 800 !important;
+      }
+
+      .closebtn {
+        color: #4cfbab;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+      
+       .questionText p {
+        display: contents; /* Makes the <p> behave like its contents are direct children */
+        margin: 0; /* Remove default <p> spacing */
+      }
+
+      #openBtn {
+        color: #4cfbab;
+        font-size: 60px;
+        padding: 10px;
+        cursor: pointer;
+      }
+
+      .pagination {
+        display: flex;
+        list-style-type: none;
+        justify-content: center;
+        width: auto;
+        padding: 10px;
+        margin: 0;
+      }
+
+      .page-item {
+        margin: 5px;
+        font-family: var(--font) !important;
+        font-size: 20px !important;
+        color: var(--green) !important;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px !important;
+        cursor: pointer;
+      }
+
+      .page-item:hover {
+        background-color: #818181 !important;
+        text-decoration: underline;
+      }
+
+      .page-link {
+        font-family: var(--font) !important;
+        font-size: 12px !important;
+        color: var(--green) !important;
+        padding: 5px !important;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .page-item.activePage {
+        background-color: v#818181 !important;
+        color: var(--black) !important;
+      }
+      
+       .panel.answer ul {
+        padding: 0;
+        margin: 0;
+        line-height: 1;
+      }
+
+      .panel.answer li {
+        margin-top: 10px;
+        margin-bottom: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        list-style-type: "-";
+        width: 100%;
+        word-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="openBtn" onclick="openNav()">&equiv;</div>
+    <div class="navBar" id="navBar">
+      <span class="closebtn" onclick="closeNav()">&times;</span>
+      <nav class="pages">
+        <ol class="pagination">
+          <li class="page-item" id="page1">
+            <a class="page-link" href="/archives">1-30</a>
+          </li>
+          <li class="page-item" id="page2">
+            <a class="page-link" href="/archives2">31-60</a>
+          </li>
+          <li class="page-item" id="page3">
+            <a class="page-link" href="/archives3">61-90</a>
+          </li>
+          <li class="page-item" id="page4">
+            <a class="page-link" href="/archives4">91-120</a>
+          </li>
+           <li class="page-item" id="page5">
+            <a class="page-link" href="/archives5">121-150</a>
+          </li>
+          <li class="page-item" id="page6">
+            <a class="page-link" href="/archives6">151-180</a>
+          </li>
+        </ol>
+      </nav>
+    </div>
+
+    <div id="load"></div>
+
+    <script>
+      let quizzes = [
+        {
+    "quiz_id": "151",
+    "questions": [
+        {
+            "qNum": 1,
+            "qTitle": "By global daily use, name four of the world's six most used Internet browsers.",
+            "qAnswer": "(Four of) Google Chrome, Safari, Microsoft Edge, Firefox, Opera, and Samsung Internet"
+        },
+        {
+            "qNum": 2,
+            "qTitle": "Which ABC presenter, holding the title of Chief Election Analyst, called his final election last Saturday?",
+            "qAnswer": "Antony Green"
+        },
+        {
+            "qNum": 3,
+            "qTitle": "Which Australian festival will play host to Kendrick Lamar in December?",
+            "qAnswer": "Spilt Milk"
+        },
+        {
+            "qNum": 4,
+            "qTitle": "For the twelfth consecutive time, which MP won the seat of Kennedy during the federal election?",
+            "qAnswer": "Bob Katter"
+        },
+        {
+            "qNum": 5,
+            "qTitle": "A Chinese student was rescued from the top of Mount Fuji last week - and then rescued again only days later. For what reason did he say he tried to return? ",
+            "qAnswer": "He left his phone up there"
+        },
+        {
+            "qNum": 6,
+            "qTitle": "Name any of the five people who co-chaired the 2025 Met Gala Committee.",
+            "qAnswer": "(Any of) Colman Domingo, Lewis Hamilton, A$AP Rocky, Pharrell Williams, or Anna Wintour"
+        },
+        {
+            "qNum": 7,
+            "qTitle": "<em>Thunderbolts</em> is the latest release from Marvel - which punctuation mark appears at the end of its title?",
+            "qAnswer": "<em>*</em>"
+        },
+        {
+            "qNum": 8,
+            "qTitle": "If you're a Melburnian, you're from Melbourne - if you're a Muscovite, where are you from?",
+            "qAnswer": "Moscow"
+        },
+        {
+            "qNum": 9,
+            "qTitle": "The AFL hosts Gather Round - what name is given to the NRL's all-in-one-city round, held last weekend?",
+            "qAnswer": "Magic Round"
+        },
+        {
+            "qNum": 10,
+            "qTitle": "For which prehistoric fish was the 2018 film <em>The Meg</em> named?",
+            "qAnswer": "The megalodon"
+        },
+        {
+            "qNum": 11,
+            "qTitle": "With regard to a nerve compression problem, what does CTS stand for? ",
+            "qAnswer": "Carpal tunnel syndrome"
+        },
+        {
+            "qNum": 12,
+            "qTitle": "In 1992, what became mandatory to appear on all Australian whitegoods?",
+            "qAnswer": "An energy rating label (i.e., an energy 'stars' information panel)"
+        },
+        {
+            "qNum": 13,
+            "qTitle": "Name the cast member the following films have in common: <em>Mrs. Doubtfire</em> (1993), <em>Forrest Gump</em> (1994), and <em>Lincoln</em> (2012). ",
+            "qAnswer": "Sally Field"
+        },
+        {
+            "qNum": 14,
+            "qTitle": "Which conversation podcast is hosted by Brittany Hockley and Laura Byrne?",
+            "qAnswer": "<em>Life Uncut</em>"
+        },
+        {
+            "qNum": 15,
+            "qTitle": "Which continent trails Australia and Antarctica as the world's third-least populous?",
+            "qAnswer": "South America (434 million)"
+        },
+        {
+            "qNum": 16,
+            "qTitle": "Magnetic, football, and corn are all types of what?",
+            "qAnswer": "Field"
+        },
+        {
+            "qNum": 17,
+            "qTitle": "Air force, army, or navy - which Australian Defence Force service had the <u>fewest</u> personnel in 2024?",
+            "qAnswer": "Navy"
+        },
+        {
+            "qNum": 18,
+            "qTitle": "Per groundbreaking research from the University of the Sunshine Coast, what is Australia's most commonly consumed herb?",
+            "qAnswer": "Basil (consumed by 97.8% of households in the previous year)"
+        },
+        {
+            "qNum": 19,
+            "qTitle": "Throughout the past year, which online media company has sold a range of 'Good Morning to Everyone Except Peter Dutton' merchandise? ",
+            "qAnswer": "Cheek Media"
+        },
+        {
+            "qNum": 20,
+            "qTitle": "Cabo Verde is renowned for a 'bo' letter sequence in its name. List four of the eight countries who plop it elsewhere. ",
+            "qAnswer": "(Four of) Bolivia, Bosnia and Herzegovina, Botswana, Cambodia, Djibouti, Gabon, and Luxembourg"
+        },
+        {
+            "qNum": 21,
+            "qTitle": "What colour is the logo of the Australian Electoral Commission?",
+            "qAnswer": "Purple"
+        },
+        {
+            "qNum": 22,
+            "qTitle": "What is the Bee Gees' most-streamed song on Spotify?",
+            "qAnswer": " 'Stayin' Alive'"
+        },
+        {
+            "qNum": 23,
+            "qTitle": "Per <em>The Ecologist</em>, what portmanteau is used to describe the halving of Western sperm counts over the past forty years?",
+            "qAnswer": "Spermageddon"
+        },
+        {
+            "qNum": 24,
+            "qTitle": "Lucy is a private pilot who wants to fly directly from Perth to New York City. For the fastest possible trip, should she travel west or east?",
+            "qAnswer": "East"
+        },
+        {
+            "qNum": 25,
+            "qTitle": "Which Australian savoury snack food shares its name with a mental block suffered by gymnasts?",
+            "qAnswer": "Twisties"
+        },
+        {
+            "qNum": 26,
+            "qTitle": "Which Canadian island is the site of the only verified Viking settlement in North America - with its name reflecting the nature of its discovery?",
+            "qAnswer": "Newfoundland"
+        },
+        {
+            "qNum": 27,
+            "qTitle": "To the nearest five minutes, what is the 5000 metre world record in athletics?",
+            "qAnswer": "Fifteen minutes (Twelve minutes, forty-nine seconds from Berihu Aregawi)"
+        },
+        {
+            "qNum": 28,
+            "qTitle": "Brides or grooms - per the ABS, who is more likely to remarry following a divorce?",
+            "qAnswer": "Grooms"
+        },
+        {
+            "qNum": 29,
+            "qTitle": "The <em>Mission: Impossible</em> franchise is about to get its eighth installment. Name any of the franchise's five subtitles that weren't simply numbers.",
+            "qAnswer": "(Any of) <em>Ghost Protocol</em>, <em>Rogue Nation</em>, <em>Fallout</em>, <em>Dead Reckoning Part One</em>, or <em>The Final Reckoning</em>"
+        },
+        {
+            "qNum": 30,
+            "qTitle": "Melbourne-Sydney is Australia's busiest flight route by annual passenger count - which is our second-busiest?",
+            "qAnswer": "Brisbane-Sydney"
+        },
+        {
+            "qNum": 31,
+            "qTitle": "If you exclude athletics events like discus, which is the only Olympic sport whose name begins with D?",
+            "qAnswer": "Diving"
+        },
+        {
+            "qNum": 32,
+            "qTitle": "Between 2009 and 2018, <em>Forbes</em> released an annual list of the world's Most Powerful People. Which world leader was the only person to appear in every year's top five? ",
+            "qAnswer": "Vladimir Putin"
+        },
+        {
+            "qNum": 33,
+            "qTitle": "David Attenborough turns 99 this week. Which Australian marvel was the subject of a series he released in 2015?",
+            "qAnswer": "The Great Barrier Reef (<em>Great Barrier Reef with David Attenborough</em>)"
+        },
+        {
+            "qNum": 34,
+            "qTitle": "What do the majority of Australian universities consider the minimum percentage required to achieve a High Distinction in a course or subject?",
+            "qAnswer": "85"
+        },
+        {
+            "qNum": 35,
+            "qTitle": "In which country was Mark Carney re-elected as Prime Minister in April?",
+            "qAnswer": "Canada"
+        },
+        {
+            "qNum": 36,
+            "qTitle": "Which insect shares its name with a member of the Red Hot Chilli Peppers?",
+            "qAnswer": "Flea"
+        },
+        {
+            "qNum": 37,
+            "qTitle": "By foot, or by sea - how did the first Tasmanians arrive on the land mass 40,000 years ago?",
+            "qAnswer": "By foot"
+        },
+        {
+            "qNum": 38,
+            "qTitle": "Her name appears every time you play it - which online game is edited by Tracy Bennett?",
+            "qAnswer": "Wordle"
+        },
+        {
+            "qNum": 39,
+            "qTitle": "Canada, Russia, or no country at all - who lays claim to the site of the North Pole?",
+            "qAnswer": "No country at all (it's located in unowned Arctic waters) "
+        },
+        {
+            "qNum": 40,
+            "qTitle": "Per AHPRA, arrange these health professions by least to most registered professionals in Australia - dentists, pharmacists, and physiotherapists.",
+            "qAnswer": "Dentists (27,583); Pharmacy (38,610); Physiotherapy (44,895)"
+        },
+        {
+            "qNum": 41,
+            "qTitle": "When holding the 'A' key on a Macbook keyboard, eight alternative A's appear, one of which is À. Name four of the others.",
+            "qAnswer": "(Four of) Á, Â, Â, Ä, Æ, Ã, Å, and Ā"
+        },
+        {
+            "qNum": 42,
+            "qTitle": "Aside from the surrounding hallways and stairs, name three of the nine rooms in the original iteration of <em>Cluedo</em>.",
+            "qAnswer": "(Three of) Ballroom, Billiard Room, Conservatory, Dining Room, Hall, Kitchen, Library, Lounge, and Study"
+        },
+        {
+            "qNum": 43,
+            "qTitle": "For which TV series did Ayo Edebiri win a Golden Globe in 2024?",
+            "qAnswer": "<em>The Bear</em>"
+        },
+        {
+            "qNum": 44,
+            "qTitle": "Per the Department of Climate Change and Energy, Australia relies on four types of renewable energy. Three of them are bioenergy, solar, wind - which is the fourth?",
+            "qAnswer": "Hydro"
+        },
+        {
+            "qNum": 45,
+            "qTitle": "Joe's gone to a mate's wedding, and uploaded the following caption: 'Was so special to be apart of your special day! 🏩'. What grammatical error has Joe made? ",
+            "qAnswer": "He said 'apart' instead of 'a part'"
+        },
+        {
+            "qNum": 46,
+            "qTitle": "Per <em>Britannica</em>'s list of the deadliest mammals, humans cause the most human deaths annually. Which mammal causes the second-most human deaths? ",
+            "qAnswer": "Elephants"
+        },
+        {
+            "qNum": 47,
+            "qTitle": "Using a three-letter word, complete the following words: s...ed, ...el, and ...ards.",
+            "qAnswer": "Tow"
+        },
+        {
+            "qNum": 48,
+            "qTitle": "Which Australian retailer produces a magazine known as <em>The House of Wellness</em>?",
+            "qAnswer": "Chemist Warehouse"
+        },
+        {
+            "qNum": 49,
+            "qTitle": "Twenty-four countries recognise Arabic as an official language - which comes first alphabetically?",
+            "qAnswer": "Algeria"
+        },
+        {
+            "qNum": 50,
+            "qTitle": "Which of the following is <u>not</u> a real excerpt from a Trumpet of Patriots spam text: a) 'forgive student debt', b) 'fast trains 20 min', c) 'common sense NOW', or d) 'take your super anytime'? ",
+            "qAnswer": "c) 'common sense NOW'"
+        }
+    ]
+},
+{
+    "quiz_id": "152",
+    "questions": [
+        {
+            "qNum": 1,
+            "qTitle": "Qantas's <em>Travel Insider</em> recently listed Australia's sixteen best 'big' things. One is the Big Banana - name four of the remaining fifteen.",
+            "qAnswer": "<br /><ul><li>(Four of)</li><li>The Big Prawn</li><li>The Big Pineapple</li><li>The Big Potato</li><li>The Big Lobster</li><li>The Giant Koala</li><li>The Big Merino</li><li>The Big Easel Emerald</li><li>The Big Rocking Horse</li><li>The Big Golden Guitar</li><li>The Big Mango</li><li>The Big Boxing Croc</li><li>The Giant Ram</li><li>The Big Bogan</li><li>The Big Ned Kelly</li> and <li>The Big Penguin</li></ul>"
+        },
+        {
+            "qNum": 2,
+            "qTitle": "How many Pope Leo's precede the newly anointed Robert Prevost in the Vatican?",
+            "qAnswer": "Thirteen (i.e., he is Pope Leo XIV)"
+        },
+        {
+            "qNum": 3,
+            "qTitle": "At the 2025 federal election, how many seats did Labor fail to retain?",
+            "qAnswer": "Zero"
+        },
+        {
+            "qNum": 4,
+            "qTitle": "Which tech manufacturer's website has three kinds of products you can purchase - watches, calculators, and instruments?",
+            "qAnswer": "Casio"
+        },
+        {
+            "qNum": 5,
+            "qTitle": "Which Netflix series, in its fifth and final season, chronicles the adventures of Joe Goldberg?",
+            "qAnswer": "<em>You</em>"
+        },
+        {
+            "qNum": 6,
+            "qTitle": "The AFL uses a Sherrin football - what brand of basketball is solely used in NBA games?",
+            "qAnswer": "Wilson"
+        },
+        {
+            "qNum": 7,
+            "qTitle": "In the original <em>Star Wars</em> trilogy, Luke Skywalker has the most screen-time of any character. Who has the second-most?",
+            "qAnswer": "Han Solo"
+        },
+        {
+            "qNum": 8,
+            "qTitle": "By annual mass consumed, what is considered the world's most eaten food?",
+            "qAnswer": "Rice"
+        },
+        {
+            "qNum": 9,
+            "qTitle": "Per <em>Merriam-Webster</em>, the difference between a cemetery and a graveyard is size. Which typically has a smaller area?",
+            "qAnswer": "A graveyard"
+        },
+        {
+            "qNum": 10,
+            "qTitle": "Name the cast member the following films have in common: <em>Twilight</em> (2008), <em>Pitch Perfect</em> (2012), and <em>Another Simple Favour</em> (2025). ",
+            "qAnswer": "Anna Kendrick"
+        },
+        {
+            "qNum": 11,
+            "qTitle": "As of this year, which customer-owned Australian bank will refuse to offer car loans for fossil fuel-powered vehicles?",
+            "qAnswer": "Bank Australia"
+        },
+        {
+            "qNum": 12,
+            "qTitle": "In a 2020 article from <em>GQ</em>, they instructed readers on how to get the perfect middle-part haircut. In its title, which actor was cited as having the haircut's ideal form?",
+            "qAnswer": "Hugh Grant (i.e., 'How to get Hugh Grant's elegant collegiate hairstyle')"
+        },
+        {
+            "qNum": 13,
+            "qTitle": "Name three of the six fruits that were consumed by the titular insect in <em>The Very Hungry Caterpillar</em>.",
+            "qAnswer": "(Three of) Apple, Pear, Plum, Strawberry, Orange, and Watermelon"
+        },
+        {
+            "qNum": 14,
+            "qTitle": "When considering the pressure it can exert, the masseter is the strongest muscle in the body. Where would you find it?",
+            "qAnswer": "The jaw"
+        },
+        {
+            "qNum": 15,
+            "qTitle": "Germany kicks off its name with a 'ge' letter sequence. Name three of the five other countries who also contain it.",
+            "qAnswer": "(Three of) Algeria, Argentina, Georgia, Niger, and Nigeria"
+        },
+        {
+            "qNum": 16,
+            "qTitle": "Which boxer - who died in March - is the namesake for a line of barbeque grills?",
+            "qAnswer": "George Foreman"
+        },
+        {
+            "qNum": 17,
+            "qTitle": "What number of payments typically forms an Afterpay payment plan?",
+            "qAnswer": "Four"
+        },
+        {
+            "qNum": 18,
+            "qTitle": "In 2009, what spectacular act made Sully Sullenberger world famous?",
+            "qAnswer": "Safely landing a plane in the Hudson River"
+        },
+        {
+            "qNum": 19,
+            "qTitle": "Which Middle Eastern capital's airport is known by the three-letter code BEY?",
+            "qAnswer": "Beirut"
+        },
+        {
+            "qNum": 20,
+            "qTitle": "Which protein is the most abundant in wheat?",
+            "qAnswer": "Gluten"
+        },
+        {
+            "qNum": 21,
+            "qTitle": "Using a mid-2000's rock hit, complete the title of a satirical <em>Betoota Advocate</em> headline: 'Stadium Under Fire After Venue Staff Forget to Play Pre-Match ... on the PA'.",
+            "qAnswer": " 'Joker and the Thief'"
+        },
+        {
+            "qNum": 22,
+            "qTitle": "North Melbourne is a famous example - which is the only state capital that <u>doesn't</u> have a suburb explicitly named after its north?",
+            "qAnswer": "Brisbane"
+        },
+        {
+            "qNum": 23,
+            "qTitle": "Which is Lorde's most-streamed song on Spotify?",
+            "qAnswer": " 'Royals'"
+        },
+        {
+            "qNum": 24,
+            "qTitle": "Per <em>Fortune Magazine</em>, which sensory toy peaked in popularity in May 2017 - seen 'whirring between the thumbs and index fingers of school children'?",
+            "qAnswer": "Fidget spinners"
+        },
+        {
+            "qNum": 25,
+            "qTitle": "Aerial, crouched, or superterranean - what label is commonly given to plants with roots visible above-ground?",
+            "qAnswer": "Aerial"
+        },
+        {
+            "qNum": 26,
+            "qTitle": "In 2024, Jamie Oliver had a new cooking show. Which culinary device did all its recipes revolve around?",
+            "qAnswer": "The air fryer (i.e., <em>Jamie's Air Fryer Meals</em>)"
+        },
+        {
+            "qNum": 27,
+            "qTitle": "Which event will be hosted at New Jersey's MetLife Stadium on July 19, 2026?",
+            "qAnswer": "The FIFA World Cup Final"
+        },
+        {
+            "qNum": 28,
+            "qTitle": "The ATO's website has an official list of acronyms - each more gorgeous than the last. Within that list, what does 'FBT' stand for?",
+            "qAnswer": "Fringe benefits tax"
+        },
+        {
+            "qNum": 29,
+            "qTitle": "Throughout the 2000's, and their rekindled romance in the 2020's, which celebrity couple were known as 'Bennifer\"?",
+            "qAnswer": "Ben Affleck and Jennifer Lopez"
+        },
+        {
+            "qNum": 30,
+            "qTitle": "Which artist, currently on her <em>Lifetimes</em> tour, has been mocked for her unusually poor dance moves?",
+            "qAnswer": "Katy Perry"
+        },
+        {
+            "qNum": 31,
+            "qTitle": "To which political position was Friedrich Merz installed on May 6?",
+            "qAnswer": "Chancellor of Germany"
+        },
+        {
+            "qNum": 32,
+            "qTitle": "Which streaming service, newly available in Australia, is operated by HBO?",
+            "qAnswer": "Max"
+        },
+        {
+            "qNum": 33,
+            "qTitle": "Fairway shot, tomahawk shot, and jump putt are all terms native to which sport?",
+            "qAnswer": "Disc/frisbee golf"
+        },
+        {
+            "qNum": 34,
+            "qTitle": "Of all the countries in the world with single-syllable names, only two are landlocked. Name either of them.",
+            "qAnswer": "(Either of) Chad or Laos"
+        },
+        {
+            "qNum": 35,
+            "qTitle": "If you're from London, you're a Londoner - which English city are you from if you're called a Brummie?",
+            "qAnswer": "Birmingham"
+        },
+        {
+            "qNum": 36,
+            "qTitle": "Using the name of a train, complete the title of an Agatha Christie novel: <em>Murder on the ... </em>",
+            "qAnswer": "<em>Orient Express</em>"
+        },
+        {
+            "qNum": 37,
+            "qTitle": "Which small, colourless fragments in blood are the primary agent in the clotting process?",
+            "qAnswer": "Platelets"
+        },
+        {
+            "qNum": 38,
+            "qTitle": "<em>Sesame Street</em> deliberately engaged in repetitive teaching techniques - but which Nick Jr. series from the early 2000's deliberately used a long-form problem-solving format, including the services of an animated dog? ",
+            "qAnswer": "<em>Blue's Clues</em>"
+        },
+        {
+            "qNum": 39,
+            "qTitle": "Using a three-letter word, complete the following words: ...th, s...t, and in...se.",
+            "qAnswer": "Ten"
+        },
+        {
+            "qNum": 40,
+            "qTitle": "Name either of the sauces that typically find their way into a Bloody Mary cocktail recipe.",
+            "qAnswer": "(Either of) Tabasco or Worcestershire"
+        },
+        {
+            "qNum": 41,
+            "qTitle": "<em>Eau de parfum</em>, or <em>eau de toilette</em> - which traditionally has a lower concentration of fragrance?",
+            "qAnswer": "<em>Eau de toilette</em>"
+        },
+        {
+            "qNum": 42,
+            "qTitle": "Leather, rubber, or soft fabrics - per a 1983 <em>British Journal of Psychiatry</em> article, which is the most commonly reported clothing-based fetish?",
+            "qAnswer": "Rubber"
+        },
+        {
+            "qNum": 43,
+            "qTitle": "<em>Wasserkocher</em> (Deu.), <em>bouilloire</em> (Fr.), and <em>pava</em> (Esp.) are all foreign translations of which English word?",
+            "qAnswer": "Kettle"
+        },
+        {
+            "qNum": 44,
+            "qTitle": "Sydney Tower is the tallest building in Sydney. Which retailer's logo lies across its golden top?",
+            "qAnswer": "Westfield's"
+        },
+        {
+            "qNum": 45,
+            "qTitle": "Which of the following is most synonymous with incorrigible: indissolvable in water; inferior to a better option; or incapable of being changed or reformed?",
+            "qAnswer": "Incapable of being changed or reformed"
+        },
+        {
+            "qNum": 46,
+            "qTitle": "With regard to the initials following Washington's name, what does 'D.C.' stand for?",
+            "qAnswer": "District of Columbia"
+        },
+        {
+            "qNum": 47,
+            "qTitle": "One of them is at 12:00 - name any of the other ten times when the minute and hour hand of an analog clock eclipse.",
+            "qAnswer": "(Any of) 1:05, 2:10, 3:16, 4:21, 5:27, 6:32, 7:38, 8:43, 9:49, and 10:54"
+        },
+        {
+            "qNum": 48,
+            "qTitle": "Camogie is an all-female version of which Irish sport?",
+            "qAnswer": "Hurling"
+        },
+        {
+            "qNum": 49,
+            "qTitle": "Video games, trading cards, or TV series - in which medium did Pokémon get its start?",
+            "qAnswer": "Video games (i.e., <em>Pokémon Red Version</em> and <em>Pokémon Blue Version</em>)"
+        },
+        {
+            "qNum": 50,
+            "qTitle": "Which of the following is <u>not</u> a real Bon Iver album: a) <em>22, A Million</em>, b) <em>i,i</em>, c) <em>SABLE, fABLE</em>, or d) <em>tetris,GONE</em>?",
+            "qAnswer": "d) <em>tetris,GONE</em>"
+        }
+    ]
+}
+]
+        
+
+      let pg = {
+        num: 6,
+        startDate: "2025-05-09",
+        startQuiz: 151,
+      };
+
+      let page = document.getElementById(`page${pg.num}`);
+      page.classList.add("activePage");
+
+      function addWeeksToDate(numberOfWeeks, firstQuiz) {
+  var startDate = new Date(firstQuiz);
+  var millisecondsInWeek = 7 * 24 * 60 * 60 * 1000;
+
+
+    var totalMillisecondsToAdd = numberOfWeeks * millisecondsInWeek;
+ 
+
+  var resultDate = new Date(startDate.getTime() + totalMillisecondsToAdd);
+  return resultDate;
+}
+
+      function formatDateAsDDMMYY(date) {
+        var day = date.getDate();
+        var month = date.getMonth() + 1; // Months are zero-based
+        var year = date.getFullYear() % 100; // Get the last two digits of the year
+
+        day = day < 10 ? "0" + day : day;
+        month = month < 10 ? "0" + month : month;
+        return day + "/" + month + "/" + year;
+      }
+
+       function getDate(numberOfWeeks, firstQuiz) {
+        date = "";
+        if (numberOfWeeks == 133) {
+          date = addWeeksToDate(134, firstQuiz);
+        } else {
+          date = addWeeksToDate(numberOfWeeks, firstQuiz);
+        }
+        return formatDateAsDDMMYY(date);
+      }
+
+      function createTabs() {
+        var cont = document.getElementById("navBar");
+
+        for (let i = 0; i < quizzes.length; i++) {
+          var tab = document.createElement("button");
+          if (i === 0) {
+            tab.className = "navTabs active";
+          } else {
+            tab.className = "navTabs";
+          }
+          tab.id = "tab_" + (i + pg.startQuiz);
+          tab.innerText =
+            "#" + (i + pg.startQuiz) + " - " + getDate(i, pg.startDate);
+          tab.addEventListener("click", function () {
+            handleTabClick(i);
+          });
+          cont.appendChild(tab);
+        }
+      }
+
+      function createQuizContainers() {
+        var page = document.getElementById("load");
+        var cont = document.createElement("div");
+        cont.className = "quizContainer";
+        page.appendChild(cont);
+
+        for (let i = 0; i < quizzes.length; i++) {
+          var quiz = document.createElement("div");
+          if (i === 0) {
+            quiz.className = "quiz active";
+          } else {
+            quiz.className = "quiz";
+          }
+          quiz.id = "quiz_" + (i + 1);
+          cont.appendChild(quiz);
+          var title = document.createElement("h2");
+          title.id = "quizTitle_" + i;
+          title.className = "quizTitle";
+          title.innerText =
+            "Quiz " + quizzes[i].quiz_id + " - " + getDate(i, pg.startDate);
+          quiz.appendChild(title);
+          createQuiz(i, quizzes[i].questions);
+        }
+      }
+
+      function createQuiz(id, questions) {
+        var quiz = document.getElementsByClassName("quiz");
+        for (let i = 0; i < questions.length; i++) {
+          let idCode = id + 1 + "_" + (i + 1);
+          var questionDiv = document.createElement("div");
+          questionDiv.className = "question";
+          questionDiv.id = "question_" + idCode;
+
+          var accordionButton = document.createElement("button");
+          accordionButton.className = "accordionButton";
+          accordionButton.id = "button_" + idCode;
+
+          var dotSpan = document.createElement("span");
+          dotSpan.className = "dot";
+          dotSpan.id = "dot_" + idCode;
+
+          var dotText = document.createTextNode(" ");
+          dotSpan.appendChild(dotText);
+
+          var questionText = document.createElement("span");
+          questionText.className = "questionText";
+          questionText.innerHTML =
+            "<b>" + (i + 1) + ". </b>" + questions[i].qTitle;
+          accordionButton.appendChild(dotSpan);
+          accordionButton.appendChild(questionText);
+          accordionButton.onclick = toggleAccordion;
+
+          var clickPanel = document.createElement("div");
+          clickPanel.className = "panel";
+
+          var answerButton = document.createElement("button");
+          answerButton.className = "genericButton";
+          answerButton.textContent = "Click for answer";
+          answerButton.onclick = togglePanel;
+
+          var answerPanel = document.createElement("div");
+          answerPanel.className = "panel answer";
+
+          var answerText = document.createElement("p");
+          answerText.className = "answerText";
+          answerText.innerHTML = questions[i].qAnswer;
+
+          var correctButton = document.createElement("button");
+          correctButton.className = "genericButton";
+          correctButton.id = "correct_" + idCode;
+          correctButton.textContent = "Correct";
+          correctButton.onclick = function () {
+            disableButton(1, id, i);
+            incrementScore(1, id, i);
+            removeDot(id + 1, i + 1);
+          };
+
+          var incorrectButton = document.createElement("button");
+          incorrectButton.className = "genericButton";
+          incorrectButton.id = "incorrect_" + idCode;
+          incorrectButton.textContent = "Incorrect";
+          incorrectButton.onclick = function () {
+            disableButton(2, id, i);
+            incrementScore(2, id, i);
+            removeDot(id + 1, i + 1);
+          };
+
+          quiz[id].appendChild(questionDiv);
+          questionDiv.appendChild(accordionButton);
+          questionDiv.appendChild(clickPanel);
+          clickPanel.appendChild(answerButton);
+          clickPanel.appendChild(answerPanel);
+          answerPanel.appendChild(answerText);
+          answerPanel.appendChild(correctButton);
+          answerPanel.appendChild(incorrectButton);
+        }
+      }
+
+      function createScore() {
+        var quiz = document.getElementsByClassName("quiz");
+        for (let i = 0; i < quizzes.length; i++) {
+          var scoreDiv = document.createElement("div");
+          scoreDiv.className = "score";
+          scoreDiv.id = "score_" + (i + 1);
+          scoreDiv.innerHTML =
+            'Score: <span id="scoreCount_' +
+            (i + 1) +
+            '">0</span> / <span id="totalCount_' +
+            (i + 1) +
+            '">0</span>';
+          quiz[i].appendChild(scoreDiv);
+        }
+      }
+
+      function toggleAccordion() {
+        this.classList.toggle("active");
+        var panel = this.nextElementSibling;
+        panel.style.display =
+          panel.style.display === "block" ? "none" : "block";
+      }
+
+      function togglePanel() {
+        this.classList.toggle("reveal");
+        var panel = this.nextElementSibling;
+        panel.style.display =
+          panel.style.display === "block" ? "none" : "block";
+      }
+
+      function handleTabClick(tabIndex) {
+        var tab = document.getElementsByClassName("navTabs");
+        var quiz = document.getElementsByClassName("quiz");
+        for (let i = 0; i < quiz.length; i++) {
+          if (i === tabIndex) {
+            tab[i].classList.add("active");
+            quiz[i].classList.add("active");
+          } else {
+            tab[i].classList.remove("active");
+            quiz[i].classList.remove("active");
+          }
+        }
+      }
+
+      function disableButton(buttonNum, quiz, pairNum) {
+        var buttonPair = buttons[quiz * 50 + pairNum];
+        var correctButton = buttonPair.correct;
+        var incorrectButton = buttonPair.incorrect;
+
+        if (buttonNum === 1) {
+          correctButton.disabled = true;
+          correctButton.classList.add("correct");
+          incorrectButton.disabled = false;
+          incorrectButton.classList.remove("incorrect");
+        } else if (buttonNum === 2) {
+          incorrectButton.disabled = true;
+          incorrectButton.classList.add("incorrect");
+          correctButton.disabled = false;
+          correctButton.classList.remove("correct");
+        }
+      }
+
+      function incrementScore(num, quiz, pairNum) {
+        var buttonIndex = quiz * 50 + pairNum;
+        console.log(buttonIndex);
+        if (num === 1) {
+          if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+            scoreCount[quiz]++;
+            totalCount[quiz]++;
+            correctClicked[buttonIndex] = true;
+          } else if (incorrectClicked[buttonIndex]) {
+            scoreCount[quiz]++;
+            correctClicked[buttonIndex] = true;
+          }
+        } else if (num === 2) {
+          if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+            totalCount[quiz]++;
+            incorrectClicked[buttonIndex] = true;
+          } else if (
+            correctClicked[buttonIndex] &&
+            !incorrectClicked[buttonIndex]
+          ) {
+            scoreCount[quiz]--;
+            incorrectClicked[buttonIndex] = true;
+          } else if (correctClicked[buttonIndex]) {
+            scoreCount[quiz]--;
+            incorrectClicked[buttonIndex] = true;
+          }
+        }
+        for (let i = 0; i < quizzes.length; i++) {
+          var score = document.getElementById(`scoreCount_${i + 1}`);
+          var total = document.getElementById(`totalCount_${i + 1}`);
+          score.innerText = scoreCount[i];
+          total.innerText = totalCount[i];
+        }
+      }
+
+      function removeDot(quiz, pairNum) {
+        var dot = document.getElementById(`dot_${quiz}_${pairNum}`);
+        dot.classList.add("removed");
+      }
+
+      function initPage() {
+        createTabs();
+        createQuizContainers();
+        createScore();
+        for (var i = 0; i < quizzes.length; i++) {
+          for (var j = 0; j < quizzes[i].questions.length; j++) {
+            var buttonPair = {
+              correct: document.getElementById(`correct_${i + 1}_${j + 1}`),
+              incorrect: document.getElementById(`incorrect_${i + 1}_${j + 1}`),
+              dot: document.getElementById(`dot_${i + 1}_${j + 1}`),
+            };
+            buttons.push(buttonPair);
+          }
+        }
+      }
+
+      let scoreCount = Array(quizzes.length).fill(0);
+      let totalCount = Array(quizzes.length).fill(0);
+      var buttons = [];
+      var correctClicked = Array(quizzes.length * 50).fill(false);
+      var incorrectClicked = Array(quizzes.length * 50).fill(false);
+      var dotStatus = Array(quizzes.length * 50).fill("block");
+
+      initPage();
+
+      function openNav() {
+        document.getElementById("navBar").style.width = "70%";
+      }
+
+      function closeNav() {
+        document.getElementById("navBar").style.width = "0%";
+      }
+    </script>
+  </body>
+</html>
