@@ -85,14 +85,10 @@
                 height: 100%;
                 overflow: auto;
                 background-color: rgba(0, 0, 0, 0.8);
-                /* THIS CENTERS IT */
-                justify-content: center;
-                align-items: center;
             }
 
             .modal-content {
                 background-color: white;
-                color: var(--secondary);
                 margin: 15% auto;
                 padding: 20px;
                 font-size: var(--smaller);
@@ -235,6 +231,10 @@
                 justify-self: center !important;
             }
 
+            .questionText {
+                display: contents;
+            }
+
             .accordionButton {
                 color: var(--primary) !important;
                 background-color: var(--secondary) !important;
@@ -252,14 +252,14 @@
                 line-height: 130% !important;
             }
 
-            .questionText p {
-                display: contents; /* Makes the <p> behave like its contents are direct children */
-                margin: 0; /* Remove default <p> spacing */
-            }
-
             .accordionButton.active {
                 color: var(--secondary) !important;
                 background-color: var(--primary) !important;
+            }
+
+            .accordionButton p {
+                margin: 0 !important;
+                display: inline !important; /* removes block behaviour */
             }
 
             .genericButton {
@@ -365,10 +365,8 @@
     </head>
     <body>
         <div id="load"></div>
-        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
         <script>
-            var showEmailModalFunc;
             function addWeeksToDate(numberOfWeeks, firstQuiz) {
                 var startDate = new Date(firstQuiz);
                 var millisecondsInWeek = 7 * 24 * 60 * 60 * 1000;
@@ -403,7 +401,7 @@
                 infoButton.id = 'infoBtn';
                 infoButton.innerHTML = '︎First timers<br /><b>click me!</b>';
                 infoButton.onclick = function () {
-                    modal.style.display = 'flex';
+                    modal.style.display = 'block';
                 };
 
                 var modalDiv = document.createElement('div');
@@ -669,162 +667,36 @@
                 dot.classList.add('removed');
             }
 
-            // async function startQuizSession(quizId) {
-            //   const sessionKey = `quiz_${quizId}_sessionId`;
-            //   if (localStorage.getItem(sessionKey))
-            //     return localStorage.getItem(sessionKey);
-
-            //   try {
-            //     const response = await fetch(
-            //       "https://weeklyfifty-7617b.web.app/api/logQuizStart",
-            //       {
-            //         method: "POST",
-            //         headers: { "Content-Type": "application/json" },
-            //         body: JSON.stringify({ quizId }), // <- correct key
-            //       }
-            //     );
-
-            //     if (!response.ok) throw new Error("Failed to start quiz session");
-            //     const data = await response.json();
-            //     localStorage.setItem(sessionKey, data.sessionId);
-            //     return data.sessionId;
-            //   } catch (err) {
-            //     console.error("Error starting quiz session:", err);
-            //     return null;
-            //   }
-            // }
-
-            // async function finishQuizSession(quizIndex) {
-            //   const quizId = String(quizzes[quizIndex].quiz_id);
-            //   const sessionKey = `quiz_${quizId}_sessionId`;
-            //   const sessionId = localStorage.getItem(sessionKey);
-            //   if (!sessionId) return;
-
-            //   const totalQuestions = quizzes[quizIndex].questions.length;
-            //   const score = scoreCount[quizIndex];
-            //   const answers = quizzes[quizIndex].questions.map((q, idx) => {
-            //     const key = `${quizIndex}_${idx}`;
-            //     return {
-            //       questionId: q.qNum,
-            //       correct: correctClicked[quizIndex * 50 + idx],
-            //       timestamp: answerTimestamps[key] || null,
-            //     };
-            //   });
-
-            //   try {
-            //     const response = await fetch(
-            //       "https://weeklyfifty-7617b.web.app/api/logQuizFinish",
-            //       {
-            //         method: "POST",
-            //         headers: { "Content-Type": "application/json" },
-            //         body: JSON.stringify({
-            //           sessionId,
-            //           score,
-            //           total: totalQuestions,
-            //           answers,
-            //         }),
-            //       }
-            //     );
-
-            //     if (!response.ok) throw new Error("Failed to finish quiz session");
-            //     console.log("Quiz session saved:", await response.json());
-            //   } catch (err) {
-            //     console.error("Error finishing quiz session:", err);
-            //   }
-            // }
-
-            function getWeeklyFiftyUser() {
-                const userStr = localStorage.getItem('weeklyFiftyUser');
-                if (!userStr) return null;
-                try {
-                    return JSON.parse(userStr);
-                } catch {
-                    return null;
-                }
-            }
-
-            function createWeeklyFiftyUser() {
-                const newUser = {
-                    userId: crypto.randomUUID(),
-                    promptForEmail: true,
-                    providedEmail: false,
-                    email: null
-                };
-                localStorage.setItem('weeklyFiftyUser', JSON.stringify(newUser));
-                return newUser;
-            }
-
-            function ensureWeeklyFiftyUser() {
-                let user = getWeeklyFiftyUser();
-                if (!user) {
-                    user = createWeeklyFiftyUser();
-                }
-                return user;
-            }
-
-            function updateWeeklyFiftyUser(fields) {
-                const user = ensureWeeklyFiftyUser();
-                Object.assign(user, fields);
-                localStorage.setItem('weeklyFiftyUser', JSON.stringify(user));
-                return user;
-            }
-
-            function setQuizSessionWithExpiry(key, value, ttlMs = ONE_WEEK_MS) {
-                const now = Date.now();
-                const item = { value, expiry: now + ttlMs };
-                localStorage.setItem(key, JSON.stringify(item));
-            }
-
-            function getQuizSessionWithExpiry(key) {
-                const itemStr = localStorage.getItem(key);
-                if (!itemStr) return null;
-                try {
-                    const item = JSON.parse(itemStr);
-                    if (Date.now() > item.expiry) {
-                        localStorage.removeItem(key);
-                        return null;
-                    }
-                    return item.value;
-                } catch {
-                    return null;
-                }
-            }
-
             async function startQuizSession(quizId) {
                 const sessionKey = `quiz_${quizId}_sessionId`;
-                const existing = getQuizSessionWithExpiry(sessionKey);
-                if (existing) return existing;
+                if (localStorage.getItem(sessionKey)) return localStorage.getItem(sessionKey);
 
-                const user = ensureWeeklyFiftyUser();
-                setQuizSessionWithExpiry(sessionKey, user.userId); // session uses userId as sessionId
                 try {
                     const response = await fetch('https://weeklyfifty-7617b.web.app/api/logQuizStart', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ quizId, userId: user.userId })
+                        body: JSON.stringify({ quizId }) // <- correct key
                     });
 
                     if (!response.ok) throw new Error('Failed to start quiz session');
-
                     const data = await response.json();
-                    setQuizSessionWithExpiry(sessionKey, data.sessionId);
+                    localStorage.setItem(sessionKey, data.sessionId);
                     return data.sessionId;
                 } catch (err) {
-                    console.error('Failed to log quiz start, falling back to local session:', err);
-                    setQuizSessionWithExpiry(sessionKey, user.userId);
-                    return user.userId;
+                    console.error('Error starting quiz session:', err);
+                    return null;
                 }
             }
 
             async function finishQuizSession(quizIndex) {
-                const quiz = quizzes[quizIndex];
-                const quizId = String(quiz.quiz_id);
-                const user = ensureWeeklyFiftyUser();
+                const quizId = String(quizzes[quizIndex].quiz_id);
                 const sessionKey = `quiz_${quizId}_sessionId`;
-                const sessionId = getQuizSessionWithExpiry(sessionKey);
+                const sessionId = localStorage.getItem(sessionKey);
                 if (!sessionId) return;
 
-                const answers = quiz.questions.map((q, idx) => {
+                const totalQuestions = quizzes[quizIndex].questions.length;
+                const score = scoreCount[quizIndex];
+                const answers = quizzes[quizIndex].questions.map((q, idx) => {
                     const key = `${quizIndex}_${idx}`;
                     return {
                         questionId: q.qNum,
@@ -833,84 +705,24 @@
                     };
                 });
 
-                const totalQuestions = quiz.questions.length;
-                const score = scoreCount[quizIndex];
-
                 try {
-                    await fetch('https://weeklyfifty-7617b.web.app/api/logQuizFinish', {
+                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logQuizFinish', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            sessionId: sessionId,
+                            sessionId,
                             score,
                             total: totalQuestions,
                             answers
                         })
                     });
 
-                    console.log('Quiz session logged for user', user.userId);
+                    if (!response.ok) throw new Error('Failed to finish quiz session');
+                    console.log('Quiz session saved:', await response.json());
                 } catch (err) {
-                    console.error('Failed to log quiz finish:', err);
+                    console.error('Error finishing quiz session:', err);
                 }
             }
-
-            async function checkQuizCompletion(quizIndex) {
-                const quizId = String(quizzes[quizIndex].quiz_id);
-                const quizSessionKey = `quiz_${quizId}_submitted`;
-
-                if (getQuizSessionWithExpiry(quizSessionKey)) return;
-
-                const totalQuestions = quizzes[quizIndex].questions.length;
-                let answeredCount = 0;
-                for (let j = 0; j < totalQuestions; j++) {
-                    const idx = quizIndex * 50 + j;
-                    if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
-                }
-
-                // Start session on first answer
-                if (answeredCount === 1) {
-                    await startQuizSession(quizId);
-                }
-
-                // Finish session on last answer
-                if (answeredCount === totalQuestions) {
-                    setQuizSessionWithExpiry(quizSessionKey, 'true'); // mark quiz submitted
-                    quizSubmitted[quizIndex] = true;
-
-                    showEmailModalFunc(); // show the modal with confetti
-
-                    for (let j = 0; j < totalQuestions; j++) {
-                        disableButton(0, quizIndex, j);
-                    }
-
-                    await finishQuizSession(quizIndex);
-                }
-            }
-
-            // function showEmailModal(quizIndex) {
-            //     const email = prompt('Congrats! Enter your email to receive updates (optional):');
-            //     if (email) {
-            //         updateWeeklyFiftyUser({
-            //             email,
-            //             providedEmail: true,
-            //             promptForEmail: false
-            //         });
-            //     } else {
-            //         updateWeeklyFiftyUser({ promptForEmail: false });
-            //         showEmailButton(quizIndex);
-            //     }
-            // }
-
-            // function showEmailButton(quizIndex) {
-            //     const scoreDiv = document.getElementById(`score_${quizIndex + 1}`);
-            //     if (!scoreDiv.querySelector('.emailButton')) {
-            //         const btn = document.createElement('button');
-            //         btn.className = 'genericButton emailButton';
-            //         btn.textContent = 'Add your email';
-            //         btn.onclick = () => showEmailModal(quizIndex);
-            //         scoreDiv.appendChild(btn);
-            //     }
-            // }
 
             function setWithExpiry(key, value, ttlMs) {
                 const now = new Date().getTime();
@@ -936,178 +748,40 @@
 
             const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-            function createEmailModal() {
-                const quizElement = document.getElementById('load');
+            async function checkQuizCompletion(quizIndex) {
+                const quizId = String(quizzes[quizIndex].quiz_id);
+                const quizSessionKey = `quiz_${quizId}_submitted`;
 
-                // Modal container
-                const modalDiv = document.createElement('div');
-                modalDiv.id = 'emailModal';
-                modalDiv.className = 'modal';
+                // Use the expiry-aware get
+                if (getWithExpiry(quizSessionKey)) return; // Already submitted
 
-                // Modal content
-                const modalContentDiv = document.createElement('div');
-                modalContentDiv.className = 'modal-content';
+                const totalQuestions = quizzes[quizIndex].questions.length;
+                let answeredCount = 0;
 
-                // Close button
-                const closeButton = document.createElement('span');
-                closeButton.className = 'close';
-                closeButton.innerHTML = '&times;';
-                closeButton.onclick = () => (modalDiv.style.display = 'none');
+                for (let j = 0; j < totalQuestions; j++) {
+                    const idx = quizIndex * 50 + j;
+                    if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
+                }
 
-                // Title
-                const title = document.createElement('h2');
-                title.innerText = 'Thanks for Quizzing!';
-                title.style.textAlign = 'center';
+                // --- START SESSION WHEN FIRST QUESTION ANSWERED ---
+                if (answeredCount === 1) {
+                    await startQuizSession(quizId);
+                }
 
-                // Description
-                const description = document.createElement('p');
-                description.innerText = 'Exciting News!\n\n We’re currently building user score tracking into the Fifty\n\n Enter your email if you’d like your scores linked when development is finished (totally optional!)';
-                description.style.textAlign = 'center';
-                description.style.marginBottom = '15px';
+                if (answeredCount === totalQuestions) {
+                    // Mark quiz as submitted for 7 days
+                    setWithExpiry(quizSessionKey, 'true', ONE_WEEK_MS);
+                    quizSubmitted[quizIndex] = true;
 
-                // Input field
-                const input = document.createElement('input');
-                input.type = 'email';
-                input.id = 'emailInput';
-                input.placeholder = 'you@example.com';
-                input.style.width = '80%';
-                input.style.padding = '8px';
-                input.style.marginBottom = '15px';
-                input.style.display = 'block';
-                input.style.marginLeft = 'auto';
-                input.style.marginRight = 'auto';
-
-                // Buttons container
-                const btnContainer = document.createElement('div');
-                btnContainer.style.textAlign = 'center';
-
-                // Submit button
-                const submitBtn = document.createElement('button');
-                submitBtn.className = 'genericButton';
-                submitBtn.innerText = 'Submit';
-                submitBtn.onclick = async () => {
-                    const email = input.value.trim();
-                    if (!email) {
-                        // User didn't provide an email, just close modal
-                        updateWeeklyFiftyUser({ promptForEmail: false });
-                        // showEmailButton(currentQuizIndex);
-                        modalDiv.style.display = 'none';
-                        return;
+                    // Disable all buttons for this quiz
+                    for (let j = 0; j < totalQuestions; j++) {
+                        disableButton(0, quizIndex, j);
                     }
 
-                    let user = getWeeklyFiftyUser();
-                    try {
-                        await fetch('https://weeklyfifty-7617b.web.app/api/updateUserEmail', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                externalQuizId: user.userId,
-                                email: email
-                            })
-                        });
-
-                        console.log(`✅ Email updated for user ${user.userId}`);
-                        updateWeeklyFiftyUser({ providedEmail: true, promptForEmail: false });
-                    } catch (err) {
-                        console.error('❌ Failed to update email:', err);
-                        alert('Failed to update email. Please try again later.');
-                    } finally {
-                        modalDiv.style.display = 'none';
-                    }
-                };
-
-                // Skip button
-                const skipBtn = document.createElement('button');
-                skipBtn.className = 'genericButton';
-                skipBtn.innerText = 'Skip';
-                skipBtn.style.marginLeft = '10px';
-                skipBtn.onclick = () => {
-                    updateWeeklyFiftyUser({ promptForEmail: false });
-                    modalDiv.style.display = 'none';
-                    showEmailButton(currentQuizIndex);
-                };
-
-                // Append buttons
-                btnContainer.appendChild(submitBtn);
-                btnContainer.appendChild(skipBtn);
-
-                // Assemble modal
-                modalContentDiv.appendChild(closeButton);
-                modalContentDiv.appendChild(title);
-                modalContentDiv.appendChild(description);
-                modalContentDiv.appendChild(input);
-                modalContentDiv.appendChild(btnContainer);
-                modalDiv.appendChild(modalContentDiv);
-                quizElement.appendChild(modalDiv);
-
-                // Click outside to close
-                window.onclick = (event) => {
-                    if (event.target === modalDiv) modalDiv.style.display = 'none';
-                };
-
-                // Trigger confetti when modal opens
-                const showModalWithConfetti = () => {
-                    modalDiv.style.display = 'flex';
-                    launchConfetti();
-                };
-
-                return showModalWithConfetti;
+                    // Log the session
+                    await finishQuizSession(quizIndex);
+                }
             }
-
-            // Example confetti function
-            function launchConfetti() {
-                const canvas = document.getElementById('confettiCanvas') || createConfettiCanvas();
-                const confettiInstance = window.confetti || confetti.create(canvas, { resize: true, useWorker: true });
-                confettiInstance({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            }
-
-            function createConfettiCanvas() {
-                const canvas = document.createElement('canvas');
-                canvas.id = 'confettiCanvas';
-                canvas.style.position = 'fixed';
-                canvas.style.top = 0;
-                canvas.style.left = 0;
-                canvas.style.width = '100%';
-                canvas.style.height = '100%';
-                canvas.style.pointerEvents = 'none';
-                document.body.appendChild(canvas);
-                return canvas;
-            }
-
-            // async function checkQuizCompletion(quizIndex) {
-            //   const quizId = String(quizzes[quizIndex].quiz_id);
-            //   const quizSessionKey = `quiz_${quizId}_submitted`;
-
-            //   // Use the expiry-aware get
-            //   if (getWithExpiry(quizSessionKey)) return; // Already submitted
-
-            //   const totalQuestions = quizzes[quizIndex].questions.length;
-            //   let answeredCount = 0;
-
-            //   for (let j = 0; j < totalQuestions; j++) {
-            //     const idx = quizIndex * 50 + j;
-            //     if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
-            //   }
-
-            //   // --- START SESSION WHEN FIRST QUESTION ANSWERED ---
-            //   if (answeredCount === 1) {
-            //     await startQuizSession(quizId);
-            //   }
-
-            //   if (answeredCount === totalQuestions) {
-            //     // Mark quiz as submitted for 7 days
-            //     setWithExpiry(quizSessionKey, "true", ONE_WEEK_MS);
-            //     quizSubmitted[quizIndex] = true;
-
-            //     // Disable all buttons for this quiz
-            //     for (let j = 0; j < totalQuestions; j++) {
-            //       disableButton(0, quizIndex, j);
-            //     }
-
-            //     // Log the session
-            //     await finishQuizSession(quizIndex);
-            //   }
-            // }
 
             // async function checkQuizCompletion(quizIndex) {
             //   const quizId = String(quizzes[quizIndex].quiz_id);
@@ -1188,7 +862,6 @@
                         buttons.push(buttonPair);
                     }
                 }
-                showEmailModalFunc = createEmailModal();
             }
 
             async function fetchLatestQuiz() {
@@ -1199,16 +872,11 @@
                     const data = await response.json();
                     quizzes = Array.isArray(data) ? data : [data];
 
-                    // Keep only the first question of the first quiz
-                    quizzes = quizzes.map((quiz) => ({
-                        ...quiz,
-                        questions: quiz.questions.slice(0, 3) // <--- only first question
-                    }));
-
-                    quizzes[0].quiz_id = 2;
-                    quizzes[0].quizId = 2;
-
-                    console.log(quizzes[0]);
+                    //   // Keep only the first question of the first quiz
+                    //   quizzes = quizzes.map((quiz) => ({
+                    //     ...quiz,
+                    //     questions: quiz.questions.slice(0, 3), // <--- only first question
+                    //   }));
 
                     quizSubmitted = Array(quizzes.length).fill(false);
                     scoreCount = Array(quizzes.length).fill(0);
