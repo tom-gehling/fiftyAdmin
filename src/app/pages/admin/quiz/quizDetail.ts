@@ -40,6 +40,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { MenuModule } from 'primeng/menu';
 import { OverlayModule } from 'primeng/overlay';
 import { QuizDisplayComponent } from '@/pages/common/quiz-display/quiz-display';
+import { StorageService } from '@/shared/services/storage.service';
 
 @Component({
   selector: 'quiz-detail',
@@ -80,6 +81,9 @@ export class QuizDetailComponent implements OnInit {
   tabSelected: string = '0';
   QuizTypeEnum = QuizTypeEnum;
   saving: boolean = false;
+  selectedImageFile?: File;
+  existingImages: string[] = [];
+  loadingImages = false;
 
   // NEW: Holds the SpeedDial menu for each question
   questionMenus: MenuItem[][] = [];
@@ -120,7 +124,8 @@ export class QuizDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private dialogService: DialogService,
     private quizTagService: QuizTagsService,
-    private notify: NotifyService
+    private notify: NotifyService,
+    private storageService: StorageService
   ) {}
 
   ngOnInit(): void {
@@ -141,6 +146,8 @@ export class QuizDetailComponent implements OnInit {
       this.availableTags = tags;
     });
 
+    this.loadExistingImages();   
+
     // Load quiz
     this.route.paramMap.subscribe(async params => {
       this.id = params.get('id') || '0';
@@ -151,6 +158,28 @@ export class QuizDetailComponent implements OnInit {
       }
     });
   }
+
+  async loadExistingImages() {
+  this.loadingImages = true;
+  this.existingImages = await this.storageService.getExistingImages();
+  this.loadingImages = false;
+}
+
+async uploadNewImage(event: any) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const url = await this.storageService.uploadQuizImage(
+    file,
+    this.form.value.quizId
+  );
+
+  this.form.get('imageUrl')?.setValue(url);
+  this.logoDialogVisible = false;
+
+  // Refresh the selection list
+  await this.loadExistingImages();
+}
 
   private async initializeEmptyQuiz(): Promise<void> {
     const emptyQuestions = Array.from({ length: 50 }, (_, i) => ({
@@ -189,11 +218,13 @@ export class QuizDetailComponent implements OnInit {
     this.form = this.fb.group({
       quizId: [quiz.quizId || null],
       quizTitle: [quiz.quizTitle || ''],
+      quizSlug: [quiz.quizSlug || ''],
       quizType: [quiz.quizType || 0],
       isActive: [quiz.isActive ?? true],
       isPremium: [quiz.isPremium || false],
       questionCount: [quiz.questions?.length || 50],
       deploymentDate: [deploymentDate],
+      collab: [quiz.collab || ''],
       theme: this.fb.group({
         fontColor: [quiz.theme?.fontColor || '#fbe2df'],
         backgroundColor: [quiz.theme?.backgroundColor || '#677c73'],
@@ -249,6 +280,13 @@ export class QuizDetailComponent implements OnInit {
     ];
   }
 
+  onImageSelected(event: any) {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.selectedImageFile = file;
+    }
+  }
+
   setQuestionCount(count: number): void {
     if (count == null || isNaN(count)) return;
     const current = this.questions.length;
@@ -296,6 +334,15 @@ export class QuizDetailComponent implements OnInit {
         q.answer = this.normalizeHtml(q.answer);
       });
 
+      let imageUrl = this.form.value.imageUrl;
+
+      if (this.selectedImageFile) {
+        imageUrl = await this.storageService.uploadQuizImage(
+          this.selectedImageFile,
+          this.form.value.quizId
+        );
+      }
+
       if (!formValue.deploymentDate) formValue.deploymentDate = serverTimestamp();
       else if (!(formValue.deploymentDate instanceof Date)) formValue.deploymentDate = new Date(formValue.deploymentDate);
 
@@ -303,7 +350,12 @@ export class QuizDetailComponent implements OnInit {
       if (quizData.quizType == QuizTypeEnum.Weekly){
         quizData.quizTitle = 'Quiz ' + String(quizData.quizId);
       } 
-      console.log(quizData)
+
+      if (quizData.quizSlug == null || quizData.quizSlug == ''){
+        quizData.quizSlug = quizData.quizId.toString();
+      } 
+
+      // console.log(quizData)
       if (this.id && this.id !== '0') {
         await this.quizzesService.updateQuiz(this.id, quizData);
       } else {
@@ -312,7 +364,7 @@ export class QuizDetailComponent implements OnInit {
       }
 
       this.notify.success('Quiz saved successfully');
-      this.router.navigate(['/members/admin/quizzes']);
+      this.router.navigate(['/fiftyPlus/admin/quizzes']);
     } catch (error) {
       console.error('Error saving quiz:', error);
       this.notify.error('Error saving quiz');
@@ -322,7 +374,7 @@ export class QuizDetailComponent implements OnInit {
   }
 
   cancel(): void {
-    this.router.navigate(['/members/admin/quizzes']);
+    this.router.navigate(['/fiftyPlus/admin/quizzes']);
   }
 
   private async loadQuiz(id: string): Promise<void> {

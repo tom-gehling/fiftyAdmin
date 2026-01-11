@@ -16,7 +16,7 @@ try {
 const db = admin.firestore();
 
 // Static array of quizIds
-const quizIds = ['176', '177', '178', '179', '180', '181'];
+const quizIds = ['185'];
 
 async function buildQuizAggregates() {
     for (const quizId of quizIds) {
@@ -166,7 +166,9 @@ async function buildQuizAggregates() {
 
                 const hardestQuestions = [...questionAccuracy].sort((a, b) => a.correctRate - b.correctRate).slice(0, 5);
                 const easiestQuestions = [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
-
+                // console.log(averageScore);
+                // console.log(easiestQuestions);
+                // console.log(hardestQuestions);
                 const docRef = db.collection('quizAggregates').doc(String(qId));
                 batch.set(docRef, {
                     quizId: qId,

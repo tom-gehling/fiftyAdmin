@@ -46,6 +46,7 @@ Thumbs.db
 *-debug.log
 .runtimeconfig.json
 batch/adminSDK.json
+cors.json
 
 cors.json
 

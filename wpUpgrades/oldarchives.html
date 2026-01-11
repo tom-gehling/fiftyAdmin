@@ -1,0 +1,845 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            :root {
+                --green: #4cfbab;
+                --black: #282828;
+                --pink: #fbe2df !important;
+                --correct: rgb(0, 215, 0) !important;
+                --incorrect: red !important;
+                --font: Helvetica, Arial, sans-serif !important;
+                --header: 25px !important;
+                --normal: 22px !important;
+                --smaller: 18px !important;
+                --transition: 0.3s !important;
+            }
+
+            body {
+                background-color: #282828;
+            }
+
+            #load {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                font-family: var(--font) !important;
+                font-size: var(--normal) !important;
+                font-weight: 500 !important;
+                transition: var(--transition) !important;
+                padding-bottom: 10px !important;
+                display: flex;
+                justify-content: flex-start !important;
+            }
+
+            .navBar {
+                height: 100%;
+                width: 0;
+                position: fixed;
+                z-index: 1;
+                left: 0;
+                top: 0;
+                background-color: rgb(0, 0, 0);
+                background-color: rgba(0, 0, 0, 0.9);
+                overflow-x: hidden;
+                transition: 0.5s;
+            }
+
+            .navBarContent {
+                position: relative;
+                top: 1%;
+                width: 90%;
+                text-align: left;
+                padding: 10px;
+                margin-top: 10%;
+            }
+
+            .navTabs {
+                border: none !important;
+                background-color: var(--black) !important;
+                color: var(--pink) !important;
+                width: 70% !important;
+                height: 60px !important;
+                margin-bottom: 10px !important;
+                padding: 10px !important;
+                font-size: 18px !important;
+                display: block;
+                border-radius: 5px !important;
+            }
+
+            .navBar .navTabs {
+                padding: 8px;
+                text-decoration: none;
+                font-size: 36px;
+                color: #818181;
+                display: block;
+                transition: 0.3s;
+            }
+
+            .navBar .active {
+                color: var(--black) !important;
+                background-color: var(--green) !important;
+                width: 80% !important;
+                transition: 300ms !important;
+            }
+
+            .navBar .navTabs:hover,
+            .navBar .navTabs:focus {
+                color: var(--black) !important;
+                background-color: var(--green) !important;
+                width: 80% !important;
+                transition: 300ms !important;
+            }
+
+            .navBar .closebtn {
+                position: sticky;
+                top: 5px;
+                bottom: 5px;
+                left: 90%;
+                font-size: 60px;
+                cursor: pointer;
+            }
+
+            @media screen and (max-height: 450px) {
+                .navBar .navTabs {
+                    font-size: 20px;
+                }
+                .navBar .closebtn {
+                    font-size: 40px;
+                    top: 15px;
+                }
+            }
+
+            .quizContainer {
+                width: 100% !important;
+            }
+
+            .quizTitle {
+                font-size: 48px !important;
+                font-family: var(--font);
+                color: var(--pink);
+                font-weight: 600 !important;
+                text-align: center;
+            }
+
+            .quiz {
+                display: none;
+            }
+
+            .quiz.active {
+                display: block;
+            }
+
+            .question {
+                width: auto !important;
+                justify-self: center !important;
+            }
+
+            .accordionButton {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: none !important;
+                border-radius: 0px !important;
+                text-align: center !important;
+                outline: none !important;
+                width: 100% !important;
+                font-family: var(--font) !important;
+                font-size: var(--header) !important;
+                font-weight: 400 !important;
+                transition: var(--transition) !important;
+                padding: 25px !important;
+                margin-bottom: 20px !important;
+                line-height: 130% !important;
+            }
+
+            .accordionButton.active {
+                color: var(--black) !important;
+                background-color: var(--pink) !important;
+            }
+
+            .genericButton {
+                font-family: var(--font) !important;
+                font-weight: 600 !important;
+                color: var(--black) !important;
+                background-color: var(--pink) !important;
+                border: 3px solid var(--pink) !important;
+                border-radius: 15px !important;
+                font-size: var(--normal) !important;
+                padding: 15px !important;
+                margin: 5px !important;
+                transition: var(--transition) !important;
+            }
+
+            .genericButton.correct {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .genericButton.incorrect {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .genericButton.reveal {
+                background-color: var(--black) !important;
+                color: var(--pink) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .dot {
+                height: 10px !important;
+                width: 10px !important;
+                background-color: var(--green) !important;
+                border-radius: 50% !important;
+                display: inline-block;
+                margin-right: 10px !important;
+                border: 1px solid #282828;
+            }
+
+            .dot.removed {
+                display: none;
+            }
+
+            .panel {
+                font-family: var(--font) !important;
+                display: none;
+                font-size: var(--normal) !important;
+                padding-top: 15px !important;
+                padding-bottom: 15px !important;
+                width: auto !important;
+                text-align: center !important;
+            }
+
+            .panel.active {
+                display: block;
+            }
+
+            .panel.answer {
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .score {
+                font-family: var(--font) !important;
+                color: var(--green) !important;
+                text-align: center !important;
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .closebtn {
+                color: #4cfbab;
+                margin-bottom: 10px;
+                cursor: pointer;
+            }
+
+            #openBtn {
+                color: #4cfbab;
+                font-size: 60px;
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .pagination {
+                display: flex;
+                list-style-type: none;
+                justify-content: center;
+                width: auto;
+                padding: 10px;
+                margin: 0;
+            }
+
+            .page-item {
+                margin: 5px;
+                font-family: var(--font) !important;
+                font-size: 20px !important;
+                color: var(--green) !important;
+                padding: 8px 12px;
+                border: 1px solid #ccc;
+                border-radius: 5px !important;
+                cursor: pointer;
+            }
+
+            .page-item:hover {
+                background-color: #818181 !important;
+                text-decoration: underline;
+            }
+
+            .page-link {
+                font-family: var(--font) !important;
+                font-size: 12px !important;
+                color: var(--green) !important;
+                padding: 5px !important;
+                text-decoration: none;
+                color: inherit;
+            }
+
+            .page-item.activePage {
+                background-color: v#818181 !important;
+                color: var(--black) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="openBtn" onclick="openNav()">&equiv;</div>
+        <div class="navBar" id="navBar">
+            <span class="closebtn" onclick="closeNav()">&times;</span>
+            <nav class="pages">
+                <ol class="pagination">
+                    <li class="page-item" id="page1">
+                        <a class="page-link" href="/archives">1-30</a>
+                    </li>
+                    <li class="page-item" id="page2">
+                        <a class="page-link" href="/archives2">31-60</a>
+                    </li>
+                    <li class="page-item" id="page3">
+                        <a class="page-link" href="/archives3">61-90</a>
+                    </li>
+                    <li class="page-item" id="page4">
+                        <a class="page-link" href="/archives4">91-120</a>
+                    </li>
+                    <li class="page-item" id="page5">
+                        <a class="page-link" href="/archives5">121-150</a>
+                    </li>
+                    <li class="page-item" id="page6">
+                        <a class="page-link" href="/archives6">151-180</a>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+
+        <div id="load"></div>
+
+        <script>
+            let quizzes = [
+                {
+                    quiz_id: 31,
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: "Name three of the six countries in the world whose names and capital cities' names are identical.",
+                            qAnswer: '(Three of) Djibouti, Luxembourg, Monaco, San Marino, Singapore, & Vatican City'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: 'To the nearest 10%, how many Australians identified as Christian in the 2021 national census?',
+                            qAnswer: '40% (44%)'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: 'In which country was media personality Andrew Tate arrested in December 2022?',
+                            qAnswer: 'Romania'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: 'Which of the following elements has the highest melting point - gold, magnesium, or silver?',
+                            qAnswer: 'Gold'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: "Which Australian actress played Rowan Atkinson's love interest in the 2003 film <em>Johnny English</em>?",
+                            qAnswer: 'Natalie Imbruglia'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: "Which person's murder is documented in amateur footage known as the 'Zapruder film'?",
+                            qAnswer: 'John F. Kennedy'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: 'Which divorced A-list couple have children named Knox, Pax, Vivienne, and Zahara?',
+                            qAnswer: 'Angelina Jolie & Brad Pitt'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: 'Which two sports compose a Winter Olympic biathlon?',
+                            qAnswer: 'Shooting and cross-country skiing'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: '<em>Off the Wall</em> was a 1979 studio album from which artist?',
+                            qAnswer: 'Michael Jackson'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: "Which US billionaire's surname translates into German as 'sugar mountain'?",
+                            qAnswer: 'Mark Zuckerberg'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: "With their President a ripe 89 years of age, which African country laid claim to the world's oldest head-of-state after Elizabeth II died?",
+                            qAnswer: 'Cameroon'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: 'Prior to her retirement, which was the last WNBA team Liz Cambage was signed to?',
+                            qAnswer: 'Los Angeles Sparks'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: "From which film did the original song 'Shallow' become an Academy Award-winning hit?",
+                            qAnswer: '<em>A Star Is Born</em>'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: 'Which animal was the Chinese zodiac symbol of 2023?',
+                            qAnswer: 'Rabbit'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: 'Which two nations lay claim to land on the largest island in the Pacific Ocean? ',
+                            qAnswer: 'Indonesia & Papua New Guinea (New Guinea) '
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: 'What is the name given for a poker hand wherein all five cards carry the same suit?',
+                            qAnswer: 'Flush'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: 'Which popular online Flash game, featuring a red-and-white scarfed figure, was developed by Bostjan Cadez in 2006?',
+                            qAnswer: '<em>Line Rider</em>'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: 'With which Saudi Arabian soccer club did Cristiano Ronaldo sign in 2022?',
+                            qAnswer: 'Al Nassr'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: 'Ioseb Besarionis dze Jughashvili was born in 1878, in a town that is today part of modern Georgia. By the time he was a world leader, what name did he assume?',
+                            qAnswer: 'Joseph Stalin'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: 'By population, what is the second largest city in Japan?',
+                            qAnswer: 'Yokohama'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: 'Which historical figure was played by Claire Foy in the first season of <em>The Crown</em>?',
+                            qAnswer: 'Queen Elizabeth II'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: '<em>Salida</em>, <em>uscita</em>, and <em>ausgang</em> are all foreign translations of which English word?',
+                            qAnswer: 'Exit'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: 'During the shooting of which 2001 film did Nicole Kidman break two of her ribs?',
+                            qAnswer: '<em>Moulin Rouge!</em>'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: 'How many obtuse angles are in a square?',
+                            qAnswer: 'Zero'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: 'In which bodily organ would you find the occipital lobe?',
+                            qAnswer: 'The brain'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: 'Which new-release Netflix film, starring Adam Driver, shares its name with a 2008 hit by the Living End?',
+                            qAnswer: '<em>White Noise</em>'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: 'In which world city would you find buildings known as the Shard and the Gherkin?',
+                            qAnswer: 'London'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: 'What did the initials of online clothing retailer ASOS originally stand for?',
+                            qAnswer: 'AsSeenOnScreen'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: 'How old was soccer legend Pele when he died in 2022?',
+                            qAnswer: '82'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: 'Which two 21st-century Australian Prime Ministers were born in the United Kingdom?',
+                            qAnswer: 'Tony Abbott & Julia Gillard'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: 'What are the four cardinal directions?',
+                            qAnswer: 'North, East, South, & West'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: "Which dairy ingredient has been described by celebrity chef Yotam Ottolenghi as 'the food of the gods'?",
+                            qAnswer: 'Yoghurt'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: "What is the name of Hong Kong's largest airline?",
+                            qAnswer: 'Cathay Pacific'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: 'In which Australian state can you visit Cradle Mountain - Lake St Clair National Park?',
+                            qAnswer: 'Tasmania'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: 'Which light entertainment program features Andy Maher, Mick Molloy, & Sam Pang as regular panellists? ',
+                            qAnswer: '<em>The Front Bar</em>'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: "Which of the following is most synonymous with 'arbitrator': judge, rival, or tutor?",
+                            qAnswer: 'Judge'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: 'What is the dominant colour on the jacket of a Popular Penguin book?',
+                            qAnswer: 'Orange'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: "In a 2021 Uber Eats commercial, which television personality played 'The Grey Wiggle'?",
+                            qAnswer: 'Simon Cowell'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: 'How many states does South Australia share a land border with?',
+                            qAnswer: 'Four (New South Wales, Queensland, Victoria, & Western Australia)'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: 'Which nation, now non-existent, had a secret police force known as the Stasi?',
+                            qAnswer: 'East Germany'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: "On a typical Visa payWave device, how many green lights are illuminated when a customer has successfully 'waved' their card?",
+                            qAnswer: 'Four'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: 'Who narrated the English-language version of the 2005 documentary <em>March of the Penguins</em>?',
+                            qAnswer: 'Morgan Freeman'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: 'Which popular party game, featuring alcohol, has the alternative name of Beirut?',
+                            qAnswer: 'Beer pong'
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: 'In 2022, which long-standing Triple J presenter hosted their final episode of <em>Good Nights</em>?',
+                            qAnswer: 'Bridget Hustwaite'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: "Which classic novel begins with the following sentence: 'It was a bright cold day in April, and the clocks were striking thirteen'?",
+                            qAnswer: '<em>Nineteen Eighty-Four</em>'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: 'In which TV series was Skylar White a major character?',
+                            qAnswer: '<em>Breaking Bad</em>'
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: 'How many unique colours are on the flag of Bangladesh?',
+                            qAnswer: 'Two'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: 'What was the stage name of rapper Jarad Higgins, who passed away in 2019?',
+                            qAnswer: 'Juice WRLD'
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: 'What is the maximum achievable score for an individual in a game of ten-pin bowling?',
+                            qAnswer: '300'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: 'Which of the following diseases <u>cannot</u> be sexually transmitted: a) trichomoniasis, b) proctitis, c) malaria, or d) syphillus?',
+                            qAnswer: 'c) malaria'
+                        }
+                    ]
+                }
+            ];
+
+            let pg = {
+                num: 2,
+                startDate: '2023-01-06',
+                startQuiz: 31
+            };
+
+            let page = document.getElementById(`page${pg.num}`);
+            page.classList.add('activePage');
+
+            function addWeeksToDate(numberOfWeeks, firstQuiz) {
+                var startDate = new Date(firstQuiz);
+                var millisecondsInWeek = 7 * 24 * 60 * 60 * 1000;
+                var totalMillisecondsToAdd = numberOfWeeks * millisecondsInWeek;
+                var resultDate = new Date(startDate.getTime() + totalMillisecondsToAdd);
+                return resultDate;
+            }
+
+            function formatDateAsDDMMYY(date) {
+                var day = date.getDate();
+                var month = date.getMonth() + 1; // Months are zero-based
+                var year = date.getFullYear() % 100; // Get the last two digits of the year
+
+                day = day < 10 ? '0' + day : day;
+                month = month < 10 ? '0' + month : month;
+                return day + '/' + month + '/' + year;
+            }
+
+            function getDate(numberOfWeeks, firstQuiz) {
+                var date = addWeeksToDate(numberOfWeeks, firstQuiz);
+                return formatDateAsDDMMYY(date);
+            }
+
+            function createTabs() {
+                var cont = document.getElementById('navBar');
+
+                for (let i = 0; i < quizzes.length; i++) {
+                    var tab = document.createElement('button');
+                    if (i === 0) {
+                        tab.className = 'navTabs active';
+                    } else {
+                        tab.className = 'navTabs';
+                    }
+                    tab.id = 'tab_' + (i + pg.startQuiz);
+                    tab.innerText = '#' + (i + pg.startQuiz) + ' - ' + getDate(i, pg.startDate);
+                    tab.addEventListener('click', function () {
+                        handleTabClick(i);
+                    });
+                    cont.appendChild(tab);
+                }
+            }
+
+            function createQuizContainers() {
+                var page = document.getElementById('load');
+                var cont = document.createElement('div');
+                cont.className = 'quizContainer';
+                page.appendChild(cont);
+
+                for (let i = 0; i < quizzes.length; i++) {
+                    var quiz = document.createElement('div');
+                    if (i === 0) {
+                        quiz.className = 'quiz active';
+                    } else {
+                        quiz.className = 'quiz';
+                    }
+                    quiz.id = 'quiz_' + (i + 1);
+                    cont.appendChild(quiz);
+                    var title = document.createElement('h2');
+                    title.id = 'quizTitle_' + i;
+                    title.className = 'quizTitle';
+                    title.innerText = 'Quiz ' + quizzes[i].quiz_id + ' - ' + getDate(i, pg.startDate);
+                    quiz.appendChild(title);
+                    createQuiz(i, quizzes[i].questions);
+                }
+            }
+
+            function createQuiz(id, questions) {
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < questions.length; i++) {
+                    let idCode = id + 1 + '_' + (i + 1);
+                    var questionDiv = document.createElement('div');
+                    questionDiv.className = 'question';
+                    questionDiv.id = 'question_' + idCode;
+
+                    var accordionButton = document.createElement('button');
+                    accordionButton.className = 'accordionButton';
+                    accordionButton.id = 'button_' + idCode;
+
+                    var dotSpan = document.createElement('span');
+                    dotSpan.className = 'dot';
+                    dotSpan.id = 'dot_' + idCode;
+
+                    var dotText = document.createTextNode(' ');
+                    dotSpan.appendChild(dotText);
+
+                    var questionText = document.createElement('span');
+                    questionText.innerHTML = '<b>' + (i + 1) + '. </b>' + questions[i].qTitle;
+                    accordionButton.appendChild(dotSpan);
+                    accordionButton.appendChild(questionText);
+                    accordionButton.onclick = toggleAccordion;
+
+                    var clickPanel = document.createElement('div');
+                    clickPanel.className = 'panel';
+
+                    var answerButton = document.createElement('button');
+                    answerButton.className = 'genericButton';
+                    answerButton.textContent = 'Click for answer';
+                    answerButton.onclick = togglePanel;
+
+                    var answerPanel = document.createElement('div');
+                    answerPanel.className = 'panel answer';
+
+                    var answerText = document.createElement('p');
+                    answerText.className = 'answerText';
+                    answerText.innerHTML = questions[i].qAnswer;
+
+                    var correctButton = document.createElement('button');
+                    correctButton.className = 'genericButton';
+                    correctButton.id = 'correct_' + idCode;
+                    correctButton.textContent = 'Correct';
+                    correctButton.onclick = function () {
+                        disableButton(1, id, i);
+                        incrementScore(1, id, i);
+                        removeDot(id + 1, i + 1);
+                    };
+
+                    var incorrectButton = document.createElement('button');
+                    incorrectButton.className = 'genericButton';
+                    incorrectButton.id = 'incorrect_' + idCode;
+                    incorrectButton.textContent = 'Incorrect';
+                    incorrectButton.onclick = function () {
+                        disableButton(2, id, i);
+                        incrementScore(2, id, i);
+                        removeDot(id + 1, i + 1);
+                    };
+
+                    quiz[id].appendChild(questionDiv);
+                    questionDiv.appendChild(accordionButton);
+                    questionDiv.appendChild(clickPanel);
+                    clickPanel.appendChild(answerButton);
+                    clickPanel.appendChild(answerPanel);
+                    answerPanel.appendChild(answerText);
+                    answerPanel.appendChild(correctButton);
+                    answerPanel.appendChild(incorrectButton);
+                }
+            }
+
+            function createScore() {
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < quizzes.length; i++) {
+                    var scoreDiv = document.createElement('div');
+                    scoreDiv.className = 'score';
+                    scoreDiv.id = 'score_' + (i + 1);
+                    scoreDiv.innerHTML = 'Score: <span id="scoreCount_' + (i + 1) + '">0</span> / <span id="totalCount_' + (i + 1) + '">0</span>';
+                    quiz[i].appendChild(scoreDiv);
+                }
+            }
+
+            function toggleAccordion() {
+                this.classList.toggle('active');
+                var panel = this.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function togglePanel() {
+                this.classList.toggle('reveal');
+                var panel = this.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function handleTabClick(tabIndex) {
+                var tab = document.getElementsByClassName('navTabs');
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < quiz.length; i++) {
+                    if (i === tabIndex) {
+                        tab[i].classList.add('active');
+                        quiz[i].classList.add('active');
+                    } else {
+                        tab[i].classList.remove('active');
+                        quiz[i].classList.remove('active');
+                    }
+                }
+            }
+
+            function disableButton(buttonNum, quiz, pairNum) {
+                var buttonPair = buttons[quiz * 50 + pairNum];
+                var correctButton = buttonPair.correct;
+                var incorrectButton = buttonPair.incorrect;
+
+                if (buttonNum === 1) {
+                    correctButton.disabled = true;
+                    correctButton.classList.add('correct');
+                    incorrectButton.disabled = false;
+                    incorrectButton.classList.remove('incorrect');
+                } else if (buttonNum === 2) {
+                    incorrectButton.disabled = true;
+                    incorrectButton.classList.add('incorrect');
+                    correctButton.disabled = false;
+                    correctButton.classList.remove('correct');
+                }
+            }
+
+            function incrementScore(num, quiz, pairNum) {
+                var buttonIndex = quiz * 50 + pairNum;
+                console.log(buttonIndex);
+                if (num === 1) {
+                    if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+                        scoreCount[quiz]++;
+                        totalCount[quiz]++;
+                        correctClicked[buttonIndex] = true;
+                    } else if (incorrectClicked[buttonIndex]) {
+                        scoreCount[quiz]++;
+                        correctClicked[buttonIndex] = true;
+                    }
+                } else if (num === 2) {
+                    if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+                        totalCount[quiz]++;
+                        incorrectClicked[buttonIndex] = true;
+                    } else if (correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+                        scoreCount[quiz]--;
+                        incorrectClicked[buttonIndex] = true;
+                    } else if (correctClicked[buttonIndex]) {
+                        scoreCount[quiz]--;
+                        incorrectClicked[buttonIndex] = true;
+                    }
+                }
+                for (let i = 0; i < quizzes.length; i++) {
+                    var score = document.getElementById(`scoreCount_${i + 1}`);
+                    var total = document.getElementById(`totalCount_${i + 1}`);
+                    score.innerText = scoreCount[i];
+                    total.innerText = totalCount[i];
+                }
+            }
+
+            function removeDot(quiz, pairNum) {
+                var dot = document.getElementById(`dot_${quiz}_${pairNum}`);
+                dot.classList.add('removed');
+            }
+
+            function initPage() {
+                createTabs();
+                createQuizContainers();
+                createScore();
+                for (var i = 0; i < quizzes.length; i++) {
+                    for (var j = 0; j < quizzes[i].questions.length; j++) {
+                        var buttonPair = {
+                            correct: document.getElementById(`correct_${i + 1}_${j + 1}`),
+                            incorrect: document.getElementById(`incorrect_${i + 1}_${j + 1}`),
+                            dot: document.getElementById(`dot_${i + 1}_${j + 1}`)
+                        };
+                        buttons.push(buttonPair);
+                    }
+                }
+            }
+
+            let scoreCount = Array(quizzes.length).fill(0);
+            let totalCount = Array(quizzes.length).fill(0);
+            var buttons = [];
+            var correctClicked = Array(quizzes.length * 50).fill(false);
+            var incorrectClicked = Array(quizzes.length * 50).fill(false);
+            var dotStatus = Array(quizzes.length * 50).fill('block');
+
+            initPage();
+
+            function openNav() {
+                document.getElementById('navBar').style.width = '70%';
+            }
+
+            function closeNav() {
+                document.getElementById('navBar').style.width = '0%';
+            }
+        </script>
+    </body>
+</html>

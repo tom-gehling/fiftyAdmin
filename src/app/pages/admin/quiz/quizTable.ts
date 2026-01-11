@@ -208,11 +208,12 @@ export class QuizTableComponent implements OnInit {
   }
 
   createQuiz() {
-    if (this.canWrite()) this.router.navigate(['/members/admin/quizzes', 0]);
+    if (this.canWrite()) this.router.navigate(['/fiftyPlus/admin/quizzes', 0]);
   }
 
   editQuiz(quiz: Quiz) {
-    this.router.navigate(['/members/admin/quizzes', quiz.id]);
+    console.log(quiz.id)
+    this.router.navigate(['/fiftyPlus/admin/quizzes', quiz.id]);
   }
 
   highlightRow(quiz: Quiz) {
@@ -220,7 +221,7 @@ export class QuizTableComponent implements OnInit {
   }
 
   openQuiz(quiz: Quiz) {
-    this.router.navigate(['/members/admin/quizzes', quiz.id]);
+    this.router.navigate(['/fiftyPlus/admin/quizzes', quiz.id]);
   }
 
   deleteQuiz(quiz: Quiz) {

@@ -167,8 +167,8 @@ async function buildQuizAggregates() {
     const batch = db.batch();
 
     for (const [quizId, agg] of Object.entries(aggregates)) {
-      console.log('Sequential:', agg.sequentialQuestionTimes);
-      console.log('Per-question avg:', agg.avgTimeBetweenByQuestion);
+      // console.log('Sequential:', agg.sequentialQuestionTimes);
+      // console.log('Per-question avg:', agg.avgTimeBetweenByQuestion);
 
       const averageScore = agg.validStatsCount > 0 ? agg.totalScore / agg.validStatsCount : 0;
       const averageTime = agg.validStatsCount > 0 ? agg.totalTime / agg.validStatsCount : 0;
@@ -184,6 +184,9 @@ async function buildQuizAggregates() {
       const easiestQuestions = [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
 
       const docRef = db.collection('quizAggregates').doc(String(quizId));
+      console.log('Avg Score: ', averageScore);
+      console.log('Easiest Questions: ', easiestQuestions);
+      console.log('Hardest Questions: ', hardestQuestions);
       batch.set(docRef, {
         quizId,
         completedCount: agg.completedCount,
