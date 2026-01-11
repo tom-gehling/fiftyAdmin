@@ -218,11 +218,13 @@ async uploadNewImage(event: any) {
     this.form = this.fb.group({
       quizId: [quiz.quizId || null],
       quizTitle: [quiz.quizTitle || ''],
+      quizSlug: [quiz.quizSlug || ''],
       quizType: [quiz.quizType || 0],
       isActive: [quiz.isActive ?? true],
       isPremium: [quiz.isPremium || false],
       questionCount: [quiz.questions?.length || 50],
       deploymentDate: [deploymentDate],
+      collab: [quiz.collab || ''],
       theme: this.fb.group({
         fontColor: [quiz.theme?.fontColor || '#fbe2df'],
         backgroundColor: [quiz.theme?.backgroundColor || '#677c73'],
@@ -348,7 +350,12 @@ async uploadNewImage(event: any) {
       if (quizData.quizType == QuizTypeEnum.Weekly){
         quizData.quizTitle = 'Quiz ' + String(quizData.quizId);
       } 
-      console.log(quizData)
+
+      if (quizData.quizSlug == null || quizData.quizSlug == ''){
+        quizData.quizSlug = quizData.quizId.toString();
+      } 
+
+      // console.log(quizData)
       if (this.id && this.id !== '0') {
         await this.quizzesService.updateQuiz(this.id, quizData);
       } else {

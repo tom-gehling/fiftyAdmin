@@ -30,6 +30,7 @@ export interface Quiz {
 
     /** Title for Fifty+ or Collab quizzes (not used for weekly quizzes) */
     quizTitle?: string;
+    quizSlug?: string;
 
     creationTime?: Date;
     createdBy?: string; //refers to a user
@@ -44,4 +45,6 @@ export interface Quiz {
     notesAbove?: string;
     notesBelow?: string;
     imageUrl?: string;
+
+    collab?: string
 }

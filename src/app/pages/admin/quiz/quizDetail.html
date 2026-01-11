@@ -47,6 +47,14 @@
                 </p-floatlabel>
             </div>
 
+            <!-- Question Count -->
+            <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab">
+                <p-floatlabel class="w-full" variant="in">
+                    <label for="collab" class="font-semibold">Collaborator</label>
+                    <input pInputText type="text" id="collab" formControlName="collab" class="w-full" />
+                </p-floatlabel>
+            </div>
+
             <!-- Deployment Date/Time -->
             <div class="p-field w-full">
                 <p-floatlabel class="w-full" variant="in">
@@ -136,10 +144,16 @@
                 <!-- Other Tab -->
                 <p-tabpanel value="2">
                     <div class="mb-6 flex flex-col gap-3">
-                        <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Weekly">
+                        <div class="p-field w-full">
                             <p-floatlabel class="w-full" variant="in">
                                 <input pInputText type="number" id="quizId" formControlName="quizId" class="w-full" [readOnly]="true" />
-                                <label for="quizId">Quiz Reference</label>
+                                <label for="quizId">Internal QuizId</label>
+                            </p-floatlabel>
+                        </div>
+                        <div class="p-field w-full">
+                            <p-floatlabel class="w-full" variant="in">
+                                <input pInputText type="text" id="quizSlug" formControlName="quizSlug" class="w-full" />
+                                <label for="quizSlug">Quiz URL</label>
                             </p-floatlabel>
                         </div>
                     </div>

@@ -23,26 +23,27 @@ declare const google: any;
   template: `
   <div class="mb-2 flex items-center">
   <!-- Left spacer -->
-
-  <div class="flex-1 flex justify-start">
-   <p-select 
-  [(ngModel)]="selectedQuizId" 
-  [options]="quizIds" 
-  optionLabel="label" 
-  optionValue="value"
-  (onChange)="refreshStats()"
-  placeholder="Select Quiz"
-  class="w-60 md:w-auto"
-></p-select>
+  <div class="flex-1 flex justify-start hidden md:flex">
+    <p-select 
+      [(ngModel)]="selectedQuizId" 
+      [options]="quizIds" 
+      optionLabel="label" 
+      optionValue="value"
+      (onChange)="refreshStats()"
+      placeholder="Select Quiz"
+      class="w-60"
+    ></p-select>
   </div>
-  <!-- Title centered -->
-  <h1 class="text-4xl md:text-6xl font-bold text-surface-900 dark:text-surface-0 text-center mt-1">
-    {{getQuizName()}}
+  <div class="flex-1 flex justify-start sm: flex md:hidden">
+  </div>
+
+  <!-- Title -->
+  <h1 class="text-4xl md:text-6xl font-bold text-surface-900 dark:text-surface-0 text-center mt-1 flex-none">
+    {{ getQuizName() }}
   </h1>
 
-  <!-- Refresh button at the end -->
+  <!-- Refresh button -->
   <div class="flex-1 flex justify-end">
-    
     <button
       class="flex items-center justify-center hover:opacity-80 transition-opacity"
       (click)="refreshStats()"
@@ -58,6 +59,20 @@ declare const google: any;
     </button>
   </div>
 </div>
+
+<!-- MOBILE SELECT DROPPED BELOW (centered) -->
+<div class="flex justify-center mt-2 md:hidden">
+  <p-select 
+    [(ngModel)]="selectedQuizId" 
+    [options]="quizIds" 
+    optionLabel="label" 
+    optionValue="value"
+    (onChange)="refreshStats()"
+    placeholder="Select Quiz"
+    class="w-60 m-5"
+  ></p-select>
+</div>
+
 
 
 <!-- SPINNER TEMPLATE -->
