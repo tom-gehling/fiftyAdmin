@@ -648,7 +648,7 @@
                 if (localStorage.getItem(sessionKey)) return localStorage.getItem(sessionKey);
 
                 try {
-                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logQuizStart', {
+                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ quizId }) // <- correct key
@@ -682,7 +682,7 @@
                 });
 
                 try {
-                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logQuizFinish', {
+                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizFinish', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

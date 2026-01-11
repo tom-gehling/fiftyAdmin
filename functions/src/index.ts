@@ -41,7 +41,50 @@ app.get('/api/getLatestQuiz', async (req: Request, res: Response): Promise<void>
         qNum: q.questionId,
         qTitle: q.question,
         qAnswer: q.answer
-      }))
+      })),
+      deploymentDate: quiz.deploymentDate?.toDate() ?? null
+    };
+
+    res.status(200).json(formattedQuiz);
+  } catch (error) {
+    console.error('Error fetching quiz:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/getLatestCollabQuiz', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const quizCollab = req.query.collab;
+
+    if (!quizCollab) {
+      res.status(400).json({ error: 'Need to define a collaborator' });
+      return;
+    }
+
+    const now = Timestamp.fromDate(new Date());
+    const snapshot = await db.collection('quizzes')
+      .where('quizType', '==', 3)
+      .where('collab', '==', quizCollab)
+      .where('deploymentDate', '<=', now)
+      .orderBy('deploymentDate', 'desc')
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      res.status(404).json({ message: 'No quiz found' });
+      return;
+    }
+
+    const quiz = snapshot.docs[0].data();
+    const formattedQuiz = {
+      ...quiz,
+      quiz_id: quiz.quizId,
+      questions: (quiz.questions || []).map((q: any) => ({
+        qNum: q.questionId,
+        qTitle: q.question,
+        qAnswer: q.answer
+      })),
+      deploymentDate: quiz.deploymentDate?.toDate() ?? null
     };
 
     res.status(200).json(formattedQuiz);
@@ -57,8 +100,11 @@ app.get('/api/getLatestQuiz', async (req: Request, res: Response): Promise<void>
 
 app.get('/api/getQuizArchiveHeaders', async (req: Request, res: Response): Promise<void> => {
   try {
+
+    const now = Timestamp.fromDate(new Date());
     const snapshot = await db.collection('quizzes')
       .where('quizType', '==', 1)
+      .where('deploymentDate', '<=', now)
       .orderBy('deploymentDate', 'desc')
       .get();
 
@@ -85,16 +131,50 @@ app.get('/api/getQuizArchiveHeaders', async (req: Request, res: Response): Promi
 
 app.get('/api/getQuizByQuizId', async (req: Request, res: Response): Promise<void> => {
   try {
-    const quizId = req.query.quizId as string;
+    const quizIdRaw = req.query.quizId;
+    const quizId = Number(quizIdRaw);
 
-    if (!quizId || quizId.trim() === "") {
-      
-      res.status(400).json({ error: 'quizId is required' });
+    if (!quizIdRaw || isNaN(quizId)) {
+      res.status(400).json({ error: 'quizId must be a valid number' });
       return;
     }
 
     const snapshot = await db.collection('quizzes')
-      .where('quizId', '==', quizId)
+      .where('quizId', '==', quizId)   // <-- now numeric
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      res.status(404).json({ message: 'Quiz not found' });
+      return;
+    }
+
+    const quiz = snapshot.docs[0].data();
+
+    const formattedQuiz = {
+      ...quiz,
+      quiz_id: quiz.quizId,
+      questions: (quiz.questions || []).map((q: any) => ({
+        qNum: q.questionId,
+        qTitle: q.question,
+        qAnswer: q.answer
+      })),
+      deploymentDate: quiz.deploymentDate?.toDate() ?? null
+    };
+
+    res.status(200).json(formattedQuiz);
+  } catch (error) {
+    console.error('Error fetching quiz:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/getQuizByQuizSlug', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const quizSlug = req.query.quizSlug;
+
+    const snapshot = await db.collection('quizzes')
+      .where('quizSlug', '==', quizSlug)   // <-- now numeric
       .limit(1)
       .get();
 
@@ -236,8 +316,7 @@ app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void>
           displayName: null,
           photoUrl: null,
           lastLoginAt: new Date(),
-          updatedAt: new Date(),
-          origin: 'Weekly'
+          updatedAt: new Date()
         });
 
         // Use doc ID as uid
@@ -258,7 +337,8 @@ app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void>
       answers: [],
       ip,
       geo: null,
-      userAgent: req.get('user-agent') || 'unknown'
+      userAgent: req.get('user-agent') || 'unknown',
+      submittedFrom: 'Weekly'
     });
 
     res.status(200).json({ sessionId: quizResultRef.id });
@@ -505,7 +585,7 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
       return;
     }
 
-    console.log('email:' ,emailAddress)
+    // console.log('email:' ,emailAddress)
 
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
     let dbUserId: string | null = null;
@@ -564,6 +644,7 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
       ip,
       geo: null,
       userAgent: req.get('user-agent') || 'unknown',
+      submittedFrom: 'Fifty+'
     });
 
     res.status(200).json({ sessionId: quizResultRef.id });

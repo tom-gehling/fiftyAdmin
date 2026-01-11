@@ -42,6 +42,13 @@
                 background-color: rgba(0, 0, 0, 0.9);
                 overflow-x: hidden;
                 transition: 0.5s;
+                /* Hide scrollbar */
+                scrollbar-width: none; /* Firefox */
+                -ms-overflow-style: none; /* IE 10+ */
+            }
+
+            .navBar::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Edge */
             }
 
             .navBarContent {
@@ -149,6 +156,11 @@
                 padding: 25px !important;
                 margin-bottom: 20px !important;
                 line-height: 130% !important;
+                list-style-type: '';
+            }
+
+            .accordionButton p {
+                display: contents;
             }
 
             .accordionButton.active {
@@ -220,6 +232,11 @@
                 font-weight: 800 !important;
             }
 
+            .panel.answer li {
+                list-style-type: '';
+                line-height: 1.2;
+            }
+
             .score {
                 font-family: var(--font) !important;
                 color: var(--green) !important;
@@ -288,15 +305,12 @@
         </div>
 
         <div id="load"></div>
+        <div id="loggedInEmail" data-email="[current_user_email]" style="display: none"></div>
 
         <script>
             let quizzes = []; // will hold full quiz data
             let quizHeaders = []; // will hold just header info
-            let pg = {
-                num: 1,
-                startDate: '2022-06-10',
-                startQuiz: 1
-            };
+            const emailAddress = document.getElementById('loggedInEmail')?.dataset.email || null;
 
             let scoreCount = 0;
             let totalCount = 0;
@@ -305,13 +319,24 @@
             const incorrectClicked = [];
             const dotStatus = [];
 
+            function formatAdelaideDate(dateString) {
+                const date = new Date(dateString);
+
+                return new Intl.DateTimeFormat('en-AU', {
+                    timeZone: 'Australia/Adelaide',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit'
+                }).format(date);
+            }
+
             // Fetch quiz headers for the page
             async function fetchQuizHeaders() {
                 try {
-                    const res = await fetch('http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/api/getQuizArchiveHeaders');
+                    const res = await fetch('https://weeklyfifty-7617b.web.app/api/getQuizArchiveHeaders');
                     if (!res.ok) throw new Error('Failed to fetch headers');
                     quizHeaders = await res.json();
-                    console.log(quizHeaders);
+                    // console.log(quizHeaders);
                 } catch (err) {
                     console.error(err);
                 }
@@ -320,7 +345,7 @@
             // Fetch full quiz data by quizId
             async function fetchQuizById(quizId) {
                 try {
-                    const res = await fetch(`http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/api/getQuizByQuizId?quizId=${quizId}`);
+                    const res = await fetch(`https://weeklyfifty-7617b.web.app/api/getQuizByQuizId?quizId=${quizId}`);
                     if (!res.ok) throw new Error(`Failed to fetch quiz ${quizId}`);
                     return await res.json();
                 } catch (err) {
@@ -356,8 +381,8 @@
                 for (let i = 0; i < quizHeaders.length; i++) {
                     const tab = document.createElement('button');
                     tab.className = i === 0 ? 'navTabs active' : 'navTabs';
-                    tab.id = 'tab_' + (i + pg.startQuiz);
-                    tab.innerText = '#' + quizHeaders[i].quizId + ' - ' + getDate(i, pg.startDate);
+                    tab.id = 'tab_' + (i + 1);
+                    tab.innerText = '#' + quizHeaders[i].quizId + ' - ' + formatAdelaideDate(quizHeaders[i].deploymentDate);
 
                     tab.addEventListener('click', async () => {
                         await loadQuiz(i);
@@ -404,7 +429,7 @@
                 // Quiz title
                 const title = document.createElement('h2');
                 title.className = 'quizTitle';
-                title.innerText = 'Quiz ' + quizData.quiz_id + ' - ' + getDate(index, pg.startDate);
+                title.innerText = 'Quiz ' + quizData.quiz_id + ' - ' + formatAdelaideDate(quizData.deploymentDate);
                 container.appendChild(title);
 
                 // Create questions
@@ -462,7 +487,7 @@
                 const scoreDiv = document.createElement('div');
                 scoreDiv.className = 'score';
                 scoreDiv.id = 'scoreDisplay';
-                scoreDiv.innerText = `Score: 0 / ${quizData.questions.length}`;
+                scoreDiv.innerText = `Score: 0 / 0`;
                 container.appendChild(scoreDiv);
             }
 
@@ -485,29 +510,163 @@
                 const btnPair = buttons[idCode];
 
                 if (correct) {
-                    btnPair.correct.disabled = true;
+                    if (!correctClicked[idCode] && !incorrectClicked[idCode]) {
+                        scoreCount++;
+                        totalCount++;
+                        correctClicked[idCode] = true;
+                    } else if (incorrectClicked[idCode]) {
+                        scoreCount++;
+                        correctClicked[idCode] = true;
+                        incorrectClicked[idCode] = false;
+                    }
+
+                    // Update button classes
                     btnPair.correct.classList.add('correct');
-                    btnPair.incorrect.disabled = false;
+                    btnPair.correct.disabled = false; // keep clickable if you want
                     btnPair.incorrect.classList.remove('incorrect');
-                    if (!correctClicked[idCode]) scoreCount++;
-                    correctClicked[idCode] = true;
-                    incorrectClicked[idCode] = false;
+                    btnPair.incorrect.disabled = false;
                 } else {
-                    btnPair.incorrect.disabled = true;
+                    if (!correctClicked[idCode] && !incorrectClicked[idCode]) {
+                        totalCount++;
+                        incorrectClicked[idCode] = true;
+                    } else if (correctClicked[idCode]) {
+                        scoreCount--;
+                        incorrectClicked[idCode] = true;
+                        correctClicked[idCode] = false;
+                    }
+
+                    // Update button classes
                     btnPair.incorrect.classList.add('incorrect');
-                    btnPair.correct.disabled = false;
+                    btnPair.incorrect.disabled = false; // keep clickable
                     btnPair.correct.classList.remove('correct');
-                    if (!incorrectClicked[idCode]) totalCount++;
-                    incorrectClicked[idCode] = true;
-                    correctClicked[idCode] = false;
+                    btnPair.correct.disabled = false;
                 }
 
                 // Remove dot
                 if (btnPair.dot) btnPair.dot.classList.add('removed');
 
-                // Update score
+                // Update score display
                 const scoreDiv = document.getElementById('scoreDisplay');
-                scoreDiv.innerText = `Score: ${scoreCount} / ${scoreCount + Object.keys(correctClicked).filter((k) => correctClicked[k]).length + Object.keys(incorrectClicked).filter((k) => incorrectClicked[k]).length}`;
+                scoreDiv.innerText = `Score: ${scoreCount} / ${totalCount}`;
+
+                // Optional: call your completion check
+                // checkQuizCompletion(currentQuizIndex);
+            }
+
+            async function startQuizSession(quizId) {
+                const sessionKey = `quiz_${quizId}_sessionId`;
+                if (localStorage.getItem(sessionKey)) return localStorage.getItem(sessionKey);
+                try {
+                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ quizId, emailAddress }) // <- correct key
+                    });
+
+                    if (!response.ok) throw new Error('Failed to start quiz session');
+                    const data = await response.json();
+                    localStorage.setItem(sessionKey, data.sessionId);
+                    return data.sessionId;
+                } catch (err) {
+                    console.error('Error starting quiz session:', err);
+                    return null;
+                }
+            }
+
+            async function finishQuizSession(quizIndex) {
+                const quizId = String(quizzes[quizIndex].quiz_id);
+                const sessionKey = `quiz_${quizId}_sessionId`;
+                const sessionId = localStorage.getItem(sessionKey);
+                if (!sessionId) return;
+
+                const totalQuestions = quizzes[quizIndex].questions.length;
+                const score = scoreCount[quizIndex];
+                const answers = quizzes[quizIndex].questions.map((q, idx) => {
+                    const key = `${quizIndex}_${idx}`;
+                    return {
+                        questionId: q.qNum,
+                        correct: correctClicked[quizIndex * 50 + idx],
+                        timestamp: answerTimestamps[key] || null
+                    };
+                });
+
+                try {
+                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizFinish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sessionId,
+                            score,
+                            total: totalQuestions,
+                            answers
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to finish quiz session');
+                    console.log('Quiz session saved:', await response.json());
+                } catch (err) {
+                    console.error('Error finishing quiz session:', err);
+                }
+            }
+
+            function setWithExpiry(key, value, ttlMs) {
+                const now = new Date().getTime();
+                const item = { value, expiry: now + ttlMs };
+                localStorage.setItem(key, JSON.stringify(item));
+            }
+
+            function getWithExpiry(key) {
+                const itemStr = localStorage.getItem(key);
+                if (!itemStr) return null;
+
+                try {
+                    const item = JSON.parse(itemStr);
+                    if (new Date().getTime() > item.expiry) {
+                        localStorage.removeItem(key);
+                        return null;
+                    }
+                    return item.value;
+                } catch {
+                    return null;
+                }
+            }
+
+            const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+            async function checkQuizCompletion(quizIndex) {
+                debugger;
+                const quizId = String(quizzes[quizIndex].quiz_id);
+                const quizSessionKey = `quiz_${quizId}_submitted`;
+
+                // Use the expiry-aware get
+                if (getWithExpiry(quizSessionKey)) return; // Already submitted
+
+                const totalQuestions = quizzes[quizIndex].questions.length;
+                let answeredCount = 0;
+
+                for (let j = 0; j < totalQuestions; j++) {
+                    const idx = quizIndex * 50 + j;
+                    if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
+                }
+
+                // --- START SESSION WHEN FIRST QUESTION ANSWERED ---
+                if (answeredCount === 1) {
+                    await startQuizSession(quizId);
+                }
+
+                if (answeredCount === totalQuestions) {
+                    // Mark quiz as submitted for 7 days
+                    setWithExpiry(quizSessionKey, 'true', ONE_WEEK_MS);
+                    quizSubmitted[quizIndex] = true;
+
+                    // Disable all buttons for this quiz
+                    for (let j = 0; j < totalQuestions; j++) {
+                        disableButton(0, quizIndex, j);
+                    }
+
+                    // Log the session
+                    await finishQuizSession(quizIndex);
+                }
             }
 
             // Initialize page

@@ -47,6 +47,14 @@
                 </p-floatlabel>
             </div>
 
+            <!-- Question Count -->
+            <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab">
+                <p-floatlabel class="w-full" variant="in">
+                    <label for="collab" class="font-semibold">Collaborator</label>
+                    <input pInputText type="text" id="collab" formControlName="collab" class="w-full" />
+                </p-floatlabel>
+            </div>
+
             <!-- Deployment Date/Time -->
             <div class="p-field w-full">
                 <p-floatlabel class="w-full" variant="in">
@@ -140,6 +148,12 @@
                             <p-floatlabel class="w-full" variant="in">
                                 <input pInputText type="number" id="quizId" formControlName="quizId" class="w-full" [readOnly]="true" />
                                 <label for="quizId">Quiz Reference</label>
+                            </p-floatlabel>
+                        </div>
+                        <div class="p-field w-full">
+                            <p-floatlabel class="w-full" variant="in">
+                                <input pInputText type="text" id="quizSlug" formControlName="quizSlug" class="w-full" />
+                                <label for="quizSlug">Quiz URL</label>
                             </p-floatlabel>
                         </div>
                     </div>
