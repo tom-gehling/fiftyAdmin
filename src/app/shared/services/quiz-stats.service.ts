@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Firestore, doc, getDoc, collection, getDocs } from '@angular/fire/firestore';
+import { query, where } from 'firebase/firestore';
+import { QuizTypeEnum } from '../enums/QuizTypeEnum';
 
 export interface QuestionAccuracy {
   questionId: string;
@@ -89,7 +91,14 @@ export class QuizStatsService {
     try {
       const colRef = collection(this.firestore, 'quizAggregates');
       const snapshot = await getDocs(colRef);
-      return snapshot.docs.map(doc => doc.id);
+
+      // Filter IDs less than 1000
+      return snapshot.docs
+        .map(doc => doc.id)
+        .filter(id => {
+          const numId = parseInt(id, 10);
+          return !isNaN(numId) && numId < 1000 && numId > 100;
+        });
     } catch (error) {
       console.error('Error fetching quizAggregate IDs:', error);
       return [];

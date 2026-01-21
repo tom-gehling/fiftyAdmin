@@ -79,7 +79,7 @@ export class AppTopbar implements OnInit {
 
     this.profileItems = [
       { label: 'Update Profile', icon: 'pi pi-user-edit', command: () => this.router.navigate(['/profile']) },
-      { label: 'Logout', icon: 'pi pi-sign-out', command: () => { this.authService.logout(); this.router.navigate(['/auth/login']); } }
+      { label: 'Logout', icon: 'pi pi-sign-out', command: () => { this.authService.logout(); this.router.navigate(['/login']); } }
     ];
   }
 

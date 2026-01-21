@@ -158,8 +158,9 @@
                         </div>
                     </div>
                     <!-- Image Section -->
+                    <!--                      
                     <div class="mb-6" *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
-                        <h3 class="font-semibold mb-2">Image</h3>
+                        <h3 class="font-semibold mb-2">Image (Not Supported On Site Currently)</h3>
                         <div class="mb-6 flex items-center gap-4 h-20">
                             <button pButton type="button" label="Select Logo" (click)="showLogoDialog()"></button>
 
@@ -172,23 +173,23 @@
                             <div *ngIf="form.get('imageUrl')?.value" class="flex-shrink-0 h-full flex items-center">
                                 <img [src]="'assets/logos/' + form.get('imageUrl')?.value" alt="Logo" class="max-h-full object-contain" />
                             </div>
-                        </div>
+                        </div> -->
 
-                        <!-- Logo Selection Dialog -->
-                        <p-dialog [(visible)]="logoDialogVisible" header="Select Logo" [modal]="true" [style]="{ width: '600px' }">
-                            <div class="flex flex-col gap-3">
-                                <!-- Upload new -->
-                                <input type="file" (change)="uploadNewImage($event)" accept="image/*" />
+                    <!-- Logo Selection Dialog -->
+                    <!-- <p-dialog [(visible)]="logoDialogVisible" header="Select Logo" [modal]="true" [style]="{ width: '600px' }">
+                            <div class="flex flex-col gap-3"> -->
+                    <!-- Upload new -->
+                    <!-- <input type="file" (change)="uploadNewImage($event)" accept="image/*" />
 
-                                <p *ngIf="loadingImages">Loading…</p>
+                                <p *ngIf="loadingImages">Loading…</p> -->
 
-                                <!-- Existing images -->
-                                <div class="grid grid-cols-4 gap-2" *ngIf="!loadingImages">
+                    <!-- Existing images -->
+                    <!-- <div class="grid grid-cols-4 gap-2" *ngIf="!loadingImages">
                                     <img *ngFor="let img of existingImages" [src]="img" class="h-20 w-20 object-cover rounded cursor-pointer hover:opacity-80" (click)="selectLogoFromDialog(img)" />
                                 </div>
                             </div>
                         </p-dialog>
-                    </div>
+                    </div> -->
 
                     <!-- Notes Section -->
                     <div class="mb-6 flex flex-col gap-3">

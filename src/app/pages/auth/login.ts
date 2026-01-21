@@ -44,7 +44,7 @@ import { firstValueFrom } from 'rxjs';
               <label for="email1"
                 class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
               <input pInputText id="email1" type="text" placeholder="Email address"
-                class="w-full md:w-120 mb-8" [(ngModel)]="email" />
+                class="w-full mb-8" [(ngModel)]="email" />
 
               <label for="password1"
                 class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
