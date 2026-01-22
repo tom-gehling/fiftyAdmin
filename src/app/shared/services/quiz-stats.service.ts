@@ -28,6 +28,30 @@ export interface QuizTotalStats {
   totalSessions: number;
 }
 
+export interface LocationData {
+  name: string;
+  count: number;
+  averageScore: number;
+  averageTime: number;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface MapDataPoint {
+  name: string;
+  latitude: number;
+  longitude: number;
+  count: number;
+}
+
+export interface QuizLocationStats {
+  quizId: string;
+  totalResults: number;
+  countries: LocationData[];
+  cities: LocationData[];
+  mapData: MapDataPoint[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class QuizStatsService {
   private baseUrl = 'https://weeklyfifty-7617b.web.app/api';
@@ -102,6 +126,17 @@ export class QuizStatsService {
     } catch (error) {
       console.error('Error fetching quizAggregate IDs:', error);
       return [];
+    }
+  }
+
+  /** Fetch location statistics for a specific quiz */
+  async getQuizLocationStats(quizId: string): Promise<QuizLocationStats | null> {
+    try {
+      const url = `${this.baseUrl}/quizLocationStats/${quizId}`;
+      return await firstValueFrom(this.http.get<QuizLocationStats>(url));
+    } catch (error) {
+      console.error('Error fetching location stats:', error);
+      return null;
     }
   }
 }

@@ -5,6 +5,8 @@ import { Timestamp } from 'firebase-admin/firestore';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { FieldValue } from "firebase-admin/firestore";
+import * as maxmind from 'maxmind';
+import * as path from 'path';
 
 const luxon = require('luxon')
 
@@ -270,6 +272,148 @@ app.get('/api/quizStats/:quizId', async (req: Request, res: Response): Promise<v
     });
   } catch (error) {
     console.error('Error generating stats:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// ===============================
+// /api/quizLocationStats/:quizId
+// ===============================
+app.get('/api/quizLocationStats/:quizId', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const quizId = req.params.quizId;
+
+    // Fetch completed quiz results
+    const snapshot = await db.collection('quizResults')
+      .where('quizId', '==', quizId)
+      .where('status', '==', 'completed')
+      .get();
+
+    if (snapshot.empty) {
+      res.status(200).json({
+        quizId,
+        totalResults: 0,
+        countries: [],
+        cities: [],
+        mapData: []
+      });
+      return;
+    }
+
+    // Initialize MaxMind reader
+    let geoLookup: maxmind.Reader<maxmind.CityResponse> | null = null;
+    try {
+      const geoLitePath = path.join(__dirname, '..', 'GeoLite2-City.mmdb');
+      geoLookup = await maxmind.open<maxmind.CityResponse>(geoLitePath);
+    } catch (error) {
+      console.error('MaxMind database not found, returning without geolocation:', error);
+      res.status(500).json({ error: 'GeoLite2 database not configured' });
+      return;
+    }
+
+    interface LocationStats {
+      count: number;
+      totalScore: number;
+      totalTime: number;
+      latitude?: number;
+      longitude?: number;
+    }
+
+    const countryStats: Record<string, LocationStats> = {};
+    const cityStats: Record<string, LocationStats> = {};
+    let totalResults = 0;
+
+    snapshot.forEach(doc => {
+      const result = doc.data() as any;
+      const ip = result.ip;
+
+      if (!ip) return;
+
+      totalResults++;
+      const geo = geoLookup!.get(ip);
+      const country = geo?.country?.names?.en || 'Unknown';
+      const city = geo?.city?.names?.en || 'Unknown';
+      const cityKey = `${city}, ${country}`;
+
+      // Calculate duration
+      const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
+      const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
+      const duration = (completed.getTime() - started.getTime()) / 1000;
+      const score = result.score ?? 0;
+
+      // Aggregate country stats
+      if (!countryStats[country]) {
+        countryStats[country] = {
+          count: 0,
+          totalScore: 0,
+          totalTime: 0,
+          latitude: geo?.location?.latitude,
+          longitude: geo?.location?.longitude
+        };
+      }
+      countryStats[country].count++;
+      countryStats[country].totalScore += score;
+      countryStats[country].totalTime += duration;
+
+      // Aggregate city stats
+      if (!cityStats[cityKey]) {
+        cityStats[cityKey] = {
+          count: 0,
+          totalScore: 0,
+          totalTime: 0,
+          latitude: geo?.location?.latitude,
+          longitude: geo?.location?.longitude
+        };
+      }
+      cityStats[cityKey].count++;
+      cityStats[cityKey].totalScore += score;
+      cityStats[cityKey].totalTime += duration;
+    });
+
+    // Format response
+    const countries = Object.entries(countryStats)
+      .map(([name, stats]) => ({
+        name,
+        count: stats.count,
+        averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
+        averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
+        latitude: stats.latitude,
+        longitude: stats.longitude
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const cities = Object.entries(cityStats)
+      .map(([name, stats]) => ({
+        name,
+        count: stats.count,
+        averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
+        averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
+        latitude: stats.latitude,
+        longitude: stats.longitude
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20); // Top 20 cities
+
+    // Map data for visualization
+    const mapData = countries
+      .filter(c => c.latitude && c.longitude)
+      .map(c => ({
+        name: c.name,
+        latitude: c.latitude,
+        longitude: c.longitude,
+        count: c.count
+      }));
+
+    res.status(200).json({
+      quizId,
+      totalResults,
+      countries,
+      cities,
+      mapData
+    });
+  } catch (error) {
+    console.error('Error generating location stats:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

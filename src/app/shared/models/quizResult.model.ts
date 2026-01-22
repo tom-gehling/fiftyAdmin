@@ -4,6 +4,13 @@ export interface QuizAnswer {
     clickedAt?: Date;           // when user clicked correct/incorrect
 }
 
+export interface GeoLocation {
+    country?: string;
+    city?: string;
+    latitude?: number;
+    longitude?: number;
+}
+
 export interface QuizResult {
     resultId?: string;          // Firestore doc ID
     quizId: string;              // reference to Quiz.id
@@ -14,4 +21,6 @@ export interface QuizResult {
     answers: QuizAnswer[];
     score?: number;              // count of correct answers, set when completed
     totalQuestions: number;      // taken from quiz.questions.length
+    ip?: string;                 // IP address of the user
+    geo?: GeoLocation;           // Geolocation data from IP lookup
 }
