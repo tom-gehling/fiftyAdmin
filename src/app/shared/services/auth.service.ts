@@ -4,10 +4,16 @@ import {
   User as FirebaseUser,
   signInAnonymously,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
   onAuthStateChanged,
 } from '@angular/fire/auth';
+import {
+  GoogleAuthProvider,
+  OAuthProvider,
+} from 'firebase/auth';
 import {
   Firestore,
   doc,
@@ -81,6 +87,65 @@ export class AuthService {
       await updateProfile(cred.user, {
         displayName: email.split('@')[0],
       });
+    }
+
+    const appUser = await this.ensureUserDocument(cred.user);
+    this.user$.next(appUser);
+    return appUser;
+  }
+
+  /** Email/password registration */
+  async registerEmailPassword(
+    email: string,
+    password: string,
+    displayName?: string,
+    rememberMe: boolean = false
+  ): Promise<AppUser> {
+    await setPersistence(
+      this.auth,
+      rememberMe ? browserLocalPersistence : browserSessionPersistence
+    );
+
+    const cred = await createUserWithEmailAndPassword(this.auth, email, password);
+
+    // Set display name if provided, otherwise use email prefix
+    const nameToSet = displayName || email.split('@')[0];
+    await updateProfile(cred.user, {
+      displayName: nameToSet,
+    });
+
+    const appUser = await this.ensureUserDocument(cred.user);
+    this.user$.next(appUser);
+    return appUser;
+  }
+
+  /** Sign in with Google */
+  async signInWithGoogle(): Promise<AppUser> {
+    const provider = new GoogleAuthProvider();
+    // Request additional scopes if needed
+    provider.addScope('profile');
+    provider.addScope('email');
+
+    const cred = await signInWithPopup(this.auth, provider);
+    const appUser = await this.ensureUserDocument(cred.user);
+    this.user$.next(appUser);
+    return appUser;
+  }
+
+  /** Sign in with Apple */
+  async signInWithApple(): Promise<AppUser> {
+    const provider = new OAuthProvider('apple.com');
+    // Apple requires additional parameters
+    provider.addScope('email');
+    provider.addScope('name');
+
+    const cred = await signInWithPopup(this.auth, provider);
+    
+    // Apple may return name in additionalUserInfo, handle it if available
+    if (cred.user && !cred.user.displayName) {
+      // Try to get name from the credential if available
+      const displayName = cred.user.email?.split('@')[0] || 'User';
+      await updateProfile(cred.user, { displayName });
     }
 
     const appUser = await this.ensureUserDocument(cred.user);

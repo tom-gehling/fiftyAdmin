@@ -21,7 +21,8 @@ import { Dashboard } from './app/pages/dashboard/dashboard';
 import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
 
 // Admin pages
-import { StatsDashboard } from '@/pages/dashboard/statsDashboard';
+import { TotalStats } from '@/pages/dashboard/totalStats';
+import { WeeklyStats } from '@/pages/dashboard/weeklyStats';
 import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
@@ -91,7 +92,14 @@ export const appRoutes: Routes = [
         path: 'fiftyPlus/admin',
         canActivate: [AdminGuard],
         children: [
-          { path: 'stats', component: StatsDashboard },
+          {
+            path: 'stats',
+            children: [
+              { path: 'total', component: TotalStats },
+              { path: 'weekly', component: WeeklyStats },
+              { path: '', redirectTo: 'total', pathMatch: 'full' }
+            ]
+          },
           { path: 'quizzes', component: QuizTableComponent },
           { path: 'quizzes/:id', component: QuizDetailComponent },
           { path: 'quizTags', component: QuizTagsComponent },

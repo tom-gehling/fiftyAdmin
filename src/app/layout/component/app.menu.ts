@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
@@ -19,7 +19,7 @@ import { filter } from 'rxjs/operators';
         </ul>
     `
 })
-export class AppMenu {
+export class AppMenu implements OnInit {
     model: MenuItem[] = [];
 
     constructor(private auth: AuthService) {}
@@ -44,7 +44,14 @@ export class AppMenu {
         const adminMenu: MenuItem = {
             label: 'Admin',
             items: [
-                { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats'] },
+                {
+                    label: 'Stats',
+                    icon: 'pi pi-fw pi-chart-line',
+                    items: [
+                        { label: 'Total Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/stats/total'] },
+                        { label: 'Weekly Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/weekly'] }
+                    ]
+                },
                 { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/fiftyPlus/admin/quizzes'] },
                 { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] }
             ]
