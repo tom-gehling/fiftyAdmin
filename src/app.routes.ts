@@ -26,6 +26,7 @@ import { WeeklyStats } from '@/pages/dashboard/weeklyStats';
 import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
+import { VenuesComponent } from '@/pages/admin/venues/venues';
 
 // Guards
 import { AuthGuard } from '@/shared/guards/authGuard';
@@ -103,6 +104,7 @@ export const appRoutes: Routes = [
           { path: 'quizzes', component: QuizTableComponent },
           { path: 'quizzes/:id', component: QuizDetailComponent },
           { path: 'quizTags', component: QuizTagsComponent },
+          { path: 'venues', component: VenuesComponent },
         ]
       }
     ]

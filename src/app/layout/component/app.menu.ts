@@ -53,7 +53,8 @@ export class AppMenu implements OnInit {
                     ]
                 },
                 { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/fiftyPlus/admin/quizzes'] },
-                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] }
+                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] },
+                { label: 'Venues', icon: 'pi pi-fw pi-map-marker', routerLink: ['/fiftyPlus/admin/venues'] }
             ]
         };
 
