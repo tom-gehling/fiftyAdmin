@@ -372,12 +372,6 @@
         <div id="load"></div>
         <div id="loggedInEmail" data-email="[current_user_email]" style="display: none"></div>
         <script>
-            /////////////////////////////////
-            //        QUIZ ID HERE         //
-            /////////////////////////////////
-            const _quizId = '10023';
-            /////////////////////////////////
-
             const emailAddress = document.getElementById('loggedInEmail')?.dataset.email || null;
             // if (emailAddress == '[current_user_email]') {
             //     emailAddress = null;
@@ -763,10 +757,10 @@
                 return path.length ? path[path.length - 1] : null;
             }
 
-            async function fetchQuiz(selectedQuizId, collabLatest = '') {
+            async function fetchQuiz(selectedQuizId, collabLatest = false) {
                 try {
-                    const response = '';
-                    if (collabLatest != '') {
+                    let response;
+                    if (collabLatest) {
                         response = await fetch(`https://weeklyfifty-7617b.web.app/api/getLatestCollabQuiz?collab=${selectedQuizId}`);
                     } else {
                         response = await fetch(`https://weeklyfifty-7617b.web.app/api/getQuizByQuizSlug?quizSlug=${selectedQuizId}`);
@@ -783,7 +777,7 @@
 
                     initPage(); // Initialize quiz after data is loaded
                 } catch (error) {
-                    console.error('Error fetching latest quiz:', error);
+                    console.error('Error fetching quiz:', error);
                     document.getElementById('load').innerText = 'Failed to load quiz. Please try again later.';
                 }
             }
@@ -792,7 +786,7 @@
             var quizSubmitted = []; // Prevent multiple submissions
             const quizSlug = getQuizUrl();
             if (quizSlug == 'donttellmum') {
-                fetchQuiz(quizSlug, (collabLatest = true));
+                fetchQuiz(quizSlug, true); // Load as collab quiz
             } else {
                 fetchQuiz(quizSlug); // Load quiz on page load
             }
