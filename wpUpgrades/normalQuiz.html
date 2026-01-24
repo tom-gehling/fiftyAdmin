@@ -844,6 +844,22 @@
             //   }
             // }
 
+            // Apply theme colors from quiz data to CSS variables
+            function applyThemeColors(quiz) {
+                if (!quiz || !quiz.theme) return;
+
+                const root = document.documentElement;
+                if (quiz.theme.fontColor) {
+                    root.style.setProperty('--primary', quiz.theme.fontColor);
+                }
+                if (quiz.theme.backgroundColor) {
+                    root.style.setProperty('--secondary', quiz.theme.backgroundColor);
+                }
+                if (quiz.theme.tertiaryColor) {
+                    root.style.setProperty('--tertiary', quiz.theme.tertiaryColor);
+                }
+            }
+
             function initPage() {
                 correctClicked = Array(quizzes.length * 50).fill(false);
                 incorrectClicked = Array(quizzes.length * 50).fill(false);
@@ -881,6 +897,9 @@
                     quizSubmitted = Array(quizzes.length).fill(false);
                     scoreCount = Array(quizzes.length).fill(0);
                     totalCount = Array(quizzes.length).fill(0);
+
+                    // Apply theme colors if available
+                    applyThemeColors(quizzes[0]);
 
                     initPage(); // Initialize quiz after data is loaded
                 } catch (error) {

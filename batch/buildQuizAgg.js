@@ -16,7 +16,7 @@ try {
 const db = admin.firestore();
 
 // Static array of quizIds
-const quizIds = ['186'];
+const quizIds = ['187'];
 
 async function buildQuizAggregates() {
     for (const quizId of quizIds) {

@@ -405,6 +405,22 @@
                 }
             }
 
+            // Apply theme colors from quiz data to CSS variables
+            function applyThemeColors(quiz) {
+                if (!quiz || !quiz.theme) return;
+
+                const root = document.documentElement;
+                if (quiz.theme.fontColor) {
+                    root.style.setProperty('--pink', quiz.theme.fontColor);
+                }
+                if (quiz.theme.backgroundColor) {
+                    root.style.setProperty('--black', quiz.theme.backgroundColor);
+                }
+                if (quiz.theme.tertiaryColor) {
+                    root.style.setProperty('--green', quiz.theme.tertiaryColor);
+                }
+            }
+
             // Load a single quiz into the container
             async function loadQuiz(index) {
                 var page = document.getElementById('load');
@@ -421,6 +437,9 @@
 
                 const quizData = quizzes[index];
                 currentQuizIndex = index; // Track current quiz
+
+                // Apply theme colors for this quiz
+                applyThemeColors(quizData);
 
                 // Reset state
                 scoreCount = 0;

@@ -1,0 +1,253 @@
+<!-- Full-screen spinner while saving -->
+<div *ngIf="saving" class="fixed inset-0 flex items-center justify-center z-50">
+  <div class="w-16 h-16 border-4 border-t-4 border-gray-200 border-t-green-500 rounded-full animate-spin"></div>
+</div>
+
+<p-card *ngIf="form" class="flex flex-col h-full">
+  <!-- Top action buttons -->
+  <div class="flex items-center justify-between mb-4">
+    <div class="text-2xl font-semibold">
+      {{ id === '0' ? 'New Submission Form' : 'Edit: ' + form.get('name')?.value }}
+    </div>
+    <div class="flex gap-2">
+      <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="!form.get('name')?.value?.trim()" (click)="saveForm()"></button>
+      <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancel()"></button>
+    </div>
+  </div>
+
+  <form [formGroup]="form" class="w-full">
+    <!-- Core Form Info -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pt-3">
+      <!-- Form Name -->
+      <div class="p-field w-full">
+        <p-floatlabel class="w-full" variant="in">
+          <input pInputText type="text" id="name" formControlName="name" class="w-full" />
+          <label for="name">Form Name</label>
+        </p-floatlabel>
+      </div>
+
+      <!-- Description -->
+      <div class="p-field w-full">
+        <p-floatlabel class="w-full" variant="in">
+          <input pInputText type="text" id="description" formControlName="description" class="w-full" />
+          <label for="description">Description</label>
+        </p-floatlabel>
+      </div>
+
+      <!-- Active checkbox -->
+      <div class="p-field flex items-center gap-2">
+        <p-checkbox formControlName="isActive" binary="true" id="isActive"></p-checkbox>
+        <label for="isActive" class="font-semibold">Active</label>
+      </div>
+
+      <!-- Default checkbox -->
+      <div class="p-field flex items-center gap-2">
+        <p-checkbox formControlName="isDefault" binary="true" id="isDefault"></p-checkbox>
+        <label for="isDefault" class="font-semibold">Default Form</label>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <p-tabs class="mt-6 flex-1 flex flex-col" [(value)]="tabSelected">
+      <p-tablist>
+        <p-tab value="0">Fields</p-tab>
+        <p-tab value="1">Preview</p-tab>
+      </p-tablist>
+
+      <p-tabpanels>
+        <!-- Fields Tab -->
+        <p-tabpanel value="0">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold">Form Fields</h3>
+            <div class="flex gap-2">
+              <button pButton type="button" label="Add Default Fields" icon="pi pi-list" class="p-button-text" (click)="addDefaultFields()"></button>
+              <button pButton type="button" label="Add Field" icon="pi pi-plus" (click)="openAddFieldDialog()"></button>
+            </div>
+          </div>
+
+          <!-- Fields List with Drag & Drop -->
+          <div formArrayName="fields" cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-3">
+            <div *ngFor="let field of fields.controls; let i = index" [formGroupName]="i" cdkDrag>
+              <div
+                class="flex flex-row gap-3 items-center p-3 rounded-md shadow hover:shadow-lg transition-shadow bg-surface-0 dark:bg-surface-800"
+                style="border: 1px solid var(--fifty-neon-green);"
+              >
+                <!-- Drag Handle -->
+                <div cdkDragHandle class="w-8 flex justify-center items-center text-gray-400 cursor-move">
+                  <i class="pi pi-bars"></i>
+                </div>
+
+                <!-- Field Info -->
+                <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div class="flex-1">
+                    <span class="font-semibold">{{ field.get('label')?.value }}</span>
+                    <span class="text-xs text-gray-500 ml-2">({{ getFieldTypeName(field.get('fieldType')?.value) }})</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-sm">
+                    <span *ngIf="field.get('required')?.value" class="px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                      Required
+                    </span>
+                    <span *ngIf="field.get('placeholder')?.value" class="text-gray-400">
+                      "{{ field.get('placeholder')?.value }}"
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2">
+                  <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editField(i)"></button>
+                  <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="removeField(i)"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="fields.length === 0" class="text-center text-gray-500 py-8">
+            No fields added yet. Click "Add Field" or "Add Default Fields" to get started.
+          </div>
+        </p-tabpanel>
+
+        <!-- Preview Tab -->
+        <p-tabpanel value="1">
+          <div class="max-w-md mx-auto p-4 border rounded-lg bg-surface-50 dark:bg-surface-800">
+            <h3 class="font-semibold mb-4 text-center">{{ form.get('name')?.value || 'Form Preview' }}</h3>
+            <p *ngIf="form.get('description')?.value" class="text-sm text-gray-500 mb-4 text-center">
+              {{ form.get('description')?.value }}
+            </p>
+
+            <div class="flex flex-col gap-4">
+              <div *ngFor="let field of fields.controls" class="flex flex-col gap-1">
+                <label class="font-medium">
+                  {{ field.get('label')?.value }}
+                  <span *ngIf="field.get('required')?.value" class="text-red-500">*</span>
+                </label>
+
+                <!-- Text Input -->
+                <input
+                  *ngIf="field.get('fieldType')?.value === 'text'"
+                  pInputText
+                  type="text"
+                  [placeholder]="field.get('placeholder')?.value"
+                  class="w-full"
+                  disabled
+                />
+
+                <!-- Number Input -->
+                <p-inputNumber
+                  *ngIf="field.get('fieldType')?.value === 'number'"
+                  [placeholder]="field.get('placeholder')?.value"
+                  class="w-full"
+                  disabled
+                ></p-inputNumber>
+
+                <!-- Dropdown -->
+                <p-select
+                  *ngIf="field.get('fieldType')?.value === 'dropdown'"
+                  [options]="field.get('options')?.value || []"
+                  [placeholder]="field.get('placeholder')?.value || 'Select...'"
+                  class="w-full"
+                  disabled
+                ></p-select>
+
+                <!-- File Upload -->
+                <div *ngIf="field.get('fieldType')?.value === 'file'" class="flex items-center gap-2 p-2 border rounded bg-white dark:bg-surface-700">
+                  <i class="pi pi-upload text-gray-400"></i>
+                  <span class="text-gray-500">{{ field.get('placeholder')?.value || 'Click to upload...' }}</span>
+                </div>
+
+                <!-- User Tag -->
+                <div *ngIf="field.get('fieldType')?.value === 'userTag'" class="flex items-center gap-2 p-2 border rounded bg-white dark:bg-surface-700">
+                  <i class="pi pi-users text-gray-400"></i>
+                  <span class="text-gray-500">{{ field.get('placeholder')?.value || 'Search for users...' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 text-center">
+              <button pButton type="button" label="Submit" class="p-button-primary" disabled></button>
+            </div>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </form>
+</p-card>
+
+<!-- Field Editor Dialog -->
+<p-dialog [(visible)]="fieldDialog" [modal]="true" [style]="{ width: '500px' }" [baseZIndex]="10000">
+  <ng-template #header>
+    <span class="font-bold">{{ editingFieldIndex !== null ? 'Edit Field' : 'Add Field' }}</span>
+  </ng-template>
+
+  <div class="flex flex-col gap-4 pt-2">
+    <!-- Field Type -->
+    <div class="p-field">
+      <label for="fieldType" class="font-semibold mb-1 block">Field Type</label>
+      <p-select
+        id="fieldType"
+        [options]="fieldTypes"
+        [(ngModel)]="currentFieldModel.fieldType"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select type"
+        class="w-full"
+      ></p-select>
+    </div>
+
+    <!-- Label -->
+    <div class="p-field">
+      <p-floatlabel class="w-full" variant="on">
+        <input pInputText id="fieldLabel" [(ngModel)]="currentFieldModel.label" class="w-full" />
+        <label for="fieldLabel">Label</label>
+      </p-floatlabel>
+    </div>
+
+    <!-- Placeholder -->
+    <div class="p-field">
+      <p-floatlabel class="w-full" variant="on">
+        <input pInputText id="fieldPlaceholder" [(ngModel)]="currentFieldModel.placeholder" class="w-full" />
+        <label for="fieldPlaceholder">Placeholder</label>
+      </p-floatlabel>
+    </div>
+
+    <!-- Required -->
+    <div class="p-field flex items-center gap-2">
+      <p-checkbox [(ngModel)]="currentFieldModel.required" binary="true" id="fieldRequired"></p-checkbox>
+      <label for="fieldRequired" class="font-semibold">Required</label>
+    </div>
+
+    <!-- Number Validation (for number type) -->
+    <div *ngIf="currentFieldModel.fieldType === 'number'" class="flex gap-4">
+      <div class="p-field flex-1">
+        <p-floatlabel class="w-full" variant="on">
+          <p-inputNumber id="minVal" [(ngModel)]="currentFieldModel.validation!.min" class="w-full"></p-inputNumber>
+          <label for="minVal">Min Value</label>
+        </p-floatlabel>
+      </div>
+      <div class="p-field flex-1">
+        <p-floatlabel class="w-full" variant="on">
+          <p-inputNumber id="maxVal" [(ngModel)]="currentFieldModel.validation!.max" class="w-full"></p-inputNumber>
+          <label for="maxVal">Max Value</label>
+        </p-floatlabel>
+      </div>
+    </div>
+
+    <!-- Dropdown Options (for dropdown type) -->
+    <div *ngIf="currentFieldModel.fieldType === 'dropdown'" class="p-field">
+      <label class="font-semibold mb-1 block">Options (comma-separated)</label>
+      <textarea
+        pTextarea
+        [ngModel]="getOptionsAsString()"
+        (ngModelChange)="setOptionsFromString($event)"
+        rows="3"
+        class="w-full"
+        placeholder="Option 1, Option 2, Option 3"
+      ></textarea>
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" severity="secondary" (click)="closeFieldDialog()"></p-button>
+    <p-button label="Save" [outlined]="true" severity="secondary" (click)="saveField()"></p-button>
+  </ng-template>
+</p-dialog>
