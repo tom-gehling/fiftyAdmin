@@ -2,19 +2,21 @@ import { Component, ElementRef, Input, OnChanges, OnInit, Optional, SimpleChange
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ButtonModule } from 'primeng/button';
 
 import { Quiz } from '@/shared/models/quiz.model';
 import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { AuthService } from '@/shared/services/auth.service';
+import { QuizPdfService } from '@/shared/services/quiz-pdf.service';
 import { ActivatedRoute } from '@angular/router';
 import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-quiz-display',
   standalone: true,
-  imports: [CommonModule, ProgressSpinnerModule],
+  imports: [CommonModule, ProgressSpinnerModule, ButtonModule],
   template: `
     <!-- Loading Spinner -->
     <div *ngIf="loading" class="flex items-center justify-center h-96">
@@ -31,8 +33,19 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
         </p>
       </ng-container>
 
-      <!-- Title -->
-      <div class="quizTitle">{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}</div>
+      <!-- Title and Download -->
+      <div class="quizHeader">
+        <div class="quizTitle">{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}</div>
+        <p-button
+          *ngIf="!locked"
+          icon="pi pi-download"
+          label="Download PDF"
+          [outlined]="true"
+          severity="secondary"
+          (onClick)="downloadPdf()"
+          class="downloadButton">
+        </p-button>
+      </div>
 
       <!-- Questions -->
       <ng-container *ngFor="let q of quiz.questions; let i = index">
@@ -122,12 +135,24 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       color: var(--primary);
     }
 
+    .quizHeader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
     .quizTitle {
       text-align: center;
       padding: 10px;
       font-size: 30px;
       font-weight: 600;
       color: var(--primary);
+    }
+
+    .downloadButton {
+      margin-bottom: 10px;
     }
 
     .accordionButton {
@@ -222,6 +247,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     private quizService: QuizzesService,
     private quizResultsService: QuizResultsService,
     private authService: AuthService,
+    private quizPdfService: QuizPdfService,
     private elRef: ElementRef,
     private route: ActivatedRoute,
     @Optional() public config: DynamicDialogConfig
@@ -465,5 +491,13 @@ private initializeQuizState(quiz: Quiz) {
         console.error('Failed to complete result', err);
       }
     }
+  }
+
+  // ---------------------------------------------
+  // DOWNLOAD PDF
+  // ---------------------------------------------
+  downloadPdf() {
+    if (!this.quiz) return;
+    this.quizPdfService.downloadQuizPdf(this.quiz);
   }
 }
