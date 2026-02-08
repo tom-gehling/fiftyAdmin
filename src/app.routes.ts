@@ -28,6 +28,7 @@ import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
 import { SubmissionFormTableComponent } from '@/pages/admin/submissionForms/submissionFormTable';
 import { SubmissionFormDetailComponent } from '@/pages/admin/submissionForms/submissionFormDetail';
+import { UserTableComponent } from '@/pages/admin/users/userTable';
 
 // Guards
 import { AuthGuard } from '@/shared/guards/authGuard';
@@ -107,6 +108,7 @@ export const appRoutes: Routes = [
           { path: 'quizTags', component: QuizTagsComponent },
           { path: 'submissionForms', component: SubmissionFormTableComponent },
           { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
+          { path: 'users', component: UserTableComponent },
         ]
       }
     ]

@@ -24,6 +24,7 @@ import {
   where,
   getDocs,
   increment,
+  serverTimestamp,
 } from '@angular/fire/firestore';
 import {
   browserLocalPersistence,
@@ -223,7 +224,11 @@ export class AuthService {
       loginCount: loginCount + 1,
     };
 
-    await setDoc(userRef, appUser, { merge: true });
+    await setDoc(userRef, {
+      ...appUser,
+      lastLoginAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
 
     this.isAdmin$.next(isAdmin);
     this.isMember$.next(appUser.isMember);

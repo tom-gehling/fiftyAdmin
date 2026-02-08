@@ -75,11 +75,11 @@ import { NotifyService } from '@/shared/services/notify.service';
       </div>
 
       <!-- Quiz List -->
-      <div *ngIf="!loading && quizzes.length > 0; else loadingOrEmpty">
+      <div *ngIf="!loading && quizzes.length > 0; else loadingOrEmpty" class="rounded-lg overflow-hidden">
        <div
-  *ngFor="let quiz of quizzes"
-  style="display: flex !important; flex-direction:row; border: 1px solid var(--fifty-neon-green); gap: 20px;"
-  class="p-card mb-2 flex flex-row items-center justify-between cursor-pointer transition-colors"
+  *ngFor="let quiz of quizzes; let first = first"
+  style="display: flex !important; flex-direction:row; background: rgba(255,255,255,0.04); box-shadow: 0 1px 3px rgba(0,0,0,0.15); gap: 20px; position: relative;"
+  class="flex flex-row items-center justify-between cursor-pointer transition-colors"
   [ngClass]="{
     'bg-surface-50 dark:bg-surface-700': selectedQuiz?.id === quiz?.id,
     'hover:bg-surface-100 dark:hover:bg-surface-600': selectedQuiz?.id !== quiz?.id
@@ -87,6 +87,7 @@ import { NotifyService } from '@/shared/services/notify.service';
   (click)="highlightRow(quiz)"
   (dblclick)="openQuiz(quiz)"
 >
+          <div *ngIf="!first" style="width:100%;height:1px;background:var(--fifty-neon-green);position:absolute;top:0;left:0"></div>
           <!-- Left: image + title -->
           <div class="flex flex-1 items-center gap-4 p-3">
             <img
