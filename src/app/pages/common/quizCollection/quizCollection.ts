@@ -13,11 +13,14 @@ import { AuthService } from '@/shared/services/auth.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
 import { QuizTheme } from '@/shared/models/quiz.model';
+import { DialogService, DynamicDialogModule } from 'primeng/dynamicdialog';
+import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.component';
 
 @Component({
   selector: 'app-quiz-collection',
   standalone: true,
-  imports: [CommonModule, ButtonModule, DrawerModule, CardModule, QuizDisplayComponent],
+  imports: [CommonModule, ButtonModule, DrawerModule, CardModule, QuizDisplayComponent, DynamicDialogModule],
+  providers: [DialogService],
   template: `
     <p-card class="flex flex-col h-full">
       <div class="flex items-center justify-center mb-4 relative">
@@ -43,11 +46,18 @@ import { QuizTheme } from '@/shared/models/quiz.model';
                 {{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}
                 <span *ngIf="completedQuizIds.has(quiz.quizId)" class="text-green-600 ml-2">✅</span>
               </span>
-              <i
-            *ngIf="isLocked(i)"
-            class="pi pi-lock ml-2 text-gray-500"
-            title="Locked for your membership tier">
-          </i>
+              <div class="flex items-center gap-1">
+                <i
+                  class="pi pi-pencil text-sm cursor-pointer hover:opacity-70"
+                  title="Manually record score"
+                  (click)="openRetroModal(quiz, $event)">
+                </i>
+                <i
+                  *ngIf="isLocked(i)"
+                  class="pi pi-lock text-gray-500"
+                  title="Locked for your membership tier">
+                </i>
+              </div>
             </li>
           </ul>
         </ng-container>
@@ -94,6 +104,10 @@ import { QuizTheme } from '@/shared/models/quiz.model';
       color: #000;
     }
 
+    .quiz-list li > span {
+      color: #fff;
+    }
+
     .quiz-list li:hover:not(.active) {
       opacity: 0.8;
     }
@@ -114,7 +128,8 @@ export class QuizCollectionComponent implements OnInit {
     private userService: UserService,
     private quizzesService: QuizzesService,
     private quizResultsService: QuizResultsService,
-    private membershipService: MembershipService
+    private membershipService: MembershipService,
+    private dialogService: DialogService
   ) {}
 
   async ngOnInit() {
@@ -179,6 +194,26 @@ export class QuizCollectionComponent implements OnInit {
       return false;
   }
 }
+
+  openRetroModal(quiz: { quizId: string; quizTitle?: string; theme?: QuizTheme }, event: Event) {
+    event.stopPropagation();
+    const ref = this.dialogService.open(RetroQuizResultComponent, {
+      header: 'Record Score — ' + (quiz.quizTitle || 'Quiz ' + quiz.quizId),
+      width: '450px',
+      modal: true,
+      dismissableMask: true,
+      data: {
+        quizId: quiz.quizId,
+        quizTitle: quiz.quizTitle || 'Quiz ' + quiz.quizId,
+      }
+    });
+
+    ref.onClose.subscribe((result: any) => {
+      if (result?.saved) {
+        this.completedQuizIds.add(quiz.quizId);
+      }
+    });
+  }
 
   getQuizItemStyle(quiz: { quizId: string; quizTitle?: string; theme?: QuizTheme }): Record<string, string> {
     if (!quiz.theme) {

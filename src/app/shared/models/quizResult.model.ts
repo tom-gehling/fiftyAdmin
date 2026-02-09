@@ -1,3 +1,5 @@
+import { TaggedUser } from './quizSubmission.model';
+
 export interface QuizAnswer {
     questionId: number;         // matches QuizQuestion.questionId
     correct?: boolean;          // undefined until user marks correct/incorrect
@@ -23,4 +25,6 @@ export interface QuizResult {
     totalQuestions: number;      // taken from quiz.questions.length
     ip?: string;                 // IP address of the user
     geo?: GeoLocation;           // Geolocation data from IP lookup
+    retro?: boolean;             // true if manually recorded (backwards compatibility)
+    taggedUsers?: TaggedUser[];  // users who took the quiz together
 }

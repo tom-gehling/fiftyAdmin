@@ -12,6 +12,7 @@ import {
 } from '@angular/fire/firestore';
 import { Observable, defer, firstValueFrom } from 'rxjs';
 import { QuizResult, QuizAnswer } from '../models/quizResult.model';
+import { TaggedUser } from '../models/quizSubmission.model';
 
 @Injectable({ providedIn: 'root' })
 export class QuizResultsService {
@@ -94,7 +95,33 @@ export class QuizResultsService {
     });
   }
 
-    /** 
+    /** Create a retro (manually recorded) result */
+  async createRetroResult(
+    quizId: string,
+    userId: string,
+    score: number,
+    totalQuestions: number,
+    taggedUsers: TaggedUser[]
+  ): Promise<string> {
+    const result: QuizResult = {
+      quizId,
+      userId,
+      status: 'completed',
+      startedAt: new Date(),
+      completedAt: new Date(),
+      totalQuestions,
+      score,
+      answers: [],
+      retro: true,
+      taggedUsers,
+    };
+
+    const resultsCollection = collection(this.firestore, this.collectionName);
+    const docRef = await addDoc(resultsCollection, result);
+    return docRef.id;
+  }
+
+  /**
    * Get summarized quiz score history for a user.
    * Returns an array of { quizId, score } objects for completed quizzes only.
    */
