@@ -35,7 +35,7 @@ import { CommonModule } from '@angular/common';
         <div class="menu-buttons">
           <button routerLink="/weekly-quiz" class="menu-btn">QUIZ</button>
           <button routerLink="/login" class="menu-btn">FIFTY+</button>
-          <button routerLink="/findavenue" class="menu-btn">FIND A VENUE</button>
+          <button routerLink="/find-a-venue" class="menu-btn">FIND A VENUE</button>
           <button routerLink="/fiftyshop" class="menu-btn">SHOP</button>
         </div>
       </div>
