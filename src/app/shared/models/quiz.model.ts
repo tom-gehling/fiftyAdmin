@@ -46,5 +46,8 @@ export interface Quiz {
     notesBelow?: string;
     imageUrl?: string;
 
-    collab?: string
+    collab?: string;
+
+    /** Reference to SubmissionForm.id for quiz submission form */
+    submissionFormId?: string;
 }

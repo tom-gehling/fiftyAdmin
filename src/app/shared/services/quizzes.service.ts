@@ -156,7 +156,7 @@ getArchiveQuizzes(getHeader: boolean = false): Observable<any[]> {
         });
 
       if (getHeader) {
-        return archiveQuizzes.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }));
+        return archiveQuizzes.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }));
       }
 
       return archiveQuizzes;
@@ -170,7 +170,7 @@ getExclusives(getHeader: boolean = false): Observable<any[]> {
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.FiftyPlus);
       return getHeader
-        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }))
         : list;
     })
   );
@@ -181,7 +181,7 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.Collab);
       return getHeader
-        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }))
         : list;
     })
   );
@@ -192,7 +192,7 @@ getQuestionQuizzes(getHeader: boolean = false): Observable<any[]> {
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.QuestionType);
       return getHeader
-        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }))
         : list;
     })
   );

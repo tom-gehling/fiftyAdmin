@@ -191,6 +191,29 @@
                         </p-dialog>
                     </div> -->
 
+                    <!-- Submission Form Section -->
+                    <div class="mb-6 flex flex-col gap-3">
+                        <h3 class="font-semibold mb-2">Submission Form</h3>
+                        <div class="p-field w-full max-w-md">
+                            <p-floatlabel class="w-full" variant="in">
+                                <p-select
+                                    id="submissionFormId"
+                                    formControlName="submissionFormId"
+                                    [options]="availableSubmissionForms"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Select submission form"
+                                    [showClear]="true"
+                                    class="w-full"
+                                ></p-select>
+                                <label for="submissionFormId">Submission Form</label>
+                            </p-floatlabel>
+                        </div>
+                        <p class="text-sm text-gray-500">
+                            Attach a submission form to this quiz. Users can submit their team results after completing the quiz.
+                        </p>
+                    </div>
+
                     <!-- Notes Section -->
                     <div class="mb-6 flex flex-col gap-3">
                         <h3 class="font-semibold mb-2">Notes</h3>

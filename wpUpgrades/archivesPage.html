@@ -308,16 +308,19 @@
         <div id="loggedInEmail" data-email="[current_user_email]" style="display: none"></div>
 
         <script>
-            let quizzes = []; // will hold full quiz data
+            let quizzes = []; // will hold full quiz data (indexed by tab position)
             let quizHeaders = []; // will hold just header info
             const emailAddress = document.getElementById('loggedInEmail')?.dataset.email || null;
 
+            let currentQuizIndex = 0; // Track which quiz is currently displayed
             let scoreCount = 0;
             let totalCount = 0;
+            let quizSubmitted = false;
             const buttons = [];
             const correctClicked = [];
             const incorrectClicked = [];
             const dotStatus = [];
+            const answerTimestamps = {}; // key: "questionIndex" → ISO timestamp
 
             function formatAdelaideDate(dateString) {
                 const date = new Date(dateString);
@@ -402,6 +405,22 @@
                 }
             }
 
+            // Apply theme colors from quiz data to CSS variables
+            function applyThemeColors(quiz) {
+                if (!quiz || !quiz.theme) return;
+
+                const root = document.documentElement;
+                if (quiz.theme.fontColor) {
+                    root.style.setProperty('--pink', quiz.theme.fontColor);
+                }
+                if (quiz.theme.backgroundColor) {
+                    root.style.setProperty('--black', quiz.theme.backgroundColor);
+                }
+                if (quiz.theme.tertiaryColor) {
+                    root.style.setProperty('--green', quiz.theme.tertiaryColor);
+                }
+            }
+
             // Load a single quiz into the container
             async function loadQuiz(index) {
                 var page = document.getElementById('load');
@@ -417,14 +436,21 @@
                 }
 
                 const quizData = quizzes[index];
+                currentQuizIndex = index; // Track current quiz
+
+                // Apply theme colors for this quiz
+                applyThemeColors(quizData);
 
                 // Reset state
                 scoreCount = 0;
                 totalCount = 0;
+                quizSubmitted = false;
                 buttons.length = 0;
                 correctClicked.length = 0;
                 incorrectClicked.length = 0;
                 dotStatus.length = 0;
+                // Clear answer timestamps for new quiz
+                Object.keys(answerTimestamps).forEach(key => delete answerTimestamps[key]);
 
                 // Quiz title
                 const title = document.createElement('h2');
@@ -509,6 +535,10 @@
             function markAnswer(idCode, correct) {
                 const btnPair = buttons[idCode];
 
+                // Track timestamp for this answer
+                const key = `${idCode}`;
+                answerTimestamps[key] = new Date().toISOString();
+
                 if (correct) {
                     if (!correctClicked[idCode] && !incorrectClicked[idCode]) {
                         scoreCount++;
@@ -522,7 +552,7 @@
 
                     // Update button classes
                     btnPair.correct.classList.add('correct');
-                    btnPair.correct.disabled = false; // keep clickable if you want
+                    btnPair.correct.disabled = true;
                     btnPair.incorrect.classList.remove('incorrect');
                     btnPair.incorrect.disabled = false;
                 } else {
@@ -537,7 +567,7 @@
 
                     // Update button classes
                     btnPair.incorrect.classList.add('incorrect');
-                    btnPair.incorrect.disabled = false; // keep clickable
+                    btnPair.incorrect.disabled = true;
                     btnPair.correct.classList.remove('correct');
                     btnPair.correct.disabled = false;
                 }
@@ -549,8 +579,8 @@
                 const scoreDiv = document.getElementById('scoreDisplay');
                 scoreDiv.innerText = `Score: ${scoreCount} / ${totalCount}`;
 
-                // Optional: call your completion check
-                // checkQuizCompletion(currentQuizIndex);
+                // Check quiz completion for session tracking
+                checkQuizCompletion();
             }
 
             async function startQuizSession(quizId) {
@@ -560,7 +590,7 @@
                     const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ quizId, emailAddress }) // <- correct key
+                        body: JSON.stringify({ quizId, emailAddress })
                     });
 
                     if (!response.ok) throw new Error('Failed to start quiz session');
@@ -573,20 +603,20 @@
                 }
             }
 
-            async function finishQuizSession(quizIndex) {
-                const quizId = String(quizzes[quizIndex].quiz_id);
+            async function finishQuizSession() {
+                const quizData = quizzes[currentQuizIndex];
+                const quizId = String(quizData.quiz_id);
                 const sessionKey = `quiz_${quizId}_sessionId`;
                 const sessionId = localStorage.getItem(sessionKey);
                 if (!sessionId) return;
 
-                const totalQuestions = quizzes[quizIndex].questions.length;
-                const score = scoreCount[quizIndex];
-                const answers = quizzes[quizIndex].questions.map((q, idx) => {
-                    const key = `${quizIndex}_${idx}`;
+                const totalQuestions = quizData.questions.length;
+                const answers = quizData.questions.map((q, idx) => {
+                    const idCode = idx + 1;
                     return {
-                        questionId: q.qNum,
-                        correct: correctClicked[quizIndex * 50 + idx],
-                        timestamp: answerTimestamps[key] || null
+                        questionId: q.qNum || idx + 1,
+                        correct: correctClicked[idCode] || false,
+                        timestamp: answerTimestamps[idCode] || null
                     };
                 });
 
@@ -596,7 +626,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             sessionId,
-                            score,
+                            score: scoreCount,
                             total: totalQuestions,
                             answers
                         })
@@ -633,20 +663,21 @@
 
             const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-            async function checkQuizCompletion(quizIndex) {
-                debugger;
-                const quizId = String(quizzes[quizIndex].quiz_id);
+            async function checkQuizCompletion() {
+                const quizData = quizzes[currentQuizIndex];
+                if (!quizData) return;
+
+                const quizId = String(quizData.quiz_id);
                 const quizSessionKey = `quiz_${quizId}_submitted`;
 
                 // Use the expiry-aware get
                 if (getWithExpiry(quizSessionKey)) return; // Already submitted
 
-                const totalQuestions = quizzes[quizIndex].questions.length;
+                const totalQuestions = quizData.questions.length;
                 let answeredCount = 0;
 
-                for (let j = 0; j < totalQuestions; j++) {
-                    const idx = quizIndex * 50 + j;
-                    if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
+                for (let j = 1; j <= totalQuestions; j++) {
+                    if (correctClicked[j] || incorrectClicked[j]) answeredCount++;
                 }
 
                 // --- START SESSION WHEN FIRST QUESTION ANSWERED ---
@@ -657,15 +688,18 @@
                 if (answeredCount === totalQuestions) {
                     // Mark quiz as submitted for 7 days
                     setWithExpiry(quizSessionKey, 'true', ONE_WEEK_MS);
-                    quizSubmitted[quizIndex] = true;
+                    quizSubmitted = true;
 
                     // Disable all buttons for this quiz
-                    for (let j = 0; j < totalQuestions; j++) {
-                        disableButton(0, quizIndex, j);
+                    for (let j = 1; j <= totalQuestions; j++) {
+                        if (buttons[j]) {
+                            buttons[j].correct.disabled = true;
+                            buttons[j].incorrect.disabled = true;
+                        }
                     }
 
                     // Log the session
-                    await finishQuizSession(quizIndex);
+                    await finishQuizSession();
                 }
             }
 

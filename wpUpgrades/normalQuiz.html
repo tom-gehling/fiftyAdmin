@@ -1,920 +1,967 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-    <head>
-        <meta http-equiv="Cache-control" content="No-Cache" />
-        <title>The Weekly Fifty</title>
-        <style>
-            :root {
-                --tertiary: #4cfbab;
-                --secondary: #677c73;
-                --primary: #fbe2df !important;
-                --font: Helvetica, Arial, sans-serif !important;
-                --header: 25px !important;
-                --normal: 22px !important;
-                --smaller: 18px !important;
-                --transition: 0.3s !important;
-            }
-
-            #load {
-                color: var(--primary) !important;
-                background-color: var(--secondary) !important;
-                font-family: var(--font) !important;
-                font-size: var(--normal) !important;
-                font-weight: 500 !important;
-                transition: var(--transition) !important;
-                padding-bottom: 10px !important;
-                display: block;
-                justify-content: flex-start !important;
-            }
-
-            .closebtn {
-                color: #4cfbab;
-                margin-bottom: 10px;
-                cursor: pointer;
-            }
-
-            #openBtn {
-                color: #4cfbab;
-                font-size: 60px;
-                padding: 10px;
-                cursor: pointer;
-            }
-
-            .logo {
-                width: 100%;
-                justify-content: center;
-                margin-bottom: 30px;
-            }
-
-            .topContainer {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-
-            .info-button {
-                background-color: var(--secondary) !important;
-                font-family: var(--font) !important;
-                font-size: var(--smaller) !important;
-                font-weight: 500 !important;
-                color: var(--primary) !important;
-                cursor: pointer !important;
-                padding: 15px !important;
-                padding-top: 1% !important;
-                padding-bottom: 1% !important;
-                vertical-align: centre !important;
-                text-align: left !important;
-                width: 100% !important;
-                height: 70% !important;
-                border: none !important;
-                outline: none !important;
-                transition: var(--transition) !important;
-                width: auto !important;
-                margin-right: 10px !important;
-                line-height: 130% !important;
-            }
-
-            .modal {
-                font-family: var(--font);
-                display: none;
-                position: fixed;
-                z-index: 1;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: auto;
-                background-color: rgba(0, 0, 0, 0.8);
-            }
-
-            .modal-content {
-                background-color: white;
-                margin: 15% auto;
-                padding: 20px;
-                font-size: var(--smaller);
-                font-family: var(--font);
-                width: 80%;
-            }
-
-            .close {
-                color: #aaa;
-                float: right;
-                font-size: 38px;
-                font-weight: bold;
-            }
-
-            .close:hover,
-            .close:focus {
-                color: secondary;
-                text-decoration: none;
-                cursor: pointer;
-            }
-
-            .info {
-                text-align: center;
-                color: var(--secondary);
-                font-family: var(--font);
-                font-weight: 300 !important;
-                line-height: 200%;
-            }
-
-            .quizTitle {
-                font-size: 38px !important;
-                font-family: var(--font);
-                color: var(--primary);
-                font-weight: 600 !important;
-                text-align: center;
-            }
-
-            .toggleButtonContainerWrapper {
-                font-family: var(--font) !important;
-                display: flex;
-                flex-direction: row;
-                width: 15%;
-                align-items: center;
-                margin-left: auto;
-            }
-
-            .toggleButtonContainer {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                font-size: var(--smaller) !important;
-                font-weight: 100 !important;
-                padding: 5px !important;
-                width: auto !important;
-            }
-
-            .toggleWithValues {
-                display: flex;
-                align-items: center;
-                flex-direction: column;
-            }
-
-            .toggleButton {
-                position: relative;
-                width: 60px !important;
-                height: 24px !important;
-                display: flex;
-                justify-content: flex-end;
-                align-items: center;
-            }
-
-            .toggleButtonLabel {
-                font-size: 16px;
-                font-weight: 500;
-                text-align: center;
-                padding: 10px;
-                line-height: 130%;
-            }
-
-            .toggleButton input[type='checkbox'] {
-                display: none;
-            }
-
-            .slider {
-                position: absolute;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                background-color: var(--primary) !important;
-                border-radius: 24px !important;
-                transition: var(--transition) !important;
-                cursor: pointer !important;
-            }
-
-            .slider:before {
-                position: absolute;
-                content: '' !important;
-                height: 16px !important;
-                width: 16px !important;
-                left: 4px !important;
-                bottom: 4px !important;
-                background-color: var(--secondary) !important;
-                border-radius: 50% !important;
-                transition: var(--transition) !important;
-            }
-
-            input[type='checkbox']:checked + .slider {
-                background-color: var(--primary) !important;
-            }
-
-            input[type='checkbox']:checked + .slider:before {
-                transform: translateX(34px) !important;
-            }
-
-            .quizContainer {
-                width: 100% !important;
-            }
-
-            .quizTitle {
-                font-size: 30px !important;
-                font-family: var(--font);
-                color: var(--primary);
-                font-weight: 600 !important;
-                text-align: center !important;
-                padding: 10px;
-            }
-
-            .quiz {
-                display: none;
-            }
-
-            .quiz.active {
-                display: block;
-            }
-
-            .question {
-                width: auto !important;
-                justify-self: center !important;
-            }
-
-            .questionText {
-                display: contents;
-            }
-
-            .accordionButton {
-                color: var(--primary) !important;
-                background-color: var(--secondary) !important;
-                border: none !important;
-                border-radius: 0px !important;
-                text-align: center !important;
-                outline: none !important;
-                width: 100% !important;
-                font-family: var(--font) !important;
-                font-size: var(--header) !important;
-                font-weight: 400 !important;
-                transition: var(--transition) !important;
-                padding: 25px !important;
-                margin-bottom: 20px !important;
-                line-height: 130% !important;
-            }
-
-            .accordionButton.active {
-                color: var(--secondary) !important;
-                background-color: var(--primary) !important;
-            }
-
-            .accordionButton p {
-                margin: 0 !important;
-                display: inline !important; /* removes block behaviour */
-            }
-
-            .genericButton {
-                font-family: var(--font) !important;
-                font-weight: 600 !important;
-                color: var(--secondary) !important;
-                background-color: var(--primary) !important;
-                border: 3px solid var(--primary) !important;
-                border-radius: 15px !important;
-                font-size: var(--normal) !important;
-                padding: 15px !important;
-                margin: 5px !important;
-                transition: var(--transition) !important;
-            }
-
-            .genericButton.correct {
-                color: var(--primary) !important;
-                background-color: var(--secondary) !important;
-                border: 3px solid var(--primary) !important;
-            }
-
-            .genericButton.incorrect {
-                color: var(--primary) !important;
-                background-color: var(--secondary) !important;
-                border: 3px solid var(--primary) !important;
-            }
-
-            .genericButton.reveal {
-                background-color: var(--secondary) !important;
-                color: var(--primary) !important;
-                border: 3px solid var(--primary) !important;
-            }
-
-            .dot {
-                height: 10px !important;
-                width: 10px !important;
-                background-color: var(--tertiary) !important;
-                border-radius: 50% !important;
-                display: inline-block;
-                margin-right: 10px !important;
-            }
-
-            .dot.removed {
-                display: none;
-            }
-
-            .panel {
-                font-family: var(--font) !important;
-                display: none;
-                font-size: var(--normal) !important;
-                padding-top: 15px !important;
-                padding-bottom: 15px !important;
-                width: auto !important;
-                text-align: center !important;
-            }
-
-            .panel.active {
-                display: block;
-            }
-
-            .panel.answer {
-                font-size: var(--header) !important;
-                font-weight: 800 !important;
-            }
-
-            .score {
-                font-family: var(--font) !important;
-                color: var(--primary) !important;
-                text-align: center !important;
-                font-size: var(--header) !important;
-                font-weight: 800 !important;
-            }
-
-            .panel.answer ul {
-                padding: 0;
-                margin: 0;
-                line-height: 1;
-            }
-
-            .panel.answer li {
-                margin-top: 10px;
-                margin-bottom: 30px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                list-style-type: '-';
-                width: 100%;
-                word-wrap: break-word;
-            }
-
-            @media only screen and (max-width: 800px) {
-                .toggleButtonContainerWrapper {
-                    width: 20%;
-                }
-            }
-
-            @media only screen and (max-width: 500px) {
-                .toggleButtonContainerWrapper {
-                    width: 30%;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div id="load"></div>
-
-        <script>
-            function addWeeksToDate(numberOfWeeks, firstQuiz) {
-                var startDate = new Date(firstQuiz);
-                var millisecondsInWeek = 7 * 24 * 60 * 60 * 1000;
-                var totalMillisecondsToAdd = numberOfWeeks * millisecondsInWeek;
-                var resultDate = new Date(startDate.getTime() + totalMillisecondsToAdd);
-                return resultDate;
-            }
-
-            function formatDateAsDDMMYY(date) {
-                var day = date.getDate() + 7;
-                var month = date.getMonth() + 1;
-                var year = date.getFullYear();
-
-                day = day < 10 ? '0' + day : day;
-                month = month < 10 ? '0' + month : month;
-                return day + '/' + month + '/' + year;
-            }
-
-            function getDate(numberOfWeeks, firstQuiz) {
-                date = '';
-                date = addWeeksToDate(numberOfWeeks, firstQuiz);
-                return formatDateAsDDMMYY(date);
-            }
-
-            function createTopContainer() {
-                var quizElement = document.getElementById('load');
-                var topContainerDiv = document.createElement('div');
-                topContainerDiv.className = 'topContainer';
-
-                var infoButton = document.createElement('button');
-                infoButton.className = 'info-button';
-                infoButton.id = 'infoBtn';
-                infoButton.innerHTML = '︎First timers<br /><b>click me!</b>';
-                infoButton.onclick = function () {
-                    modal.style.display = 'block';
-                };
-
-                var modalDiv = document.createElement('div');
-                modalDiv.id = 'infoModal';
-                modalDiv.className = 'modal';
-
-                var modalContentDiv = document.createElement('div');
-                modalContentDiv.className = 'modal-content';
-
-                var closeButton = document.createElement('span');
-                closeButton.className = 'close';
-                closeButton.innerHTML = '&times;';
-
-                var infoParagraph = document.createElement('p');
-                infoParagraph.className = 'info';
-                infoParagraph.innerHTML =
-                    "Welcome to the Fifty. <br> First time? Easy. <br> <br> Once you've settled on your answer, click on the question to see if you're correct. Mark accordingly. <br> <br> If you don’t want your answers straight away, no stress. There’s a 'gimme the answers' button down below. Just have a notepad handy, and scroll gently. <br> <br> Happy quizzing! <br> All our love, <br> The Weekly Fifty xx";
-
-                modalContentDiv.appendChild(closeButton);
-                modalContentDiv.appendChild(infoParagraph);
-                modalDiv.appendChild(modalContentDiv);
-
-                var toggleButtonContainerWrapperDiv = document.createElement('div');
-                toggleButtonContainerWrapperDiv.className = 'toggleButtonContainerWrapper';
-
-                var toggleButtonContainerQuestionsDiv = document.createElement('div');
-                toggleButtonContainerQuestionsDiv.className = 'toggleButtonContainer';
-
-                var toggleWithValuesQuestionsDiv = document.createElement('div');
-                toggleWithValuesQuestionsDiv.id = 'quizNightSwitch';
-                toggleWithValuesQuestionsDiv.className = 'toggleWithValues';
-                toggleWithValuesQuestionsDiv.innerHTML =
-                    '<label class="toggleButtonLabel" for="toggleButton">Been To A Quiz Night</label><label class="toggleButton"><input type="checkbox" id="quizNightToggleButton" onchange="toggleQuestions()"><span class="slider"></span></label>';
-
-                toggleButtonContainerQuestionsDiv.appendChild(toggleWithValuesQuestionsDiv);
-
-                toggleButtonContainerWrapperDiv.appendChild(toggleButtonContainerQuestionsDiv);
-                topContainerDiv.appendChild(infoButton);
-                topContainerDiv.appendChild(modalDiv);
-                topContainerDiv.appendChild(toggleButtonContainerWrapperDiv);
-                quizElement.appendChild(topContainerDiv);
-            }
-
-            function createTitle(id, questions) {
-                var quizElement = document.getElementById('load');
-                var title = document.createElement('div');
-                title.className = 'quizTitle';
-                title.innerText = 'Quiz ' + quizzes[0].quiz_id + ' - ' + getDate(quizzes[0].quiz_id, '2022-06-17');
-                quizElement.appendChild(title);
-            }
-
-            function createQuizContainers(id, questions) {
-                var page = document.getElementById('load');
-                var cont = document.createElement('div');
-                cont.className = 'quizContainer';
-                page.appendChild(cont);
-
-                for (let i = 0; i < quizzes.length; i++) {
-                    var quiz = document.createElement('div');
-                    if (i === 0) {
-                        quiz.className = 'quiz active';
-                    } else {
-                        quiz.className = 'quiz';
-                    }
-                    quiz.id = 'quiz_' + (i + 1);
-                    cont.appendChild(quiz);
-                    createQuiz(i, quizzes[i].questions);
-                }
-            }
-
-            function createQuiz(id, questions) {
-                var quiz = document.getElementsByClassName('quiz');
-                for (let i = 0; i < questions.length; i++) {
-                    let idCode = id + 1 + '_' + (i + 1);
-                    var questionDiv = document.createElement('div');
-                    questionDiv.className = 'question';
-                    questionDiv.id = 'clickQuestion_' + idCode;
-
-                    var accordionButton = document.createElement('button');
-                    accordionButton.className = 'accordionButton';
-                    accordionButton.id = 'button_' + idCode;
-
-                    var dotSpan = document.createElement('span');
-                    dotSpan.className = 'dot';
-                    dotSpan.id = 'dot_' + idCode;
-
-                    var dotText = document.createTextNode(' ');
-                    dotSpan.appendChild(dotText);
-
-                    var questionText = document.createElement('span');
-                    questionText.className = 'questionText';
-                    questionText.innerHTML = '<b>' + (i + 1) + '. </b>' + questions[i].qTitle;
-                    accordionButton.appendChild(dotSpan);
-                    accordionButton.appendChild(questionText);
-                    accordionButton.onclick = toggleAccordion;
-
-                    var clickPanel = document.createElement('div');
-                    clickPanel.className = 'panel';
-
-                    var answerButton = document.createElement('button');
-                    answerButton.className = 'genericButton';
-                    answerButton.id = 'clickAnswer_' + idCode;
-                    answerButton.textContent = 'Click for answer';
-                    answerButton.onclick = togglePanel;
-
-                    var answerPanel = document.createElement('div');
-                    answerPanel.className = 'panel answer';
-
-                    var answerText = document.createElement('p');
-                    answerText.className = 'answerText';
-                    answerText.innerHTML = questions[i].qAnswer;
-
-                    var correctButton = document.createElement('button');
-                    correctButton.className = 'genericButton';
-                    correctButton.id = 'clickCorrectBtn_' + idCode;
-                    correctButton.textContent = 'Correct';
-                    correctButton.onclick = function () {
-                        disableButton(1, id, i);
-                        incrementScore(1, id, i);
-                        removeDot(id + 1, i + 1);
-                        const key = `${id}_${i}`;
-                        answerTimestamps[key] = new Date().toISOString();
-                    };
-
-                    var incorrectButton = document.createElement('button');
-                    incorrectButton.className = 'genericButton';
-                    incorrectButton.id = 'clickIncorrectBtn_' + idCode;
-                    incorrectButton.textContent = 'Incorrect';
-                    incorrectButton.onclick = function () {
-                        disableButton(2, id, i);
-                        incrementScore(2, id, i);
-                        removeDot(id + 1, i + 1);
-                        const key = `${id}_${i}`;
-                        answerTimestamps[key] = new Date().toISOString();
-                    };
-
-                    quiz[id].appendChild(questionDiv);
-                    questionDiv.appendChild(accordionButton);
-                    questionDiv.appendChild(clickPanel);
-                    clickPanel.appendChild(answerButton);
-                    clickPanel.appendChild(answerPanel);
-                    answerPanel.appendChild(answerText);
-                    answerPanel.appendChild(correctButton);
-                    answerPanel.appendChild(incorrectButton);
-                }
-            }
-
-            function shareScore() {
-                const quizNumber = quizzes[0].quiz_id;
-                const scoreElement = document.querySelector('.score');
-                const scoreText = scoreElement ? scoreElement.innerText : 'a mystery score';
-                const scoreMatch = scoreText.match(/\d+/);
-                const score = scoreMatch ? scoreMatch[0] : '??';
-
-                const shareMessage = `The Weekly Fifty\nQuiz ${quizNumber}\nScore:  ${score}/50! 🎉\nTry at https://theweeklyfifty.com`;
-
-                if (navigator.share) {
-                    navigator
-                        .share({
-                            title: 'My Weekly Fifty Score',
-                            text: shareMessage,
-                            url: 'https://theweeklyfifty.com'
-                        })
-                        .catch((err) => console.error('Share failed:', err));
-                } else {
-                    navigator.clipboard.writeText(shareMessage).then(() => {
-                        alert('Score copied to clipboard! You can now paste it anywhere 😊');
-                    });
-                }
-            }
-
-            function createScore() {
-                var quiz = document.getElementsByClassName('quiz');
-                for (let i = 0; i < quizzes.length; i++) {
-                    var scoreDiv = document.createElement('div');
-                    scoreDiv.className = 'score';
-                    scoreDiv.id = 'score_' + (i + 1);
-                    scoreDiv.innerHTML = 'Score: <span id="scoreCount_' + (i + 1) + '">0</span> / <span id="totalCount_' + (i + 1) + '">0</span>';
-                    quiz[i].appendChild(scoreDiv);
-                }
-            }
-
-            function toggleQuestions() {
-                let toggleButton = document.getElementById('quizNightToggleButton');
-                displayQuestions = toggleButton.checked ? 20 : 50;
-
-                let questions = document.getElementsByClassName('question');
-                if (displayQuestions === 20) {
-                    for (var i = 0; i < 30; i++) {
-                        questions[i].style.display = 'none';
-                    }
-                } else {
-                    for (var i = 0; i < 50; i++) {
-                        questions[i].style.display = 'block';
-                    }
-                }
-            }
-
-            function toggleAccordion() {
-                this.classList.toggle('active');
-                var panel = this.nextElementSibling;
-                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-            }
-
-            function togglePanel() {
-                this.classList.toggle('reveal');
-                var panel = this.nextElementSibling;
-                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-            }
-
-            function disableButton(buttonNum, quiz, pairNum) {
-                var buttonPair = buttons[quiz * 50 + pairNum];
-                var correctButton = buttonPair.correct;
-                var incorrectButton = buttonPair.incorrect;
-
-                if (buttonNum === 1) {
-                    correctButton.disabled = true;
-                    correctButton.classList.add('correct');
-                    incorrectButton.disabled = false;
-                    incorrectButton.classList.remove('incorrect');
-                } else if (buttonNum === 2) {
-                    incorrectButton.disabled = true;
-                    incorrectButton.classList.add('incorrect');
-                    correctButton.disabled = false;
-                    correctButton.classList.remove('correct');
-                }
-            }
-
-            function incrementScore(num, quiz, pairNum) {
-                var buttonIndex = quiz * 50 + pairNum;
-                if (num === 1) {
-                    if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
-                        scoreCount[quiz]++;
-                        totalCount[quiz]++;
-                        correctClicked[buttonIndex] = true;
-                    } else if (incorrectClicked[buttonIndex]) {
-                        scoreCount[quiz]++;
-                        correctClicked[buttonIndex] = true;
-                    }
-                } else if (num === 2) {
-                    if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
-                        totalCount[quiz]++;
-                        incorrectClicked[buttonIndex] = true;
-                    } else if (correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
-                        scoreCount[quiz]--;
-                        incorrectClicked[buttonIndex] = true;
-                    } else if (correctClicked[buttonIndex]) {
-                        scoreCount[quiz]--;
-                        incorrectClicked[buttonIndex] = true;
-                    }
-                }
-                for (let i = 0; i < quizzes.length; i++) {
-                    var score = document.getElementById(`scoreCount_${i + 1}`);
-                    var total = document.getElementById(`totalCount_${i + 1}`);
-                    score.innerText = scoreCount[i];
-                    total.innerText = totalCount[i];
-                }
-                checkQuizCompletion(quiz);
-            }
-
-            function removeDot(quiz, pairNum) {
-                var dot = document.getElementById(`dot_${quiz}_${pairNum}`);
-                dot.classList.add('removed');
-            }
-
-            async function startQuizSession(quizId) {
-                const sessionKey = `quiz_${quizId}_sessionId`;
-                if (localStorage.getItem(sessionKey)) return localStorage.getItem(sessionKey);
-
-                try {
-                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logQuizStart', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ quizId }) // <- correct key
-                    });
-
-                    if (!response.ok) throw new Error('Failed to start quiz session');
-                    const data = await response.json();
-                    localStorage.setItem(sessionKey, data.sessionId);
-                    return data.sessionId;
-                } catch (err) {
-                    console.error('Error starting quiz session:', err);
-                    return null;
-                }
-            }
-
-            async function finishQuizSession(quizIndex) {
-                const quizId = String(quizzes[quizIndex].quiz_id);
-                const sessionKey = `quiz_${quizId}_sessionId`;
-                const sessionId = localStorage.getItem(sessionKey);
-                if (!sessionId) return;
-
-                const totalQuestions = quizzes[quizIndex].questions.length;
-                const score = scoreCount[quizIndex];
-                const answers = quizzes[quizIndex].questions.map((q, idx) => {
-                    const key = `${quizIndex}_${idx}`;
-                    return {
-                        questionId: q.qNum,
-                        correct: correctClicked[quizIndex * 50 + idx],
-                        timestamp: answerTimestamps[key] || null
-                    };
-                });
-
-                try {
-                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logQuizFinish', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            sessionId,
-                            score,
-                            total: totalQuestions,
-                            answers
-                        })
-                    });
-
-                    if (!response.ok) throw new Error('Failed to finish quiz session');
-                    console.log('Quiz session saved:', await response.json());
-                } catch (err) {
-                    console.error('Error finishing quiz session:', err);
-                }
-            }
-
-            function setWithExpiry(key, value, ttlMs) {
-                const now = new Date().getTime();
-                const item = { value, expiry: now + ttlMs };
-                localStorage.setItem(key, JSON.stringify(item));
-            }
-
-            function getWithExpiry(key) {
-                const itemStr = localStorage.getItem(key);
-                if (!itemStr) return null;
-
-                try {
-                    const item = JSON.parse(itemStr);
-                    if (new Date().getTime() > item.expiry) {
-                        localStorage.removeItem(key);
-                        return null;
-                    }
-                    return item.value;
-                } catch {
-                    return null;
-                }
-            }
-
-            const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-            async function checkQuizCompletion(quizIndex) {
-                const quizId = String(quizzes[quizIndex].quiz_id);
-                const quizSessionKey = `quiz_${quizId}_submitted`;
-
-                // Use the expiry-aware get
-                if (getWithExpiry(quizSessionKey)) return; // Already submitted
-
-                const totalQuestions = quizzes[quizIndex].questions.length;
-                let answeredCount = 0;
-
-                for (let j = 0; j < totalQuestions; j++) {
-                    const idx = quizIndex * 50 + j;
-                    if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
-                }
-
-                // --- START SESSION WHEN FIRST QUESTION ANSWERED ---
-                if (answeredCount === 1) {
-                    await startQuizSession(quizId);
-                }
-
-                if (answeredCount === totalQuestions) {
-                    // Mark quiz as submitted for 7 days
-                    setWithExpiry(quizSessionKey, 'true', ONE_WEEK_MS);
-                    quizSubmitted[quizIndex] = true;
-
-                    // Disable all buttons for this quiz
-                    for (let j = 0; j < totalQuestions; j++) {
-                        disableButton(0, quizIndex, j);
-                    }
-
-                    // Log the session
-                    await finishQuizSession(quizIndex);
-                }
-            }
-
-            // async function checkQuizCompletion(quizIndex) {
-            //   const quizId = String(quizzes[quizIndex].quiz_id);
-
-            //   // Use a per-quiz session key to track submission
-            //   const quizSessionKey = `quiz_${quizId}_submitted`;
-            //   if (localStorage.getItem(quizSessionKey)) {
-            //     return; // already submitted for this session token
-            //   }
-
-            //   const totalQuestions = quizzes[quizIndex].questions.length;
-            //   let answeredCount = 0;
-
-            //   for (let j = 0; j < totalQuestions; j++) {
-            //     const idx = quizIndex * 50 + j;
-            //     if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
-            //   }
-
-            //   if (answeredCount === totalQuestions) {
-            //     // Mark as submitted for this session
-            //     localStorage.setItem(quizSessionKey, "true");
-            //     quizSubmitted[quizIndex] = true;
-
-            //     // Disable all buttons for this quiz
-            //     for (let j = 0; j < totalQuestions; j++) {
-            //       disableButton(0, quizIndex, j); // 0 = just disable without increment
-            //     }
-
-            //     console.log("All questions answered for quiz", quizId);
-
-            //     const averageScore = scoreCount[quizIndex] / totalQuestions;
-
-            //     // --- SESSION TOKEN LOGIC ---
-            //     let sessionToken = localStorage.getItem("quizSessionToken");
-            //     if (!sessionToken) {
-            //       sessionToken = crypto.randomUUID(); // generate a new token
-            //       localStorage.setItem("quizSessionToken", sessionToken);
-            //     }
-
-            //     try {
-            //       const response = await fetch(
-            //         "https://weeklyfifty-7617b.web.app/api/recordQuizSession",
-            //         {
-            //           method: "POST",
-            //           headers: { "Content-Type": "application/json" },
-            //           body: JSON.stringify({
-            //             quizId,
-            //             score: averageScore,
-            //             sessionToken,
-            //           }),
-            //         }
-            //       );
-
-            //       if (!response.ok) throw new Error("Failed to record quiz");
-            //       const data = await response.json();
-            //       console.log("Quiz recorded:", data);
-            //     } catch (error) {
-            //       console.error("Error recording quiz:", error);
-            //     }
-            //   }
-            // }
-
-            function initPage() {
-                correctClicked = Array(quizzes.length * 50).fill(false);
-                incorrectClicked = Array(quizzes.length * 50).fill(false);
-                dotStatus = Array(quizzes.length * 50).fill('block');
-                createTopContainer();
-                createTitle();
-                createQuizContainers();
-                createScore();
-                for (var i = 0; i < quizzes.length; i++) {
-                    for (var j = 0; j < quizzes[i].questions.length; j++) {
-                        var buttonPair = {
-                            correct: document.getElementById(`clickCorrectBtn_${i + 1}_${j + 1}`),
-                            incorrect: document.getElementById(`clickIncorrectBtn_${i + 1}_${j + 1}`),
-                            dot: document.getElementById(`dot_${i + 1}_${j + 1}`)
-                        };
-                        buttons.push(buttonPair);
-                    }
-                }
-            }
-
-            async function fetchLatestQuiz() {
-                try {
-                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/getLatestQuiz');
-                    if (!response.ok) throw new Error('Network response was not ok');
-
-                    const data = await response.json();
-                    quizzes = Array.isArray(data) ? data : [data];
-
-                    //   // Keep only the first question of the first quiz
-                    //   quizzes = quizzes.map((quiz) => ({
-                    //     ...quiz,
-                    //     questions: quiz.questions.slice(0, 3), // <--- only first question
-                    //   }));
-
-                    quizSubmitted = Array(quizzes.length).fill(false);
-                    scoreCount = Array(quizzes.length).fill(0);
-                    totalCount = Array(quizzes.length).fill(0);
-
-                    initPage(); // Initialize quiz after data is loaded
-                } catch (error) {
-                    console.error('Error fetching latest quiz:', error);
-                    document.getElementById('load').innerText = 'Failed to load quiz. Please try again later.';
-                }
-            }
-            var answerTimestamps = {}; // key: "quizIndex_questionIndex" → ISO timestamp
-            var quizzes = [];
-            var quizSubmitted = []; // Prevent multiple submissions
-
-            fetchLatestQuiz(); // Load quiz on page load
-            var buttons = [];
-            var correctClicked = Array(quizzes.length * 50).fill(false);
-            var incorrectClicked = Array(quizzes.length * 50).fill(false);
-            var dotStatus = Array(quizzes.length * 50).fill('block');
-
-            var modal = document.getElementById('infoModal');
-            var btn = document.getElementById('infoBtn');
-            var span = document.getElementsByClassName('close')[0];
-
-            btn.onclick = function () {
-                modal.style.display = 'block';
+  <head>
+    <meta http-equiv="Cache-control" content="No-Cache" />
+    <title>The Weekly Fifty</title>
+    <style>
+      :root {
+        --tertiary: #4cfbab;
+        --secondary: #677c73;
+        --primary: #fbe2df !important;
+        --font: Helvetica, Arial, sans-serif !important;
+        --header: 25px !important;
+        --normal: 22px !important;
+        --smaller: 18px !important;
+        --transition: 0.3s !important;
+      }
+
+      #load {
+        color: var(--primary) !important;
+        background-color: var(--secondary) !important;
+        font-family: var(--font) !important;
+        font-size: var(--normal) !important;
+        font-weight: 500 !important;
+        transition: var(--transition) !important;
+        padding-bottom: 10px !important;
+        display: block;
+        justify-content: flex-start !important;
+      }
+
+      .closebtn {
+        color: #4cfbab;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+
+      #openBtn {
+        color: #4cfbab;
+        font-size: 60px;
+        padding: 10px;
+        cursor: pointer;
+      }
+
+      .logo {
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 30px;
+      }
+
+      .topContainer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .info-button {
+        background-color: var(--secondary) !important;
+        font-family: var(--font) !important;
+        font-size: var(--smaller) !important;
+        font-weight: 500 !important;
+        color: var(--primary) !important;
+        cursor: pointer !important;
+        padding: 15px !important;
+        padding-top: 1% !important;
+        padding-bottom: 1% !important;
+        vertical-align: centre !important;
+        text-align: left !important;
+        width: 100% !important;
+        height: 70% !important;
+        border: none !important;
+        outline: none !important;
+        transition: var(--transition) !important;
+        width: auto !important;
+        margin-right: 10px !important;
+        line-height: 130% !important;
+      }
+
+      .modal {
+        font-family: var(--font);
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.8);
+      }
+
+      .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        font-size: var(--smaller);
+        font-family: var(--font);
+        width: 80%;
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 38px;
+        font-weight: bold;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: secondary;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .info {
+        text-align: center;
+        color: var(--secondary);
+        font-family: var(--font);
+        font-weight: 300 !important;
+        line-height: 200%;
+      }
+
+      .quizTitle {
+        font-size: 38px !important;
+        font-family: var(--font);
+        color: var(--primary);
+        font-weight: 600 !important;
+        text-align: center;
+      }
+
+      .toggleButtonContainerWrapper {
+        font-family: var(--font) !important;
+        display: flex;
+        flex-direction: row;
+        width: 15%;
+        align-items: center;
+        margin-left: auto;
+      }
+
+      .toggleButtonContainer {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-size: var(--smaller) !important;
+        font-weight: 100 !important;
+        padding: 5px !important;
+        width: auto !important;
+      }
+
+      .toggleWithValues {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      .toggleButton {
+        position: relative;
+        width: 60px !important;
+        height: 24px !important;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+
+      .toggleButtonLabel {
+        font-size: 16px;
+        font-weight: 500;
+        text-align: center;
+        padding: 10px;
+        line-height: 130%;
+      }
+
+      .toggleButton input[type="checkbox"] {
+        display: none;
+      }
+
+      .slider {
+        position: absolute;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        background-color: var(--primary) !important;
+        border-radius: 24px !important;
+        transition: var(--transition) !important;
+        cursor: pointer !important;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "" !important;
+        height: 16px !important;
+        width: 16px !important;
+        left: 4px !important;
+        bottom: 4px !important;
+        background-color: var(--secondary) !important;
+        border-radius: 50% !important;
+        transition: var(--transition) !important;
+      }
+
+      input[type="checkbox"]:checked + .slider {
+        background-color: var(--primary) !important;
+      }
+
+      input[type="checkbox"]:checked + .slider:before {
+        transform: translateX(34px) !important;
+      }
+
+      .quizContainer {
+        width: 100% !important;
+      }
+
+      .quizTitle {
+        font-size: 30px !important;
+        font-family: var(--font);
+        color: var(--primary);
+        font-weight: 600 !important;
+        text-align: center !important;
+        padding: 10px;
+      }
+
+      .quiz {
+        display: none;
+      }
+
+      .quiz.active {
+        display: block;
+      }
+
+      .question {
+        width: auto !important;
+        justify-self: center !important;
+      }
+      
+      .questionText{
+          display: contents;
+      }
+
+      .accordionButton {
+        color: var(--primary) !important;
+        background-color: var(--secondary) !important;
+        border: none !important;
+        border-radius: 0px !important;
+        text-align: center !important;
+        outline: none !important;
+        width: 100% !important;
+        font-family: var(--font) !important;
+        font-size: var(--header) !important;
+        font-weight: 400 !important;
+        transition: var(--transition) !important;
+        padding: 25px !important;
+        margin-bottom: 20px !important;
+        line-height: 130% !important;
+      }
+
+      .accordionButton.active {
+        color: var(--secondary) !important;
+        background-color: var(--primary) !important;
+      }
+      
+      .accordionButton p {
+        margin: 0 !important;
+        display: inline !important; /* removes block behaviour */
+      }
+
+      .genericButton {
+        font-family: var(--font) !important;
+        font-weight: 600 !important;
+        color: var(--secondary) !important;
+        background-color: var(--primary) !important;
+        border: 3px solid var(--primary) !important;
+        border-radius: 15px !important;
+        font-size: var(--normal) !important;
+        padding: 15px !important;
+        margin: 5px !important;
+        transition: var(--transition) !important;
+      }
+
+      .genericButton.correct {
+        color: var(--primary) !important;
+        background-color: var(--secondary) !important;
+        border: 3px solid var(--primary) !important;
+      }
+
+      .genericButton.incorrect {
+        color: var(--primary) !important;
+        background-color: var(--secondary) !important;
+        border: 3px solid var(--primary) !important;
+      }
+
+      .genericButton.reveal {
+        background-color: var(--secondary) !important;
+        color: var(--primary) !important;
+        border: 3px solid var(--primary) !important;
+      }
+
+      .dot {
+        height: 10px !important;
+        width: 10px !important;
+        background-color: var(--tertiary) !important;
+        border-radius: 50% !important;
+        display: inline-block;
+        margin-right: 10px !important;
+      }
+
+      .dot.removed {
+        display: none;
+      }
+
+      .panel {
+        font-family: var(--font) !important;
+        display: none;
+        font-size: var(--normal) !important;
+        padding-top: 15px !important;
+        padding-bottom: 15px !important;
+        width: auto !important;
+        text-align: center !important;
+      }
+
+      .panel.active {
+        display: block;
+      }
+
+      .panel.answer {
+        font-size: var(--header) !important;
+        font-weight: 800 !important;
+      }
+
+      .score {
+        font-family: var(--font) !important;
+        color: var(--primary) !important;
+        text-align: center !important;
+        font-size: var(--header) !important;
+        font-weight: 800 !important;
+      }
+
+      .panel.answer ul {
+        padding: 0;
+        margin: 0;
+        line-height: 1;
+      }
+
+      .panel.answer li {
+        margin-top: 10px;
+        margin-bottom: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        list-style-type: "-";
+        width: 100%;
+        word-wrap: break-word;
+      }
+
+      @media only screen and (max-width: 800px) {
+        .toggleButtonContainerWrapper {
+          width: 20%;
+        }
+      }
+
+      @media only screen and (max-width: 500px) {
+        .toggleButtonContainerWrapper {
+          width: 30%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="load"></div>
+
+    <script>
+      function addWeeksToDate(numberOfWeeks, firstQuiz) {
+        var startDate = new Date(firstQuiz);
+        var millisecondsInWeek = 7 * 24 * 60 * 60 * 1000;
+        var totalMillisecondsToAdd = numberOfWeeks * millisecondsInWeek;
+        var resultDate = new Date(startDate.getTime() + totalMillisecondsToAdd);
+        return resultDate;
+      }
+
+      function formatDateAsDDMMYY(date) {
+        var day = date.getDate()-24 ;
+        var month = date.getMonth() +2;
+        var year = date.getFullYear();
+
+        day = day < 10 ? "0" + day : day;
+        month = month < 10 ? "0" + month : month;
+        return day + "/" + month + "/" + year;
+      }
+
+      function getDate(numberOfWeeks, firstQuiz) {
+        date = "";
+        date = addWeeksToDate(numberOfWeeks, firstQuiz);
+        return formatDateAsDDMMYY(date);
+      }
+
+      function createTopContainer() {
+        var quizElement = document.getElementById("load");
+        var topContainerDiv = document.createElement("div");
+        topContainerDiv.className = "topContainer";
+
+        var infoButton = document.createElement("button");
+        infoButton.className = "info-button";
+        infoButton.id = "infoBtn";
+        infoButton.innerHTML = "︎First timers<br /><b>click me!</b>";
+        infoButton.onclick = function () {
+          modal.style.display = "block";
+        };
+
+        var modalDiv = document.createElement("div");
+        modalDiv.id = "infoModal";
+        modalDiv.className = "modal";
+
+        var modalContentDiv = document.createElement("div");
+        modalContentDiv.className = "modal-content";
+
+        var closeButton = document.createElement("span");
+        closeButton.className = "close";
+        closeButton.innerHTML = "&times;";
+
+        var infoParagraph = document.createElement("p");
+        infoParagraph.className = "info";
+        infoParagraph.innerHTML =
+          "Welcome to the Fifty. <br> First time? Easy. <br> <br> Once you've settled on your answer, click on the question to see if you're correct. Mark accordingly. <br> <br> If you don’t want your answers straight away, no stress. There’s a 'gimme the answers' button down below. Just have a notepad handy, and scroll gently. <br> <br> Happy quizzing! <br> All our love, <br> The Weekly Fifty xx";
+
+        modalContentDiv.appendChild(closeButton);
+        modalContentDiv.appendChild(infoParagraph);
+        modalDiv.appendChild(modalContentDiv);
+
+        var toggleButtonContainerWrapperDiv = document.createElement("div");
+        toggleButtonContainerWrapperDiv.className =
+          "toggleButtonContainerWrapper";
+
+        var toggleButtonContainerQuestionsDiv = document.createElement("div");
+        toggleButtonContainerQuestionsDiv.className = "toggleButtonContainer";
+
+        var toggleWithValuesQuestionsDiv = document.createElement("div");
+        toggleWithValuesQuestionsDiv.id = "quizNightSwitch";
+        toggleWithValuesQuestionsDiv.className = "toggleWithValues";
+        toggleWithValuesQuestionsDiv.innerHTML =
+          '<label class="toggleButtonLabel" for="toggleButton">Been To A Quiz Night</label><label class="toggleButton"><input type="checkbox" id="quizNightToggleButton" onchange="toggleQuestions()"><span class="slider"></span></label>';
+
+        toggleButtonContainerQuestionsDiv.appendChild(
+          toggleWithValuesQuestionsDiv
+        );
+
+        toggleButtonContainerWrapperDiv.appendChild(
+          toggleButtonContainerQuestionsDiv
+        );
+        topContainerDiv.appendChild(infoButton);
+        topContainerDiv.appendChild(modalDiv);
+        topContainerDiv.appendChild(toggleButtonContainerWrapperDiv);
+        quizElement.appendChild(topContainerDiv);
+      }
+
+      function formatDeploymentDate(dateString) {
+        return new Intl.DateTimeFormat('en-AU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'Australia/Adelaide'
+        }).format(new Date(dateString));
+      }
+
+      function createTitle(id, questions) {
+        var quizElement = document.getElementById("load");
+        var title = document.createElement("div");
+        title.className = "quizTitle";
+        title.innerText =
+          "Quiz " +
+          quizzes[0].quiz_id +
+          " - " +
+          formatDeploymentDate(quizzes[0].deploymentDate);
+        quizElement.appendChild(title);
+      }
+
+      function createQuizContainers(id, questions) {
+        var page = document.getElementById("load");
+        var cont = document.createElement("div");
+        cont.className = "quizContainer";
+        page.appendChild(cont);
+
+        for (let i = 0; i < quizzes.length; i++) {
+          var quiz = document.createElement("div");
+          if (i === 0) {
+            quiz.className = "quiz active";
+          } else {
+            quiz.className = "quiz";
+          }
+          quiz.id = "quiz_" + (i + 1);
+          cont.appendChild(quiz);
+          createQuiz(i, quizzes[i].questions);
+        }
+      }
+
+      function createQuiz(id, questions) {
+        var quiz = document.getElementsByClassName("quiz");
+        for (let i = 0; i < questions.length; i++) {
+          let idCode = id + 1 + "_" + (i + 1);
+          var questionDiv = document.createElement("div");
+          questionDiv.className = "question";
+          questionDiv.id = "clickQuestion_" + idCode;
+
+          var accordionButton = document.createElement("button");
+          accordionButton.className = "accordionButton";
+          accordionButton.id = "button_" + idCode;
+
+          var dotSpan = document.createElement("span");
+          dotSpan.className = "dot";
+          dotSpan.id = "dot_" + idCode;
+
+          var dotText = document.createTextNode(" ");
+          dotSpan.appendChild(dotText);
+
+          var questionText = document.createElement("span");
+          questionText.className = "questionText";
+          questionText.innerHTML =
+            "<b>" + (i + 1) + ". </b>" + questions[i].qTitle;
+          accordionButton.appendChild(dotSpan);
+          accordionButton.appendChild(questionText);
+          accordionButton.onclick = toggleAccordion;
+
+          var clickPanel = document.createElement("div");
+          clickPanel.className = "panel";
+
+          var answerButton = document.createElement("button");
+          answerButton.className = "genericButton";
+          answerButton.id = "clickAnswer_" + idCode;
+          answerButton.textContent = "Click for answer";
+          answerButton.onclick = togglePanel;
+
+          var answerPanel = document.createElement("div");
+          answerPanel.className = "panel answer";
+
+          var answerText = document.createElement("p");
+          answerText.className = "answerText";
+          answerText.innerHTML = questions[i].qAnswer;
+
+          var correctButton = document.createElement("button");
+          correctButton.className = "genericButton";
+          correctButton.id = "clickCorrectBtn_" + idCode;
+          correctButton.textContent = "Correct";
+          correctButton.onclick = function () {
+            disableButton(1, id, i);
+            incrementScore(1, id, i);
+            removeDot(id + 1, i + 1);
+            const key = `${id}_${i}`;
+            answerTimestamps[key] = new Date().toISOString();
+          };
+
+          var incorrectButton = document.createElement("button");
+          incorrectButton.className = "genericButton";
+          incorrectButton.id = "clickIncorrectBtn_" + idCode;
+          incorrectButton.textContent = "Incorrect";
+          incorrectButton.onclick = function () {
+            disableButton(2, id, i);
+            incrementScore(2, id, i);
+            removeDot(id + 1, i + 1);
+            const key = `${id}_${i}`;
+            answerTimestamps[key] = new Date().toISOString();
+          };
+
+          quiz[id].appendChild(questionDiv);
+          questionDiv.appendChild(accordionButton);
+          questionDiv.appendChild(clickPanel);
+          clickPanel.appendChild(answerButton);
+          clickPanel.appendChild(answerPanel);
+          answerPanel.appendChild(answerText);
+          answerPanel.appendChild(correctButton);
+          answerPanel.appendChild(incorrectButton);
+        }
+      }
+
+      function shareScore() {
+        const quizNumber = quizzes[0].quiz_id;
+        const scoreElement = document.querySelector(".score");
+        const scoreText = scoreElement
+          ? scoreElement.innerText
+          : "a mystery score";
+        const scoreMatch = scoreText.match(/\d+/);
+        const score = scoreMatch ? scoreMatch[0] : "??";
+
+        const shareMessage = `The Weekly Fifty\nQuiz ${quizNumber}\nScore:  ${score}/50! 🎉\nTry at https://theweeklyfifty.com`;
+
+        if (navigator.share) {
+          navigator
+            .share({
+              title: "My Weekly Fifty Score",
+              text: shareMessage,
+              url: "https://theweeklyfifty.com",
+            })
+            .catch((err) => console.error("Share failed:", err));
+        } else {
+          navigator.clipboard.writeText(shareMessage).then(() => {
+            alert(
+              "Score copied to clipboard! You can now paste it anywhere 😊"
+            );
+          });
+        }
+      }
+
+      function createScore() {
+        var quiz = document.getElementsByClassName("quiz");
+        for (let i = 0; i < quizzes.length; i++) {
+          var scoreDiv = document.createElement("div");
+          scoreDiv.className = "score";
+          scoreDiv.id = "score_" + (i + 1);
+          scoreDiv.innerHTML =
+            'Score: <span id="scoreCount_' +
+            (i + 1) +
+            '">0</span> / <span id="totalCount_' +
+            (i + 1) +
+            '">0</span>';
+          quiz[i].appendChild(scoreDiv);
+        }
+      }
+
+      function toggleQuestions() {
+        let toggleButton = document.getElementById("quizNightToggleButton");
+        displayQuestions = toggleButton.checked ? 20 : 50;
+
+        let questions = document.getElementsByClassName("question");
+        if (displayQuestions === 20) {
+          for (var i = 0; i < 30; i++) {
+            questions[i].style.display = "none";
+          }
+        } else {
+          for (var i = 0; i < 50; i++) {
+            questions[i].style.display = "block";
+          }
+        }
+      }
+
+      function toggleAccordion() {
+        this.classList.toggle("active");
+        var panel = this.nextElementSibling;
+        panel.style.display =
+          panel.style.display === "block" ? "none" : "block";
+      }
+
+      function togglePanel() {
+        this.classList.toggle("reveal");
+        var panel = this.nextElementSibling;
+        panel.style.display =
+          panel.style.display === "block" ? "none" : "block";
+      }
+
+      function disableButton(buttonNum, quiz, pairNum) {
+        var buttonPair = buttons[quiz * 50 + pairNum];
+        var correctButton = buttonPair.correct;
+        var incorrectButton = buttonPair.incorrect;
+
+        if (buttonNum === 1) {
+          correctButton.disabled = true;
+          correctButton.classList.add("correct");
+          incorrectButton.disabled = false;
+          incorrectButton.classList.remove("incorrect");
+        } else if (buttonNum === 2) {
+          incorrectButton.disabled = true;
+          incorrectButton.classList.add("incorrect");
+          correctButton.disabled = false;
+          correctButton.classList.remove("correct");
+        }
+      }
+
+      function incrementScore(num, quiz, pairNum) {
+        var buttonIndex = quiz * 50 + pairNum;
+        if (num === 1) {
+          if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+            scoreCount[quiz]++;
+            totalCount[quiz]++;
+            correctClicked[buttonIndex] = true;
+          } else if (incorrectClicked[buttonIndex]) {
+            scoreCount[quiz]++;
+            correctClicked[buttonIndex] = true;
+          }
+        } else if (num === 2) {
+          if (!correctClicked[buttonIndex] && !incorrectClicked[buttonIndex]) {
+            totalCount[quiz]++;
+            incorrectClicked[buttonIndex] = true;
+          } else if (
+            correctClicked[buttonIndex] &&
+            !incorrectClicked[buttonIndex]
+          ) {
+            scoreCount[quiz]--;
+            incorrectClicked[buttonIndex] = true;
+          } else if (correctClicked[buttonIndex]) {
+            scoreCount[quiz]--;
+            incorrectClicked[buttonIndex] = true;
+          }
+        }
+        for (let i = 0; i < quizzes.length; i++) {
+          var score = document.getElementById(`scoreCount_${i + 1}`);
+          var total = document.getElementById(`totalCount_${i + 1}`);
+          score.innerText = scoreCount[i];
+          total.innerText = totalCount[i];
+        }
+        checkQuizCompletion(quiz);
+      }
+
+      function removeDot(quiz, pairNum) {
+        var dot = document.getElementById(`dot_${quiz}_${pairNum}`);
+        dot.classList.add("removed");
+      }
+
+      async function startQuizSession(quizId) {
+        const sessionKey = `quiz_${quizId}_sessionId`;
+        if (localStorage.getItem(sessionKey))
+          return localStorage.getItem(sessionKey);
+
+        try {
+          const response = await fetch(
+            "https://weeklyfifty-7617b.web.app/api/logQuizStart",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ quizId }), // <- correct key
+            }
+          );
+
+          if (!response.ok) throw new Error("Failed to start quiz session");
+          const data = await response.json();
+          localStorage.setItem(sessionKey, data.sessionId);
+          return data.sessionId;
+        } catch (err) {
+          console.error("Error starting quiz session:", err);
+          return null;
+        }
+      }
+
+      async function finishQuizSession(quizIndex) {
+        const quizId = String(quizzes[quizIndex].quiz_id);
+        const sessionKey = `quiz_${quizId}_sessionId`;
+        const sessionId = localStorage.getItem(sessionKey);
+        if (!sessionId) return;
+
+        const totalQuestions = quizzes[quizIndex].questions.length;
+        const score = scoreCount[quizIndex];
+        const answers = quizzes[quizIndex].questions.map((q, idx) => {
+          const key = `${quizIndex}_${idx}`;
+          return {
+            questionId: q.qNum,
+            correct: correctClicked[quizIndex * 50 + idx],
+            timestamp: answerTimestamps[key] || null,
+          };
+        });
+
+        try {
+          const response = await fetch(
+            "https://weeklyfifty-7617b.web.app/api/logQuizFinish",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionId,
+                score,
+                total: totalQuestions,
+                answers,
+              }),
+            }
+          );
+
+          if (!response.ok) throw new Error("Failed to finish quiz session");
+          console.log("Quiz session saved:", await response.json());
+        } catch (err) {
+          console.error("Error finishing quiz session:", err);
+        }
+      }
+
+      function setWithExpiry(key, value, ttlMs) {
+        const now = new Date().getTime();
+        const item = { value, expiry: now + ttlMs };
+        localStorage.setItem(key, JSON.stringify(item));
+      }
+
+      function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key);
+        if (!itemStr) return null;
+
+        try {
+          const item = JSON.parse(itemStr);
+          if (new Date().getTime() > item.expiry) {
+            localStorage.removeItem(key);
+            return null;
+          }
+          return item.value;
+        } catch {
+          return null;
+        }
+      }
+
+      const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+      async function checkQuizCompletion(quizIndex) {
+        const quizId = String(quizzes[quizIndex].quiz_id);
+        const quizSessionKey = `quiz_${quizId}_submitted`;
+
+        // Use the expiry-aware get
+        if (getWithExpiry(quizSessionKey)) return; // Already submitted
+
+        const totalQuestions = quizzes[quizIndex].questions.length;
+        let answeredCount = 0;
+
+        for (let j = 0; j < totalQuestions; j++) {
+          const idx = quizIndex * 50 + j;
+          if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
+        }
+
+        // --- START SESSION WHEN FIRST QUESTION ANSWERED ---
+        if (answeredCount === 1) {
+          await startQuizSession(quizId);
+        }
+
+        if (answeredCount === totalQuestions) {
+          // Mark quiz as submitted for 7 days
+          setWithExpiry(quizSessionKey, "true", ONE_WEEK_MS);
+          quizSubmitted[quizIndex] = true;
+
+          // Disable all buttons for this quiz
+          for (let j = 0; j < totalQuestions; j++) {
+            disableButton(0, quizIndex, j);
+          }
+
+          // Log the session
+          await finishQuizSession(quizIndex);
+        }
+      }
+
+      // async function checkQuizCompletion(quizIndex) {
+      //   const quizId = String(quizzes[quizIndex].quiz_id);
+
+      //   // Use a per-quiz session key to track submission
+      //   const quizSessionKey = `quiz_${quizId}_submitted`;
+      //   if (localStorage.getItem(quizSessionKey)) {
+      //     return; // already submitted for this session token
+      //   }
+
+      //   const totalQuestions = quizzes[quizIndex].questions.length;
+      //   let answeredCount = 0;
+
+      //   for (let j = 0; j < totalQuestions; j++) {
+      //     const idx = quizIndex * 50 + j;
+      //     if (correctClicked[idx] || incorrectClicked[idx]) answeredCount++;
+      //   }
+
+      //   if (answeredCount === totalQuestions) {
+      //     // Mark as submitted for this session
+      //     localStorage.setItem(quizSessionKey, "true");
+      //     quizSubmitted[quizIndex] = true;
+
+      //     // Disable all buttons for this quiz
+      //     for (let j = 0; j < totalQuestions; j++) {
+      //       disableButton(0, quizIndex, j); // 0 = just disable without increment
+      //     }
+
+      //     console.log("All questions answered for quiz", quizId);
+
+      //     const averageScore = scoreCount[quizIndex] / totalQuestions;
+
+      //     // --- SESSION TOKEN LOGIC ---
+      //     let sessionToken = localStorage.getItem("quizSessionToken");
+      //     if (!sessionToken) {
+      //       sessionToken = crypto.randomUUID(); // generate a new token
+      //       localStorage.setItem("quizSessionToken", sessionToken);
+      //     }
+
+      //     try {
+      //       const response = await fetch(
+      //         "https://weeklyfifty-7617b.web.app/api/recordQuizSession",
+      //         {
+      //           method: "POST",
+      //           headers: { "Content-Type": "application/json" },
+      //           body: JSON.stringify({
+      //             quizId,
+      //             score: averageScore,
+      //             sessionToken,
+      //           }),
+      //         }
+      //       );
+
+      //       if (!response.ok) throw new Error("Failed to record quiz");
+      //       const data = await response.json();
+      //       console.log("Quiz recorded:", data);
+      //     } catch (error) {
+      //       console.error("Error recording quiz:", error);
+      //     }
+      //   }
+      // }
+
+      function initPage() {
+        correctClicked = Array(quizzes.length * 50).fill(false);
+        incorrectClicked = Array(quizzes.length * 50).fill(false);
+        dotStatus = Array(quizzes.length * 50).fill("block");
+        createTopContainer();
+        createTitle();
+        createQuizContainers();
+        createScore();
+        for (var i = 0; i < quizzes.length; i++) {
+          for (var j = 0; j < quizzes[i].questions.length; j++) {
+            var buttonPair = {
+              correct: document.getElementById(
+                `clickCorrectBtn_${i + 1}_${j + 1}`
+              ),
+              incorrect: document.getElementById(
+                `clickIncorrectBtn_${i + 1}_${j + 1}`
+              ),
+              dot: document.getElementById(`dot_${i + 1}_${j + 1}`),
             };
+            buttons.push(buttonPair);
+          }
+        }
+      }
 
-            span.onclick = function () {
-                modal.style.display = 'none';
-            };
+      async function fetchLatestQuiz() {
+        try {
+          const response = await fetch(
+            "https://weeklyfifty-7617b.web.app/api/getLatestQuiz"
+          );
+          if (!response.ok) throw new Error("Network response was not ok");
 
-            window.onclick = function (event) {
-                if (event.target == modal) {
-                    modal.style.display = 'none';
-                }
-            };
-        </script>
-    </body>
+          const data = await response.json();
+          quizzes = Array.isArray(data) ? data : [data];
+
+          //   // Keep only the first question of the first quiz
+          //   quizzes = quizzes.map((quiz) => ({
+          //     ...quiz,
+          //     questions: quiz.questions.slice(0, 3), // <--- only first question
+          //   }));
+
+          quizSubmitted = Array(quizzes.length).fill(false);
+          scoreCount = Array(quizzes.length).fill(0);
+          totalCount = Array(quizzes.length).fill(0);
+
+          initPage(); // Initialize quiz after data is loaded
+        } catch (error) {
+          console.error("Error fetching latest quiz:", error);
+          document.getElementById("load").innerText =
+            "Failed to load quiz. Please try again later.";
+        }
+      }
+      var answerTimestamps = {}; // key: "quizIndex_questionIndex" → ISO timestamp
+      var quizzes = [];
+      var quizSubmitted = []; // Prevent multiple submissions
+
+      fetchLatestQuiz(); // Load quiz on page load
+      var buttons = [];
+      var correctClicked = Array(quizzes.length * 50).fill(false);
+      var incorrectClicked = Array(quizzes.length * 50).fill(false);
+      var dotStatus = Array(quizzes.length * 50).fill("block");
+
+      var modal = document.getElementById("infoModal");
+      var btn = document.getElementById("infoBtn");
+      var span = document.getElementsByClassName("close")[0];
+
+      btn.onclick = function () {
+        modal.style.display = "block";
+      };
+
+      span.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      window.onclick = function (event) {
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+  </body>
 </html>

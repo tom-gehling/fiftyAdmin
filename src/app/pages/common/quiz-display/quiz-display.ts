@@ -198,7 +198,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
   `
 })
-export class QuizDisplayComponent implements OnInit {
+export class QuizDisplayComponent implements OnInit, OnChanges {
 
   @Input() quizId?: string;
   @Input() quiz?: Quiz;          // for preview mode
@@ -226,6 +226,20 @@ export class QuizDisplayComponent implements OnInit {
     private route: ActivatedRoute,
     @Optional() public config: DynamicDialogConfig
   ) {}
+
+  // ---------------------------------------------
+  // CHANGES
+  // ---------------------------------------------
+  async ngOnChanges(changes: SimpleChanges) {
+    // Reload quiz when quizId input changes (after initial load)
+    if (changes['quizId'] && !changes['quizId'].firstChange) {
+      const newId = changes['quizId'].currentValue;
+      if (newId && newId !== changes['quizId'].previousValue) {
+        this.quizId = newId;
+        await this.loadQuiz();
+      }
+    }
+  }
 
   // ---------------------------------------------
   // INIT

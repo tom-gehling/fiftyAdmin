@@ -32,7 +32,7 @@ export class FiftyPageComponent implements OnInit {
 
     // Read optional quiz ID from route params
     this.route.paramMap.subscribe(params => {
-      this.selectedQuizId = params.get('id') ?? undefined;
+      this.selectedQuizId = params.get('quizid') ?? undefined;
     });
   }
 }
