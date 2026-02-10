@@ -30,6 +30,7 @@ import { VenuesComponent } from '@/pages/admin/venues/venues';
 import { SubmissionFormTableComponent } from '@/pages/admin/submissionForms/submissionFormTable';
 import { SubmissionFormDetailComponent } from '@/pages/admin/submissionForms/submissionFormDetail';
 import { UserTableComponent } from '@/pages/admin/users/userTable';
+import { ProfilePage } from '@/pages/profile/profile';
 
 // Guards
 import { AuthGuard } from '@/shared/guards/authGuard';
@@ -59,8 +60,8 @@ export const appRoutes: Routes = [
   { path: 'login', component: Login },
   { path: 'signup', component: Landing },
 
-  // User public → protected crossover
-  { path: 'profile/:userId', component: Landing, canActivate: [AuthGuard] },
+  // User profile
+  { path: 'profile/:userId', component: ProfilePage, canActivate: [AuthGuard] },
 
   // Checkout
   { path: 'checkout', component: Landing, canActivate: [AuthGuard] },
@@ -76,6 +77,7 @@ export const appRoutes: Routes = [
     canActivate: [AuthGuard],
     children: [
       { path: 'fiftyPlus', component: Dashboard },
+      { path: 'fiftyPlus/profile', component: ProfilePage },
 
       { path: 'fiftyPlus/archives', component: FiftyPageComponent, data: { type: 1, title: 'Archives' } },
       { path: 'fiftyPlus/archives/:quizid', component: FiftyPageComponent, data: { type: 1 } },

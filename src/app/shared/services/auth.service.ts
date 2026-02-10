@@ -9,6 +9,7 @@ import {
   signOut,
   updateProfile,
   onAuthStateChanged,
+  sendPasswordResetEmail,
 } from '@angular/fire/auth';
 import {
   GoogleAuthProvider,
@@ -172,6 +173,11 @@ export class AuthService {
     await updateProfile(this.auth.currentUser, { displayName });
     const appUser = await this.ensureUserDocument(this.auth.currentUser);
     this.user$.next(appUser);
+  }
+
+  /** Send password reset email */
+  async sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(this.auth, email);
   }
 
   async logout() {

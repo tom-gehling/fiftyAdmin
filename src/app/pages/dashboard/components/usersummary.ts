@@ -5,7 +5,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { UserService } from '@/shared/services/user.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
-import { MembershipService } from '@/shared/services/membership.service';
+import { QuizzesService } from '@/shared/services/quizzes.service';
+import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 import { RecentQuizzesWidget } from './userrecentquizzes';
 
 @Component({
@@ -14,28 +15,9 @@ import { RecentQuizzesWidget } from './userrecentquizzes';
   imports: [CommonModule, RecentQuizzesWidget],
   template: `
      <div class="card p-6 mb-6 flex flex-col">
-      <!-- Top row: Name on left, Joined on right -->
-      <div class="flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <!-- User icon with subtle circle -->
-          <span class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xl">
-            <i class="pi pi-user"></i>
-          </span>
-          <h2 class="text-2xl font-semibold">{{ displayName || 'Guest User' }}</h2>
-        </div>
-        <div class="flex flex-col items-end">
-          <div class="text-sm text-gray-500 dark:text-gray-400">
-          Joined: {{ joinedAt ? (joinedAt | date: 'mediumDate') : '—' }}
-        </div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">
-          {{ membershipType }} Member
-        </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          Logins: {{ loginCount }}
-        </div>
-        
-      </div>
-        
+      <!-- Top row: Name -->
+      <div class="flex items-center mb-2">
+        <h2 class="text-2xl font-semibold">{{ greeting }}, {{ displayName || 'Guest User' }}</h2>
       </div>
 
       <div class="flex justify-center">
@@ -46,11 +28,11 @@ import { RecentQuizzesWidget } from './userrecentquizzes';
       <div class="grid grid-cols-4 gap-4 text-center">
         <div>
           <div class="text-lg font-semibold">{{ completedCount }}</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">Quizzes Completed</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Quizzes Done</div>
         </div>
         <div>
-          <div class="text-lg font-semibold">{{ averageScore | number:'1.0-1' }}/50</div>
-          <div class="text-sm text-gray-500 dark:text-gray-400">Avg Score</div>
+          <div class="text-lg font-semibold">{{ correctRate | number:'1.0-0' }}%</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Correct Rate</div>
         </div>
         <div>
           <div class="text-lg font-semibold">{{ followers }}</div>
@@ -61,6 +43,20 @@ import { RecentQuizzesWidget } from './userrecentquizzes';
           <div class="text-sm text-gray-500 dark:text-gray-400">Following</div>
         </div>
       </div>
+
+      <div class="flex justify-center">
+        <hr class="w-10/10 border-t" style="border-color: var(--fifty-neon-green);"/>
+      </div>
+
+      <!-- Streak row -->
+      <div class="flex flex-col items-center py-3">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-bolt text-orange-500 text-2xl"></i>
+          <span class="text-3xl font-bold">{{ weeklyStreak }}</span>
+        </div>
+        <span class="text-sm text-gray-500 dark:text-gray-400 mt-1">week streak</span>
+      </div>
+
       <div class="flex justify-center">
         <hr class="w-10/10 border-t" style="border-color: var(--fifty-neon-green);"/>
       </div>
@@ -73,16 +69,21 @@ export class UserSummaryWidget implements OnInit {
   private auth = inject(Auth);
   private userService = inject(UserService);
   private quizResultsService = inject(QuizResultsService);
-  private membershipService = inject(MembershipService);
+  private quizzesService = inject(QuizzesService);
 
+  private readonly greetings = [
+    'Hi', 'Hey', 'Howdy', 'Welcome back',
+    "G'day", 'Hola', 'What\'s up', 'Good to see you',
+    'Hiya', 'Well hello there'
+  ];
+
+  greeting = this.greetings[Math.floor(Math.random() * this.greetings.length)];
   displayName: string | null = null;
-  joinedAt: Date | null = null;
   completedCount = 0;
-  averageScore = 0;
+  correctRate = 0;
   followers = 0;
   following = 0;
-  membershipType: string = '';
-  loginCount: number = 0;
+  weeklyStreak = 0;
 
   async ngOnInit() {
     onAuthStateChanged(this.auth, async user => {
@@ -91,28 +92,58 @@ export class UserSummaryWidget implements OnInit {
       // Display name
       this.displayName = user.displayName || user.email?.split('@')[0] || 'User';
 
-      this.membershipService.membership$.subscribe(tier => {
-        this.membershipType = tier;
-      });
-
       // Fetch user document from Firestore
       const userDoc = await firstValueFrom(this.userService.getUser(user.uid));
-      this.joinedAt = (userDoc?.createdAt as any)?.toDate?.() ?? new Date();
 
       // Followers / Following counts
       this.followers = userDoc?.followersCount ?? 0;
       this.following = userDoc?.followingCount ?? 0;
 
-      this.loginCount = userDoc?.loginCount ?? 0;
-
-
       // Quiz stats
       const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
       const completed = results.filter(r => r.status === 'completed' && r.score != null);
       this.completedCount = completed.length;
-      this.averageScore = completed.length
-        ? completed.reduce((sum, r) => sum + (r.score ?? 0), 0) / completed.length
-        : 0;
+
+      // Correct rate as percentage (score out of totalQuestions)
+      if (completed.length) {
+        const totalCorrect = completed.reduce((sum, r) => sum + (r.score ?? 0), 0);
+        const totalQuestions = completed.reduce((sum, r) => sum + (r.totalQuestions ?? 0), 0);
+        this.correctRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
+      }
+
+      // Weekly streak calculation
+      const allQuizzes = await firstValueFrom(this.quizzesService.getAllQuizzes());
+      const weeklyQuizIds = new Set(
+        allQuizzes
+          .filter(q => q.quizType === QuizTypeEnum.Weekly)
+          .map(q => String(q.quizId))
+      );
+
+      // Build a set of week timestamps the user completed a weekly quiz
+      const completedWeeks = new Set<number>();
+      for (const r of completed) {
+        if (weeklyQuizIds.has(String(r.quizId)) && r.completedAt) {
+          const d = (r.completedAt as any)?.toDate?.() ?? new Date(r.completedAt);
+          completedWeeks.add(this.getWeekStart(d).getTime());
+        }
+      }
+
+      // Walk backwards from current week
+      let streak = 0;
+      let checkWeek = this.getWeekStart(new Date());
+      while (completedWeeks.has(checkWeek.getTime())) {
+        streak++;
+        checkWeek = new Date(checkWeek.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
+      this.weeklyStreak = streak;
     });
+  }
+
+  /** Get the Monday 00:00 of the week containing the given date */
+  private getWeekStart(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust to Monday
+    return new Date(d.getFullYear(), d.getMonth(), diff, 0, 0, 0, 0);
   }
 }
