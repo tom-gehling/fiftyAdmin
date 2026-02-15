@@ -1,8 +1,9 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { CardModule } from 'primeng/card';
+import { Router } from '@angular/router';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { QuizDisplayComponent } from "../quiz-display/quiz-display";
 import { UserService } from '@/shared/services/user.service';
@@ -38,9 +39,9 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
           <ul class="quiz-list">
             <li
               *ngFor="let quiz of quizHeaders; let i = index"
-              [class.active]="quiz.quizId == selectedQuizId"
+              [class.active]="isQuizSelected(quiz.quizId)"
               [ngStyle]="getQuizItemStyle(quiz)"
-              (click)="selectQuiz(quiz.quizId)"
+              (click)="selectQuiz(quizIdToString(quiz.quizId))"
             >
               <span>
                 {{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}
@@ -113,7 +114,7 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
     }
   `]
 })
-export class QuizCollectionComponent implements OnInit {
+export class QuizCollectionComponent implements OnInit, OnChanges {
   @Input() title = 'Quizzes';
   @Input() quizType: 'archives' | 'exclusives' | 'collaborations' | 'questions' = 'archives';
   @Input() selectedQuizId?: string;
@@ -129,7 +130,8 @@ export class QuizCollectionComponent implements OnInit {
     private quizzesService: QuizzesService,
     private quizResultsService: QuizResultsService,
     private membershipService: MembershipService,
-    private dialogService: DialogService
+    private dialogService: DialogService,
+    private router: Router
   ) {}
 
   async ngOnInit() {
@@ -157,23 +159,54 @@ export class QuizCollectionComponent implements OnInit {
     this.quizHeaders = headers;
 
     // Auto-select quiz from route or default to first
-    if (this.selectedQuizId && headers.some(q => q.quizId === this.selectedQuizId)) {
-      this.selectQuiz(this.selectedQuizId);
+    // Convert to string for comparison since route params are strings but quizId is a number
+    if (this.selectedQuizId && headers.some(q => String(q.quizId) === this.selectedQuizId)) {
+      this.selectQuiz(this.selectedQuizId, false); // Don't update URL on init
     } else if (headers.length) {
-      this.selectQuiz(headers[0].quizId);
+      this.selectQuiz(String(headers[0].quizId), false); // Don't update URL on init
     }
   });
     });
   }
 
-  selectQuiz(id: string) {
-  const index = this.quizHeaders.findIndex(q => q.quizId === id);
+  ngOnChanges(changes: SimpleChanges): void {
+    // React to changes in selectedQuizId from parent (URL changes)
+    if (changes['selectedQuizId'] && !changes['selectedQuizId'].firstChange) {
+      const newQuizId = changes['selectedQuizId'].currentValue;
+      // Convert to string for comparison since route params are strings but quizId is a number
+      if (newQuizId && this.quizHeaders.some(q => String(q.quizId) === newQuizId)) {
+        this.selectQuiz(newQuizId, false); // Don't update URL since it came from URL
+      }
+    }
+  }
+
+  selectQuiz(id: string, updateUrl: boolean = true) {
+  // Convert to string for comparison since route params are strings but quizId can be a number
+  const index = this.quizHeaders.findIndex(q => String(q.quizId) === id);
   if (index === -1) return; // invalid id
 
   this.selectedQuizId = id;
-  this.selectedQuizLocked = this.isLocked(index); // new property
+  this.selectedQuizLocked = this.isLocked(index);
   this.drawerVisible = false;
+
+  // Update the URL to reflect the selected quiz
+  if (updateUrl) {
+    const baseRoute = this.getBaseRoute();
+    this.router.navigate([`${baseRoute}/${id}`], {
+      replaceUrl: true // Replace current history entry instead of adding new one
+    });
+  }
 }
+
+  private getBaseRoute(): string {
+    switch (this.quizType) {
+      case 'archives': return '/fiftyPlus/archives';
+      case 'exclusives': return '/fiftyPlus/exclusives';
+      case 'collaborations': return '/fiftyPlus/collabs';
+      case 'questions': return '/fiftyPlus/questionQuizzes';
+      default: return '/fiftyPlus/archives';
+    }
+  }
 
   isLocked(index: number): boolean {
   // Premium/Gold/Admin have full access
@@ -223,5 +256,15 @@ export class QuizCollectionComponent implements OnInit {
       'border-color': quiz.theme.tertiaryColor || '#4cfbab',
       'color': quiz.theme.tertiaryColor || '#4cfbab'
     };
+  }
+
+  // Helper method to check if a quiz is selected (handles number/string comparison)
+  isQuizSelected(quizId: number | string): boolean {
+    return String(quizId) === this.selectedQuizId;
+  }
+
+  // Helper method to convert quizId to string for consistency
+  quizIdToString(quizId: number | string): string {
+    return String(quizId);
   }
 }
