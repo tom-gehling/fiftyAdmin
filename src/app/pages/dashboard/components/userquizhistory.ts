@@ -73,7 +73,7 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
         }
 
         const completedResults = results
-          .filter(r => r.status === 'completed')
+          .filter(r => r.status === 'completed' && !r.retro)
           .sort((a, b) => Number(a.quizId) - Number(b.quizId));
 
         if (!completedResults.length) {

@@ -72,9 +72,10 @@ export class UserSummaryWidget implements OnInit {
   private quizzesService = inject(QuizzesService);
 
   private readonly greetings = [
-    'Hi', 'Hey', 'Howdy', 'Welcome back',
-    "G'day", 'Hola', 'What\'s up', 'Good to see you',
-    'Hiya', 'Well hello there'
+    'Hi', 'Hey', 'Welcome back',
+    "G'day", 'Good to see you',
+    'Hiya', 'Bonjour', 'Hola',             
+    'Ciao', 'Olá',    
   ];
 
   greeting = this.greetings[Math.floor(Math.random() * this.greetings.length)];
@@ -101,7 +102,7 @@ export class UserSummaryWidget implements OnInit {
 
       // Quiz stats
       const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
-      const completed = results.filter(r => r.status === 'completed' && r.score != null);
+      const completed = results.filter(r => r.status === 'completed' && r.score != null && !r.retro);
       this.completedCount = completed.length;
 
       // Correct rate as percentage (score out of totalQuestions)
@@ -113,28 +114,81 @@ export class UserSummaryWidget implements OnInit {
 
       // Weekly streak calculation
       const allQuizzes = await firstValueFrom(this.quizzesService.getAllQuizzes());
-      const weeklyQuizIds = new Set(
-        allQuizzes
-          .filter(q => q.quizType === QuizTypeEnum.Weekly)
-          .map(q => String(q.quizId))
-      );
+      const weeklyQuizzes = allQuizzes
+        .filter(q => q.quizType === QuizTypeEnum.Weekly && q.deploymentDate)
+        .map(q => {
+          const date = q.deploymentDate instanceof Date
+            ? q.deploymentDate
+            : (q.deploymentDate as any).toDate();
+          return {
+            quizId: String(q.quizId),
+            deploymentDate: date,
+          };
+        })
+        .sort((a, b) => b.deploymentDate.getTime() - a.deploymentDate.getTime());
 
-      // Build a set of week timestamps the user completed a weekly quiz
-      const completedWeeks = new Set<number>();
+      if (weeklyQuizzes.length === 0) {
+        this.weeklyStreak = 0;
+        return;
+      }
+
+      // Get current active quiz (most recent deployed quiz)
+      const now = new Date();
+      const currentActiveQuiz = weeklyQuizzes.find(q => q.deploymentDate <= now);
+
+      if (!currentActiveQuiz) {
+        this.weeklyStreak = 0;
+        return;
+      }
+
+      // Build a map of quiz completions: quizId -> completion date
+      const completionMap = new Map<string, Date>();
       for (const r of completed) {
-        if (weeklyQuizIds.has(String(r.quizId)) && r.completedAt) {
+        if (r.completedAt) {
           const d = (r.completedAt as any)?.toDate?.() ?? new Date(r.completedAt);
-          completedWeeks.add(this.getWeekStart(d).getTime());
+          completionMap.set(String(r.quizId), d);
         }
       }
 
-      // Walk backwards from current week
+      // Walk backwards from current active quiz, counting consecutive weeks
       let streak = 0;
-      let checkWeek = this.getWeekStart(new Date());
-      while (completedWeeks.has(checkWeek.getTime())) {
-        streak++;
-        checkWeek = new Date(checkWeek.getTime() - 7 * 24 * 60 * 60 * 1000);
+      for (let i = 0; i < weeklyQuizzes.length; i++) {
+        const quiz = weeklyQuizzes[i];
+
+        // Stop if we've gone past the current active quiz (future quizzes)
+        if (quiz.deploymentDate > now) continue;
+
+        const completionDate = completionMap.get(quiz.quizId);
+        const isCurrentQuiz = quiz.quizId === currentActiveQuiz.quizId;
+
+        // Find when this quiz's window closes (when the next quiz deploys)
+        const nextQuiz = weeklyQuizzes[i - 1]; // Previous index = next chronologically
+        const hasNextQuizDeployed = nextQuiz && nextQuiz.deploymentDate <= now;
+
+        if (!completionDate) {
+          // User didn't complete this quiz
+          if (isCurrentQuiz && !hasNextQuizDeployed) {
+            // Current quiz and next quiz hasn't deployed yet - user still has time
+            streak++;
+            continue;
+          } else {
+            // Missed this quiz, streak breaks
+            break;
+          }
+        }
+
+        // Quiz was completed - check it wasn't completed retroactively
+        // Only count if completed on or after deployment date
+        if (completionDate >= quiz.deploymentDate) {
+          // For previous quizzes, ideally check it was completed before next quiz
+          // but we'll be lenient and count it as long as it was completed
+          streak++;
+        } else {
+          // Completed before deployment (shouldn't happen)
+          break;
+        }
       }
+
       this.weeklyStreak = streak;
     });
   }

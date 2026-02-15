@@ -24,10 +24,11 @@ import { TaggedUser } from '@/shared/models/quizSubmission.model';
         <p-inputNumber
           [(ngModel)]="score"
           [min]="0"
-          [max]="totalQuestions"
           [showButtons]="true"
           placeholder="Enter score"
+          (ngModelChange)="validateScore()"
         ></p-inputNumber>
+        <small *ngIf="scoreError" class="text-red-500">{{ scoreError }}</small>
       </div>
 
       <!-- <div class="flex flex-col gap-1">
@@ -40,7 +41,7 @@ import { TaggedUser } from '@/shared/models/quizSubmission.model';
 
       <div class="flex justify-end gap-2 mt-2">
         <p-button label="Cancel" severity="secondary" (onClick)="cancel()"></p-button>
-        <p-button label="Save Result" (onClick)="save()" [disabled]="score == null || !totalQuestions"></p-button>
+        <p-button label="Save Result" (onClick)="save()" [disabled]="!!scoreError || score == null || !totalQuestions"></p-button>
       </div>
     </div>
   `
@@ -51,6 +52,7 @@ export class RetroQuizResultComponent implements OnInit {
   totalQuestions: number = 0;
   score: number | null = null;
   taggedUsers: TaggedUser[] = [];
+  scoreError: string = '';
 
   constructor(
     public ref: DynamicDialogRef,
@@ -70,8 +72,21 @@ export class RetroQuizResultComponent implements OnInit {
     }
   }
 
+  validateScore() {
+    if (this.score == null) {
+      this.scoreError = '';
+    } else if (this.score < 0) {
+      this.scoreError = 'Score cannot be negative';
+    } else if (this.score > this.totalQuestions) {
+      this.scoreError = `Score cannot exceed ${this.totalQuestions} (total questions)`;
+    } else {
+      this.scoreError = '';
+    }
+  }
+
   async save() {
-    if (this.score == null || !this.totalQuestions) return;
+    this.validateScore();
+    if (this.score == null || !this.totalQuestions || this.scoreError) return;
     const user = this.auth.currentUser;
     if (!user) return;
 
