@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { VenueLocation, VenueSchedule } from '@/shared/models/venue.model';
-import { environment } from '../../../environments/environment';
+// import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class GoogleMapsService {
@@ -32,7 +32,7 @@ export class GoogleMapsService {
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.googleMapsApiKey}&libraries=places`;
+      // script.src = `https://maps.googleapis.com/maps/api/js?key=${environment.googleMapsApiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
 
