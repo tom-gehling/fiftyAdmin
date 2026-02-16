@@ -24,6 +24,7 @@ interface RecentQuiz {
   selector: 'app-recent-quizzes-widget',
   imports: [CommonModule, ButtonModule, MenuModule, ProgressSpinnerModule],
   template: `
+    <ng-container *ngIf="loading || recentQuizzes.length > 0">
     <div class="flex items-center mb-6">
       <div class="font-semibold text-md">Recent Quizzes</div>
     </div>
@@ -48,6 +49,7 @@ interface RecentQuiz {
         </div>
       </li>
     </ul>
+    </ng-container>
   `
 })
 export class RecentQuizzesWidget implements OnInit {

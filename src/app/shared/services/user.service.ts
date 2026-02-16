@@ -9,12 +9,13 @@ import {
   serverTimestamp,
   increment,
   docData,
+  collectionData,
   collection,
   query,
-  where,
   getDocs
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { QuizResultsService } from './quiz-result.service';
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +34,7 @@ export class UserService {
         ...data,
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         loginCount: 1,
         followersCount: 0,
         followingCount: 0
@@ -42,6 +44,7 @@ export class UserService {
       await updateDoc(userRef, {
         ...data,
         lastLoginAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         loginCount: increment(1)
       });
     }
@@ -89,6 +92,14 @@ export class UserService {
       : 0;
 
     return { completedCount, averageScore };
+  }
+
+  /** Get all users that have a displayName */
+  async getAllUsers(): Promise<any[]> {
+    const snap = await getDocs(collection(this.firestore, 'users'));
+    return snap.docs
+      .map(d => ({ uid: d.id, ...d.data() } as any))
+      .filter(u => !!u.displayName);
   }
 
   /** (Optional) Fetch followers count directly from subcollection */

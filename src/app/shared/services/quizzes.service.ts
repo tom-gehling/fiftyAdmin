@@ -99,7 +99,8 @@ export class QuizzesService {
 
     getQuizByQuizId(quizId: string): Observable<Quiz | undefined> {
   const quizzesRef = collection(this.firestore, this.collectionName);
-  const q = query(quizzesRef, where('quizId', '==', quizId));
+  const numericId = Number(quizId);
+  const q = query(quizzesRef, where('quizId', '==', isNaN(numericId) ? quizId : numericId));
 
   return from(getDocs(q)).pipe(
     map(snapshot => {

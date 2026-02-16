@@ -228,6 +228,10 @@ app.get('/api/quizStats/:quizId', async (req: Request, res: Response): Promise<v
 
     snapshot.forEach(doc => {
       const result = doc.data() as any;
+
+      // Skip retro quiz results from stats
+      if (result.retro && result.retro === true) return;
+
       attempts++;
 
       if (result.completedAt) {
@@ -326,6 +330,10 @@ app.get('/api/quizLocationStats/:quizId', async (req: Request, res: Response): P
 
     snapshot.forEach(doc => {
       const result = doc.data() as any;
+
+      // Skip retro quiz results from location stats
+      if (result.retro && result.retro === true) return;
+
       const ip = result.ip;
 
       if (!ip) return;
@@ -525,6 +533,7 @@ export const quizStarted = onDocumentCreated(
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
+    if (data.retro && data.retro === true) return; // Skip retro quiz results from stats
 
     const quizId = data.quizId;
     if (!quizId) return;
@@ -570,6 +579,7 @@ export const quizFinished = onDocumentUpdated(
     const after = event.data?.after?.data();
     if (!after) return;
     if (before?.completedAt) return; // Only process newly completed quizzes
+    if (after.retro && after.retro === true) return; // Skip retro quiz results from stats
 
     const quizId = after.quizId;
     if (!quizId) return;

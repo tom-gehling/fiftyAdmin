@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { ChartModule } from 'primeng/chart';
-import { Subscription, combineLatest, firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { LayoutService } from '../../../layout/service/layout.service';
 import { Auth } from '@angular/fire/auth';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -40,7 +40,7 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
   siteAverages: { quizId: number; avgScore: number | null }[] = [];
   chartData: any;
   chartOptions: any;
-  subscription!: Subscription;
+  subscriptions = new Subscription();
   loading = true;
 
   private layoutService = inject(LayoutService);
@@ -49,9 +49,12 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
   private auth = inject(Auth);
 
   ngOnInit() {
-    this.subscription = this.layoutService.configUpdate$.subscribe(() => this.initChart());
+    this.subscriptions.add(
+      this.layoutService.configUpdate$.subscribe(() => this.initChart())
+    );
 
-    onAuthStateChanged(this.auth, async user => {
+    // Properly handle auth state changes with cleanup
+    const unsubscribeAuth = onAuthStateChanged(this.auth, async user => {
       this.loading = true;
 
       if (!user) {
@@ -63,43 +66,31 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
       }
 
       try {
-        const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
-        if (!results || !results.length) {
-          this.quizScores = [];
+        // Use the optimized getUserQuizScoreHistory method
+        // This only fetches completed quizzes with quizId <= 1000
+        this.quizScores = await this.quizResultsService.getUserQuizScoreHistory(user.uid);
+
+        if (!this.quizScores.length) {
           this.siteAverages = [];
           this.loading = false;
           this.initChart();
           return;
         }
 
-        const completedResults = results
-          .filter(r => r.status === 'completed')
-          .sort((a, b) => Number(a.quizId) - Number(b.quizId));
+        // Load stats for each quiz (only for the quizzes the user has completed)
+        const statsPromises = this.quizScores.map(async q => {
+          try {
+            const stat = await this.quizStatsService.getQuizStats(q.quizId.toString());
+            return {
+              quizId: q.quizId,
+              avgScore: stat.averageScore ?? null
+            };
+          } catch {
+            return { quizId: q.quizId, avgScore: null };
+          }
+        });
 
-        if (!completedResults.length) {
-          this.quizScores = [];
-          this.siteAverages = [];
-          this.loading = false;
-          this.initChart();
-          return;
-        }
-
-        this.quizScores = completedResults.map(r => ({
-          quizId: Number(r.quizId),
-          score: r.score ?? null
-        }));
-
-        // Load averages for all completed quizzes
-        const statsObservables = this.quizScores.map(q =>
-          this.quizStatsService.getQuizStats(q.quizId.toString())
-        );
-
-        const statsResults = await firstValueFrom(combineLatest(statsObservables));
-
-        this.siteAverages = statsResults.map((stat, i) => ({
-          quizId: this.quizScores[i].quizId,
-          avgScore: stat?.averageScore ?? null
-        }));
+        this.siteAverages = await Promise.all(statsPromises);
       } catch (err) {
         console.error('Error loading quiz history', err);
         this.quizScores = [];
@@ -109,6 +100,9 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
         this.initChart();
       }
     });
+
+    // Store the cleanup function for auth subscription
+    this.subscriptions.add(() => unsubscribeAuth());
   }
 
   private initChart() {
@@ -176,6 +170,6 @@ export class UserQuizHistoryWidget implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.subscription?.unsubscribe();
+    this.subscriptions.unsubscribe();
   }
 }

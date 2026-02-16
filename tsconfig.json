@@ -5,6 +5,7 @@
     "compilerOptions": {
         "outDir": "./dist/out-tsc",
         "strict": true,
+        "types": ["google.maps"],
         "noImplicitOverride": true,
         "noPropertyAccessFromIndexSignature": true,
         "noImplicitReturns": true,

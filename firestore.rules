@@ -1,4 +1,92 @@
 rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Venues collection — only admins can read/write
+    match /venues/{id} {
+  allow read, write: if isAdmin(request.auth.uid);
+}
+
+    // Quizzes collection
+    match /quizzes/{id} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.token.firebase.sign_in_provider != "anonymous";
+    }
+
+    // Quiz tags
+    match /quizTags/{id} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.token.firebase.sign_in_provider != "anonymous";
+    }
+
+    // Admins collection
+    match /admins/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+     // Users collection — own doc or admin can read, only own doc can write
+    match /users/{userId} {
+      allow read: if request.auth != null
+                  && (request.auth.uid == userId || isAdmin(request.auth.uid));
+      allow write: if request.auth != null && request.auth.uid == userId;
+
+      // User subcollections (followers/following)
+      match /{subcollection}/{docId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Submission forms — admins can read/write, members can read active forms
+    match /submissionForms/{formId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // Quiz results — members can write their own results, admins can read all
+    match /quizResults/{resultId} {
+      allow create, update: if request.auth != null
+                            && isMember(request.auth.uid)
+                            && request.resource.data.userId == request.auth.uid;
+
+      allow read: if request.auth != null
+                  && (resource.data.userId == request.auth.uid || isAdmin(request.auth.uid));
+    }
+    
+    match /quizTotalStats/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /quizAggregates/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Default deny everything else
+    match /{document=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // Helper function to check if a user is a member
+    function isMember(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+             && get(/databases/$(database)/documents/users/$(uid)).data.isMember == true;
+    }
+    
+    function isAdmin(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+             && get(/databases/$(database)/documents/users/$(uid)).data.isAdmin == true;
+    }
+
+  }
+}
+
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -14,74 +102,142 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Admins collection - only admins can read/write
-    match /admins/{adminId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
+    // Venues Collection
+    match /venues/{venueId} {
+      // Public read for active, non-deleted venues
+      allow read: if resource.data.isActive == true &&
+                     resource.data.deletedAt == null;
 
-    // Users collection
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Admins can read all venues (including deleted and inactive)
+      allow read: if isAdmin();
 
-      // User subcollections (followers/following)
-      match /{subcollection}/{docId} {
-        allow read: if isAuthenticated();
-        allow write: if isAuthenticated() && request.auth.uid == userId;
-      }
-    }
+      // Only admins can create or update venues
+      allow create: if isAdmin() &&
+                       request.resource.data.keys().hasAll(['venueName', 'location', 'isActive', 'createdBy', 'createdAt', 'quizSchedules']);
 
-    // Quizzes collection
-    match /quizzes/{quizId} {
-      allow read: if true;  // Public read for quizzes
-      allow write: if isAdmin();
-    }
+      allow update: if isAdmin();
 
-    // Quiz Results collection
-    match /quizResults/{resultId} {
-      allow read: if isAuthenticated();
-      allow create: if true;  // Anyone can submit results
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Only admins can delete (soft delete by updating deletedAt)
       allow delete: if isAdmin();
     }
 
-    // Quiz Tags collection
-    match /quizTags/{tagId} {
+    // Admins Collection
+    match /admins/{email} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Quiz Aggregates collection
-    match /quizAggregates/{quizId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // ========================================
-    // NEW: Submission Forms (admin only)
-    // ========================================
-    match /submissionForms/{formId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    // ========================================
-    // NEW: Quiz Submissions (users can create)
-    // ========================================
-    match /quizSubmissions/{submissionId} {
+    // Users Collection
+    match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if false; // Users should not be deleted
+
+      // User subcollections
+      match /quizSessions/{sessionId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+
+        match /events/{eventId} {
+          allow read, write: if isAuthenticated() && request.auth.uid == userId;
+        }
+      }
+
+      match /following/{followId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && request.auth.uid == userId;
+      }
+
+      match /followers/{followerId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated();
+      }
+    }
+
+    // Quizzes Collection
+    match /quizzes/{quizId} {
+      // Public read for active quizzes
+      allow read: if resource.data.isActive == true;
+
+      // Admins can read all quizzes
+      allow read: if isAdmin();
+
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+
+    // Quiz Tags Collection
+    match /quizTags/{tagId} {
+      // Public read for active tags
+      allow read: if resource.data.isActive == true &&
+                     resource.data.deletedTime == null;
+
+      // Admins can read all tags
+      allow read: if isAdmin();
+
+      // Only admins can write
+      allow write: if isAdmin();
+    }
+
+    // Quiz Results Collection
+    match /quizResults/{resultId} {
+      // Users can read their own results
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+
+      // Admins can read all results
+      allow read: if isAdmin();
+
+      // Users can create results (for taking quizzes)
+      allow create: if isAuthenticated();
+
+      // Users can update their own incomplete results
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       resource.data.status == 'in_progress';
+
+      // Admins can update any result
+      allow update: if isAdmin();
+
+      // No deletions allowed
+      allow delete: if false;
+    }
+
+    // Quiz Aggregates (stats)
+    match /quizAggregates/{quizId} {
+      // Anyone can read stats
+      allow read: if true;
+
+      // Only server-side (functions) can write
+      // Admins can also write for manual corrections
+      allow write: if isAdmin();
+    }
+
+    // Quiz Total Stats
+    match /quizTotalStats/{quizId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Submissions Collection
+    match /submissions/{submissionId} {
+      // Anyone can read submissions
+      allow read: if true;
+
+      // Authenticated users can create submissions
+      allow create: if isAuthenticated();
+
+      // Users can update their own submissions
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid;
+
+      // Admins can update or delete any submission
       allow update, delete: if isAdmin();
     }
 
-    // ========================================
-    // NEW: User Submission Stats
-    // ========================================
-    match /userSubmissionStats/{uid} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+    // Default: deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

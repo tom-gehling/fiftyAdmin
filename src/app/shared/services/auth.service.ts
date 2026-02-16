@@ -9,6 +9,7 @@ import {
   signOut,
   updateProfile,
   onAuthStateChanged,
+  sendPasswordResetEmail,
 } from '@angular/fire/auth';
 import {
   GoogleAuthProvider,
@@ -24,6 +25,7 @@ import {
   where,
   getDocs,
   increment,
+  serverTimestamp,
 } from '@angular/fire/firestore';
 import {
   browserLocalPersistence,
@@ -173,6 +175,11 @@ export class AuthService {
     this.user$.next(appUser);
   }
 
+  /** Send password reset email */
+  async sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(this.auth, email);
+  }
+
   async logout() {
     await signOut(this.auth);
     this.user$.next(null);
@@ -223,7 +230,11 @@ export class AuthService {
       loginCount: loginCount + 1,
     };
 
-    await setDoc(userRef, appUser, { merge: true });
+    await setDoc(userRef, {
+      ...appUser,
+      lastLoginAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
 
     this.isAdmin$.next(isAdmin);
     this.isMember$.next(appUser.isMember);

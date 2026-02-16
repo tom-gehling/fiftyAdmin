@@ -1,0 +1,2447 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            :root {
+                --green: #4cfbab;
+                --black: #282828;
+                --pink: #fbe2df !important;
+                --correct: rgb(0, 215, 0) !important;
+                --incorrect: red !important;
+                --font: Helvetica, Arial, sans-serif !important;
+                --header: 25px !important;
+                --normal: 22px !important;
+                --smaller: 18px !important;
+                --transition: 0.3s !important;
+            }
+
+            body {
+                background-color: #282828;
+            }
+
+            #load {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                font-family: var(--font) !important;
+                font-size: var(--normal) !important;
+                font-weight: 500 !important;
+                transition: var(--transition) !important;
+                padding-bottom: 10px !important;
+                display: flex;
+                justify-content: flex-start !important;
+            }
+
+            .navBar {
+                height: 100%;
+                width: 0;
+                position: fixed;
+                z-index: 1;
+                left: 0;
+                top: 0;
+                background-color: rgb(0, 0, 0);
+                background-color: rgba(0, 0, 0, 0.9);
+                overflow-x: hidden;
+                transition: 0.5s;
+            }
+
+            .navBarContent {
+                position: relative;
+                top: 1%;
+                width: 90%;
+                text-align: left;
+                padding: 10px;
+                margin-top: 10%;
+            }
+
+            .navTabs {
+                border: none !important;
+                background-color: var(--black) !important;
+                color: var(--pink) !important;
+                width: 70% !important;
+                height: 60px !important;
+                margin-bottom: 10px !important;
+                padding: 10px !important;
+                font-size: 18px !important;
+                display: block;
+                border-radius: 5px !important;
+            }
+
+            .navBar .navTabs {
+                padding: 8px;
+                text-decoration: none;
+                font-size: 36px;
+                color: #818181;
+                display: block;
+                transition: 0.3s;
+            }
+
+            .navBar .active {
+                color: var(--black) !important;
+                background-color: var(--green) !important;
+                width: 80% !important;
+                transition: 300ms !important;
+            }
+
+            .navBar .navTabs:hover,
+            .navBar .navTabs:focus {
+                color: var(--black) !important;
+                background-color: var(--green) !important;
+                width: 80% !important;
+                transition: 300ms !important;
+            }
+
+            .navBar .closebtn {
+                position: sticky;
+                top: 5px;
+                bottom: 5px;
+                left: 90%;
+                font-size: 60px;
+                cursor: pointer;
+            }
+
+            @media screen and (max-height: 450px) {
+                .navBar .navTabs {
+                    font-size: 20px;
+                }
+                .navBar .closebtn {
+                    font-size: 40px;
+                    top: 15px;
+                }
+            }
+
+            .quizContainer {
+                width: 100% !important;
+            }
+
+            .quizTitle {
+                font-size: 48px !important;
+                font-family: var(--font);
+                color: var(--pink);
+                font-weight: 600 !important;
+                text-align: center;
+            }
+
+            .quiz {
+                display: none;
+            }
+
+            .quiz.active {
+                display: block;
+            }
+
+            .question {
+                width: auto !important;
+                justify-self: center !important;
+            }
+
+            .accordionButton {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: none !important;
+                border-radius: 0px !important;
+                text-align: center !important;
+                outline: none !important;
+                width: 100% !important;
+                font-family: var(--font) !important;
+                font-size: var(--header) !important;
+                font-weight: 400 !important;
+                transition: var(--transition) !important;
+                padding: 25px !important;
+                margin-bottom: 20px !important;
+                line-height: 130% !important;
+            }
+
+            .accordionButton.active {
+                color: var(--black) !important;
+                background-color: var(--pink) !important;
+            }
+
+            .genericButton {
+                font-family: var(--font) !important;
+                font-weight: 600 !important;
+                color: var(--black) !important;
+                background-color: var(--pink) !important;
+                border: 3px solid var(--pink) !important;
+                border-radius: 15px !important;
+                font-size: var(--normal) !important;
+                padding: 15px !important;
+                margin: 5px !important;
+                transition: var(--transition) !important;
+            }
+
+            .genericButton.correct {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .genericButton.incorrect {
+                color: var(--pink) !important;
+                background-color: var(--black) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .genericButton.reveal {
+                background-color: var(--black) !important;
+                color: var(--pink) !important;
+                border: 3px solid var(--pink) !important;
+            }
+
+            .dot {
+                height: 10px !important;
+                width: 10px !important;
+                background-color: var(--green) !important;
+                border-radius: 50% !important;
+                display: inline-block;
+                margin-right: 10px !important;
+                border: 1px solid #282828;
+            }
+
+            .dot.removed {
+                display: none;
+            }
+
+            .panel {
+                font-family: var(--font) !important;
+                display: none;
+                font-size: var(--normal) !important;
+                padding-top: 15px !important;
+                padding-bottom: 15px !important;
+                width: auto !important;
+                text-align: center !important;
+            }
+
+            .panel.active {
+                display: block;
+            }
+
+            .panel.answer {
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .score {
+                font-family: var(--font) !important;
+                color: var(--green) !important;
+                text-align: center !important;
+                font-size: var(--header) !important;
+                font-weight: 800 !important;
+            }
+
+            .closebtn {
+                color: #4cfbab;
+                margin-bottom: 10px;
+                cursor: pointer;
+            }
+
+            #openBtn {
+                color: #4cfbab;
+                font-size: 60px;
+                padding: 10px;
+                cursor: pointer;
+            }
+
+            .pagination {
+                display: flex;
+                list-style-type: none;
+                justify-content: center;
+                width: auto;
+                padding: 10px;
+                margin: 0;
+            }
+
+            .page-item {
+                margin: 5px;
+                font-family: var(--font) !important;
+                font-size: 12px !important;
+                color: var(--green) !important;
+                padding: 8px 12px;
+                border: 1px solid #ccc;
+                border-radius: 5px !important;
+                cursor: pointer;
+            }
+
+            .page-item:hover {
+                background-color: #818181 !important;
+                text-decoration: underline;
+            }
+
+            .page-link {
+                font-family: var(--font) !important;
+                font-size: 12px !important;
+                color: var(--green) !important;
+                padding: 5px !important;
+                text-decoration: none;
+                color: inherit;
+            }
+
+            .page-item.activePage {
+                background-color: v#818181 !important;
+                color: var(--black) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="openBtn" onclick="openNav()">&equiv;</div>
+        <div class="navBar" id="navBar">
+            <span class="closebtn" onclick="closeNav()">&times;</span>
+        </div>
+
+        <div id="load"></div>
+
+        <script>
+            let quizzes = [
+                {
+                    quiz_id: 'Three-Letter Words',
+                    quiz_title: 'Using a three-letter word, complete the following words:',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: 'sp…, grim…, and outp…',
+                            qAnswer: 'Ace'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: 'car..., im...uous, and ...rify',
+                            qAnswer: 'Pet'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: 'p...ess, sor..., and c...',
+                            qAnswer: 'Row'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: 'tr…et, th…er, and bl…',
+                            qAnswer: 'Ink'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: 'drop..., ...ter, and is...',
+                            qAnswer: 'Let'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: 'lifes..., ...da, and ...ic.',
+                            qAnswer: 'Pan'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: '(five letter word) flash..., f..., and ...ning.',
+                            qAnswer: 'Light'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: 's...k, s...r, and im...ch.',
+                            qAnswer: 'Pea'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: '...se, c...ped, and ...el.',
+                            qAnswer: 'Lap'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: '...ger, ...ish, and cof...',
+                            qAnswer: 'Fin'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: '…d, …etic, and …dred.',
+                            qAnswer: 'Kin'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: '...lish, pa..., and ha...',
+                            qAnswer: 'Sty'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: 'abs..., ...it, and m...id.',
+                            qAnswer: 'Orb'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: 's...ab, s..., and ...t.',
+                            qAnswer: 'Car'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: 'sp..., p..., and c...on.',
+                            qAnswer: 'Ray'
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: '...ology, ...m, and ra...r.',
+                            qAnswer: 'The'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: '...ge, ...age, and be...e.',
+                            qAnswer: 'For'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: '...e, c...e, and orc...',
+                            qAnswer: 'Hid'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: 't...ing, b..., and mo...',
+                            qAnswer: 'Urn'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: 'ma…, ...th, and s…ing.',
+                            qAnswer: 'Nor '
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: '...ly, r..., and c...ure.',
+                            qAnswer: 'Apt'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: 't..., ...ks, and ...vil.',
+                            qAnswer: 'Wee'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: 't...le, sc...t, and ...ple.',
+                            qAnswer: 'Rip'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: '...th, s...l, and s...p.',
+                            qAnswer: 'Too'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: 's...per, c..., and f...',
+                            qAnswer: 'Lip'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: 's...ach, do...g, and ...ing.',
+                            qAnswer: 'Pin'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: '...ics, p...ing, and peas...',
+                            qAnswer: 'Ant'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: 'g..., d...ly, and ...nest.',
+                            qAnswer: 'Ear'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: '...king, tur..., and ...ter.',
+                            qAnswer: 'Ban'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: 'f...ery, pil..., and b...er.',
+                            qAnswer: 'Low'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: 's...per, ...ography, ...iary.',
+                            qAnswer: 'Top'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: 'scr..., che...n, and di...r.',
+                            qAnswer: 'Ape'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: 's..., ...tering, and ...erary.',
+                            qAnswer: 'Lit'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: 'sc...e, c..., and d...ble.',
+                            qAnswer: 'Rib'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: 'b...sed, d...re, and ...late.',
+                            qAnswer: 'Emu'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: '...le, pa..., and un...lish.',
+                            qAnswer: 'Sty'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: '...tage, ad...ce, and ser...t. ',
+                            qAnswer: 'Van'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: 't...ped, ...acious, and g...ple.',
+                            qAnswer: 'Rap'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: 'pros..., ...tinent, and ...spire.',
+                            qAnswer: 'Per'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: 's...my, t...ble, and c...ing.',
+                            qAnswer: 'Him'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: 'dep..., r...er, and ...ocrine.',
+                            qAnswer: 'End'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: '...ar, ar..., and per...a. ',
+                            qAnswer: 'Son'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: '...ald, c...ish, and sp...e.',
+                            qAnswer: 'Her'
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: '...de, ...rkler, and de...ir.',
+                            qAnswer: 'Spa'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: 'tom..., ...cher, and s...ter. ',
+                            qAnswer: 'Cat'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: 'brie..., ...er, and blow...',
+                            qAnswer: 'Fly'
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: 's...n, f...r, and ...ning',
+                            qAnswer: 'Eve'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: 'c...us, t...ic, and ...ress.',
+                            qAnswer: 'Act'
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: 'as..., ...na, and heat...',
+                            qAnswer: 'Hen'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: 'fur..., f...st, and rest...',
+                            qAnswer: 'Ore'
+                        }
+                    ]
+                },
+                {
+                    quiz_id: "Question #1's",
+                    quiz_title: 'Start listing - we need 221 answers from you here',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: "Nudity is one of them - name four of the five other 'elements' affecting a film's classification in Australia.",
+                            qAnswer: '(Four of) Drug use, language, sex, themes, and violence'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: 'Name three of the ten most-viewed Wikipedia articles dedicated to an individual.',
+                            qAnswer: '(Three of) Donald Trump, Elizabeth II, Barack Obama, Cristiano Ronaldo, Michael Jackson, Elon Musk, Cleopatra, Lady Gaga, Adolf Hitler, and Eminem'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: 'Name three of the last ten winners of the Academy Award for Best Picture, as of June 2024.',
+                            qAnswer:
+                                '(Three of) <em>Birdman</em>, <em>Spotlight</em>, <em>Moonlight</em>, <em>The Shape of Water</em>, <em>Green Book</em>, <em>Parasite</em>, <em>Nomadland</em>, <em>CODA</em>, <em>Everything Everywhere All at Once</em>, and <em>Oppenheimer</em>'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: 'Name seven of the thirteen fruits and vegetables available at Subway assembly lines in Australia.',
+                            qAnswer: '(Seven of) Avocado, Beetroot, Capsicum, Carrot, Cucumber, Jalapeños, Lettuce, Olives, Onions, Pickles, Pineapple, Spinach, and Tomatoes '
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: " 'Images' is one of them - name five of the nine remaining search categories available on Google.",
+                            qAnswer: '(Five of) All, Books, Finance, Flights, Maps, News, Shopping, Videos, and Web'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: 'Name four of the eight home (or hybrid) consoles released worldwide by Nintendo in their history.',
+                            qAnswer: '(Four of) Nintendo Entertainment System, Super Nintendo Entertainment System, Nintendo Virtual Boy, Nintendo 64, Nintendo GameCube, Nintendo Wii, Nintendo Wii U, and Nintendo Switch'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: "Per a 2015 report from <em>ABC News</em>, name four of the world's ten most common phobias.",
+                            qAnswer:
+                                '(Four of) <ul><li>Agoraphobia (fear of open spaces)</li>acrophobia (fear of heights)</li><li>pteromerhanophobia (fear of flying)</li><li>claustrophobia (fear of enclosed spaces)</li><li>entomophobia (fear of insects)</li><li>ophidiophobia (fear of snakes)</li><li>cynophobia (fear of dogs)</li><li>astraphobia (fear of storms)</li><li>trypanophobia (fear of needles)</li><li>social phobia</li></ul>'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: "Name three of the eleven artists who've had more than seven songs go to #1 on the Australian charts.",
+                            qAnswer: '(Three of) The Beatles, Elvis Presley, Taylor Swift, Madonna, Kylie Minogue, Rihanna, Delta Goodrem, P!nk, Eminem, Justin Bieber, and the Black Eyed Peas'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: 'Name six of the seven cities to host a Summer Olympics this millennium.',
+                            qAnswer: '(Six of) Sydney (2000), Athens (2004), Beijing (2008), London (2012), Rio de Janeiro (2016), Tokyo (2020), and Paris (2024)'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: 'Name four of the fourteen US presidents to have survived or been killed in an assassination attempt.',
+                            qAnswer:
+                                '(Four of) Andrew Jackson, Abraham Lincoln, James Garfield, William McKinley, William Taft, Franklin D. Roosevelt, Harry S. Truman, John F. Kennedy, Gerald Ford, Ronald Reagan, George H.W. Bush, Bill Clinton, George W. Bush, and Donald Trump'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: "Name three of the ten most popular Netflix series of all-time, per the site's criteria - i.e., the shows with the most hours watched in their first four weeks of release.",
+                            qAnswer:
+                                '(Three of) <br /><ul> <li>Squid Game</li><li>Stranger Things</li><li>Wednesday</li><li>Dahmer - Monster: The Jeffrey Dahmer Story</li><li>Money Heist</li><li>Bridgerton</li><li>Lucifer</li><li>All of Us Are Dead</li><li>The Witcher</li></ul>'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: 'Name three of the ten Rihanna songs with over one billion streams on Spotify, as of August 2024.',
+                            qAnswer:
+                                "(Three of) 'This is What You Came For' (1.8b), 'We Found Love' (1.7b), 'Umbrella' (1.5b), 'Love on the Brain' (1.5b), 'Diamonds' (1.5b), 'Needed Me' (1.5b) 'Stay' (1.3b), 'Only Girl (In the World)' (1.1b), 'S&M' (1.1b), and 'Don't Stop the Music' (1.0b)"
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: "Name three of the five most commonly pledged New Year's resolutions for Australians in 2024, per <em>Finder</em>.",
+                            qAnswer: '(Three of) Save money, eat healthier, improve fitness, lose weight, and spend less money'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: 'Name seven of the ten European countries visited the most by tourists in 2023, per <em>Statista</em>.',
+                            qAnswer: '(Seven of) France, Spain, Italy, Türkiye, United Kingdom, Germany, Greece, Austria, Netherlands, and Poland'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: 'Name six of the seven national public holidays in Australia - i.e., public holidays acknowledged on the same date in every state.',
+                            qAnswer: "(Six of) New Year's Day, Australia Day, Good Friday, Easter Monday, ANZAC Day, Christmas Day, and Boxing Day"
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: 'Name six of the ten top-selling car manufacturers in Australia for 2023, according to the RACV.',
+                            qAnswer: '(Six of) Toyota, Mazda, Ford, Kia, Hyundai, Mitsubishi, MG, Tesla, Suburu, and Isuzu'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: "Name four of the six icons you'd find on the bottom bar of the Facebook mobile app, if you were browsing the latest version in September 2024.",
+                            qAnswer: '(Four of) Home, Video, Marketplace, Explore, Notifications, and Menu'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: "List three of the seven cereals currently found in a Kellogg's Variety Pack.",
+                            qAnswer: '(Three of) Coco Pops, Cornflakes, Just Right, Nutri-Grain, Special K, Sultana Bran, and Sustain  '
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: 'Every Australian state capital has a major airport known by a three-letter abbreviation. Name five of those six abbreviations. ',
+                            qAnswer: '(Five of) ADL (Adelaide), BNE (Brisbane), HBA (Hobart), MEL (Melbourne), PER (Perth), and SYD (Sydney)'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: 'Richmond won three of them - name all five of the other AFL Grand Final winners from 2016 to 2023, inclusive. ',
+                            qAnswer: 'Western Bulldogs (2016), West Coast Eagles (2018), Melbourne (2021), Geelong (2022), and Collingwood (2023)'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: 'Name four of the nine highest-selling video game consoles of all-time, across home and handheld formats.',
+                            qAnswer: '(Four of) PlayStation 2, Nintendo Switch, Game Boy, PlayStation 4, PlayStation, Wii, PlayStation 3, XBOX 360, and Nintendo Entertainment System'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: "The <em>Australian Financial Review</em> recently published its annual list of Australia's ten most powerful people. Name three of them.",
+                            qAnswer: '(Three of) Anthony Albanese, Michelle Bullock, Penny Wong, Peter Dutton, Jim Chalmers, Richard Marles, Mike Henry, Max Chandler-Mather, Sally McManus, and Jacinta Nampijinpa Price'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: 'Name the four most used dating apps in Australia, as of June 2024.',
+                            qAnswer: 'Tinder, Bumble, Hinge, and Grindr'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: 'Since 2013, Spotify has annually announced its most-streamed artist of the past year. Name three of the six artists to have been crowned a year-end number one, as of 2024.',
+                            qAnswer: '(Three of) Macklemore & Ryan Lewis, Ed Sheeran, Drake, Post Malone, Bad Bunny, and Taylor Swift'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: 'Name four of the ten most common foreign countries-of-birth for Australian residents, per the 2021 census.',
+                            qAnswer: '(Four of) United Kingdom, India, China, New Zealand, Philippines, Vietnam, South Africa, Malaysia, Nepal, and Italy'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: 'The International Olympic Committee splits Summer Olympic sports into tiers, based on popularity - there are six tiers, listed A through to F. Name five of the eight sports that make up the A and B tiers.',
+                            qAnswer: '(Five of) Athletics (A); Aquatics (inc. swimming, diving, and water polo) (A); Gymnastics (A); Basketball (B); Cycling (B); Football (B); Tennis (B); and Volleyball (B)'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: 'Name six of the ten most commonly traded currencies in the world, per <em>IG</em>. ',
+                            qAnswer:
+                                '(Six of) US dollar (USD), Euro (EUR), Japanese yen (JPY), Pound sterling (GBP), Australian dollar (AUD), Canadian dollar (CAD), Swiss franc (CHF), Chinese renminbi (CNH), Hong Kong dollar (HKD), and New Zealand dollar (NZD)'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: 'Name five of the ten most-logged films featuring Leonardo DiCaprio on Letterboxd, as of November 2024.',
+                            qAnswer:
+                                "(Five of) <em>Inception</em>, <em>The Wolf of Wall Street</em>, <em>Once Upon a Time... In Hollywood</em>, <em>Shutter Island</em>, <em>Django Unchained</em>, <em>Titanic</em>, <em>Don't Look Up</em>, <em>Catch Me If You Can</em>, <em>Killers of the Flower Moon</em>, and <em>The Departed</em>"
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: "Australia's most-viewed telecast each year is typically a sporting event. Since 2001, five television series have had their season finales be the year's most popular telecast. Name three of those series.",
+                            qAnswer: '(Three of) <em>Australian Idol</em> (2004), <em>MasterChef Australia</em> (2009 & 2010), <em>The Block</em> (2011), <em>The Voice</em> (2012), and <em>My Kitchen Rules</em> (2013) '
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: 'Name ten of the twelve star signs in traditional Western astrology.',
+                            qAnswer: '(Ten of) Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, and Pisces'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: "Name three of the ten cities listed as the world's most significant financial hubs, per the most recent <em>Global Financial Centres Index</em>. ",
+                            qAnswer: '(Three of) New York City, London, Hong Kong, Singapore, San Francisco, Chicago, Los Angeles, Shanghai, Shenzhen, and Frankfurt'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: "Name three of the recipients of <em>Time</em>'s Person of the Year title from 2017 to 2024, inclusive.",
+                            qAnswer:
+                                '(Three of) The Silence Breakers (2017), The Guardians (2018), Greta Thunberg (2019), Joe Biden and Kamala Harris (2020), Elon Musk (2021), Volodymyr Zelenskyy and the Spirit of Ukraine (2022), Taylor Swift (2023), and Donald Trump (2024)'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: "Lonely Planet recently recommended the ten best cities to celebrate New Year's Eve in. Name three of them.",
+                            qAnswer: '(Three of) Bangkok, Cape Town, Dubai, Las Vegas, New York City, Québec City, Rio de Janeiro, Rome, Sydney, and Tokyo'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: 'Six tennis players have won twenty or more Grand Slam singles titles. Name four of them.',
+                            qAnswer: '(Four of) Margaret Court (24), Novak Djokovic (24), Serena Williams (23), Steffi Graf (22), Rafael Nadal (22), and Roger Federer (20)'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: "Per the Australian Red Cross, there are eight 'main' blood types. Name four of them.",
+                            qAnswer: '(Four of) O+, O-, A+, A-, B+, B-, AB+, and AB-'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: 'Name three of the ten feature films directed by the late, great David Lynch.',
+                            qAnswer:
+                                '(Three of) <em>Eraserhead</em>, <em>The Elephant Man</em>, <em>Dune</em>, <em>Blue Velvet</em>, <em>Wild at Heart</em>, <em>Twin Peaks: Fire Walk With Me</em>, <em>Lost Highway</em>, <em>The Straight Story</em>, <em>Mulholland Drive</em>, and <em>INLAND EMPIRE</EM>'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: "By annual litres produced,  name four of the world's six leading wine-producing countries -  per <em>Statista</em>'s 2023 figures.",
+                            qAnswer: '(Three of) Italy, France, Spain, USA, Chile, and Australia'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: "Tourism Australia's website has a core list of ten cities or areas 'you simply can't miss' when you visit. Name six of them.",
+                            qAnswer: '(Six of) Great Barrier Reef/Cairns, Sydney, Uluṟu, Melbourne, Perth/Margaret River, Kangaroo Island, Hobart, Kakadu, Gold Coast, and Byron Bay'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: "Per a US survey from <em>Statista</em>, seven kinds gifts or experiences were the most commonly bought for a Valentine's Day gift. Name three of them.",
+                            qAnswer: '(Three of) Confectionery/sweets, greeting cards, flowers, dinner, wine, gift cards, and jewelry'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: "Name four of the world's ten highest-paid athletes - a list comprising a golfer, a gridrion player, three basketballers, and five soccer stars. ",
+                            qAnswer: '(Four of) Cristiano Ronaldo, Jon Rahm, Lionel Messi, LeBron James, Giannis Anteteokounmpo, Kylian Mbappé, Neymar, Karim Benzema, Stephen Curry, and Lamar Jackson'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: 'Aside from Coca-Cola Classic, name four of the seven flavours of liquid Coca-Cola available in Australia.',
+                            qAnswer:
+                                '(Four of) <br /><ul><li>Coca-Cola Zero Sugar</li><li>Diet Coke</li><li>Coca-Cola Classic Vanilla</li><li>Coca-Cola Zero Sugar Vanilla</li><li>Coca-Cola Zero Sugar Raspberry</li><li>Coca-Cola Zero Sugar Zero Caffeine</li><li>Coca-Cola Zero Sugar Lime </li></ul>'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: "Name three of the seven teams faced by the Matildas in the 2023 FIFA Women's World Cup.",
+                            qAnswer: '(Three of) <br /><ul><li>Ireland</li><li>Nigeria</li><li>Canada</li><li>Denmark</li><li>France</li> <li>England</li><li><li>Sweden</li></ul>'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: 'List five of the eight US states that start and end with a vowel. ',
+                            qAnswer: '(Five of) Alaska, Alabama, Idaho, Arizona, Ohio, Oklahoma, Indiana, Iowa'
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: "Name five of the ten teams that featured at this year's Australian Grand Prix.",
+                            qAnswer: '(Five of) McLaren, Ferrari, Red Bull Racing, Mercedes, Aston Martin, Alpine, Haas, Racing Bulls, Willliams or Sauber'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: 'Name six of the nine heaviest bodily organs for the average human - per <em>BBC Science Focus</em>.',
+                            qAnswer: '(Six of) Skin, liver, brain, lungs, heart, kidneys, spleen, pancreas, and thyroid'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: 'In 2023, <em>Compare the Market</em> published a list of the most desired nation to move to for residents of every country. For example, Australia was the top preference for residents of New Zealand. Name two of the five countries to be most commonly desired first.',
+                            qAnswer: '(Two of) Canada (50 countries), Japan (31 countries), China (15 countries), Spain (11 countries), and France (11 countries) '
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: 'Per a 2017 report from the Australian Sports Commission, name six of the ten most popular organised sports for Australian school students.',
+                            qAnswer: '(Six of) Swimming, Soccer, Australian rules football, Dancing, Gymanstics, Basketball, Netball, Tennis, Athletics, and Cricket'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: "Name three of Australia's top ten exported goods and services by gross income - per the most recent numbers from the Department of Foreign Affairs and Trade.",
+                            qAnswer:
+                                '<br /><ul><li>(Three of)</li><li>Iron ore</li><li>Coal</li><li>Natural gas</li><li>Education-related travel services (e.g., university tuition for international students)</li><li>Gold</li><li>Crude minerals</li><li>Personal travel services (e.g., tourism)</li><li>Wheat</li><li>Crude petroleum</li> and <li>Beef</li></ul>'
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: 'Name five of the ten people to appear as season-long judges on <em>MasterChef Australia</em>.',
+                            qAnswer: '(Five of) George Calombaris, Gary Mehigan, Matt Preston, Matt Moran, Andy Allen, Melissa Leong, Jock Zonfrillo, Poh Ling Yeow, Jean-Christophe Novelli, and Sofia Levin'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: 'Name eight of the last nine people to serve as Australian Prime Ministers prior to Anthony Albanese.',
+                            qAnswer: '(Eight of) Malcom Fraser, Bob Hawke, Paul Keating, John Howard, Kevin Rudd, Julia Gillard, Tony Abbott, Malcolm Turnbull, and Scott Morrison'
+                        }
+                    ]
+                },
+                {
+                    quiz_id: 'Cast Member In Common',
+                    quiz_title: 'Name the cast member the following films have in common:',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: '<em>Panic Room</em> (2002), <em>Snow White and the Huntsman</em> (2012), and <em>Love Lies Bleeding</em> (2024). ',
+                            qAnswer: 'Kristen Stewart'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: '<em>Reservoir Dogs</em> (1992), <em>Fargo</em> (1996), and <em>The Big Lebowski</em> (1998).',
+                            qAnswer: 'Steve Buscemi'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: '<em>The Deer Hunter</em> (1978), <em>Doubt</em> (2008), and <em>Ricki and the Flash</em> (2015).',
+                            qAnswer: 'Meryl Streep'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: '<em>Taxi Driver</em> (1975), <em>The Silence of the Lambs</em> (1991), and <em>Panic Room</em> (2002).',
+                            qAnswer: 'Jodie Foster'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: '<em>Moonlight</em> (2016), <em>Green Book</em> (2018), and <em>Leave the World Behind</em> (2023).',
+                            qAnswer: 'Mahershala Ali'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: '<em>Bottle Rocket</em> (1996), <em>The Darjeeling Limited</em> (2006), and <em>Midnight in Paris</em> (2011). ',
+                            qAnswer: 'Owen Wilson'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: '<em>Pulp Fiction</em> (1994), <em>Batman and Robin</em> (1997), and <em>Gattaca</em> (1997).',
+                            qAnswer: 'Uma Thurman'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: "<em>The Hunt for Red October</em> (1990), <em>The Departed</em> (2006), and <em>It's Complicated</em> (2009).",
+                            qAnswer: 'Alec Baldwin'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: '<em>Trainspotting</em> (1996), <em>Moulin Rouge!</em> (2001), <em>Black Hawk Down</em> (2001).',
+                            qAnswer: 'Ewan McGregor'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: '<em>Eyes Wide Shut</em> (1999), <em>Australia</em> (2008), and <em>Bombshell</em> (2019).',
+                            qAnswer: 'Nicole Kidman'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: '<em>Shakespeare in Love</em> (1998), <em>The Talented Mr. Ripley</em> (1999), and <em>Shallow Hal</em> (2001).',
+                            qAnswer: 'Gwyneth Paltrow'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: '<em>Zero Dark Thirty</em> (2012), <em>The Martian</em> (2015), and <em>It: Chapter Two</em> (2019).',
+                            qAnswer: 'Jessica Chastain'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: '<em>The Shallows</em> (2016), <em>A Simple Favor</em> (2018), and <em>It Ends With Us</em> (2024).',
+                            qAnswer: 'Blake Lively'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: '<em>Mulholland Drive</em> (2001), <em>The Ring</em> (2002), and <em>King Kong</em> (2005).',
+                            qAnswer: 'Naomi Watts'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: '<em>Wedding Crashers</em> (2005), <em>Hot Rod</em> (2007), and <em>Confessions of a Shopaholic</em> (2009).',
+                            qAnswer: 'Isla Fisher'
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: "<em>Muriel's Wedding</em> (1994), <em>Jasper Jones</em> (2017), and <em>Knives Out</em> (2019).",
+                            qAnswer: 'Toni Collette'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: " <em>One Flew Over the Cuckoo's Nest</em> (1975), <em>Batman Returns</em> (1992), and <em>Matilda</em> (1996). ",
+                            qAnswer: 'Danny DeVito'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: '<em>Misery</em> (1990), <em>Titanic</em> (1997), and <em>The Blind Side</em> (2009). ',
+                            qAnswer: 'Kathy Bates'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: '<em>Michael Clayton</em> (2007),  <em>Snowpiercer</em> (2016), and <em>Three Thousand Years of Longing</em> (2022). ',
+                            qAnswer: 'Tilda Swinton'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: '<em>Boogie Nights</em> (1997), <em>Austin Powers: The Spy Who Shagged Me</em> (1999), and <em>The Hangover</em> (2009).',
+                            qAnswer: 'Heather Graham'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: '<em>Hairspray</em> (2007), <em>Dirty Grandpa</em> (2016), and <em>The Iron Claw</em> (2023).',
+                            qAnswer: 'Zac Efron'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: '<em>Aftersun</em> (2022), <em>All of Us Strangers</em> (2023), and <em>Gladiator II</em> (2024). ',
+                            qAnswer: 'Paul Mescal'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: '<em>Heathers</em> (1988), <em>Edward Scissorhands</em> (1990), and <em>Beetlejuice Beetlejuice</em> (2024). ',
+                            qAnswer: 'Winona Ryder'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: '<em>Black Swan</em> (2010), <em>Friends with Benefits</em> (2011), and <em>Ted</em> (2012). ',
+                            qAnswer: 'Mila Kunis'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: '<em>Legally Blonde</em> (2001), <em>The Royal Tenenbaums</em> (2001), and <em>Idiocracy</em> (2006).',
+                            qAnswer: 'Luke Wilson'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: '<em>Spy Kids</em> (2001), <em>Shrek 2</em> (2004), and <em>Pain and Glory</em> (2019).',
+                            qAnswer: 'Antonio Banderas'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: '<em>Blue Velvet</em> (1986), <em>Jurassic Park</em> (1993), and <em>Marriage Story</em> (2019).',
+                            qAnswer: 'Laura Dern'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: '<em>Labyrinth</em> (1986), <em>Zoolander</em> (2001), and <em>The Prestige</em> (2006). ',
+                            qAnswer: 'David Bowie'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: '<em>Ghost</em> (1990), <em>A Few Good Men</em> (1992), and <em>The Substance</em> (2024). ',
+                            qAnswer: 'Demi Moore'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: '<em>Pulp Fiction</em> (1994), <em>Sin City</em> (2005), and <em>Moonrise Kingdom</em> (2012). ',
+                            qAnswer: 'Bruce Willis'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: '<em>Goodfellas</em> (1990), <em>Home Alone</em> (1990), and <em>The Irishman</em> (2019).',
+                            qAnswer: 'Joe Pesci'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: '<em>L.A. Confidential</em> (1997), <em>Memento</em> (2001), and <em>The Brutalist</em> (2024).',
+                            qAnswer: 'Guy Pearce'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: '<em>Inception</em> (2010), <em>Mad Max: Fury Road</em> (2015), and <em>Venom</em> (2018). ',
+                            qAnswer: 'Tom Hardy'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: '<em>Avatar</em> (2009), <em>Guardians of the Galaxy</em> (2014), and <em>Emilia Perez</em> (2024). ',
+                            qAnswer: 'Zoe Saldaña'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: ' <em>American History X</em> (1998), <em>Fight Club</em> (1999), and <em>A Complete Unknown</em> (2024). ',
+                            qAnswer: 'Edward Norton'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: '<em>Friday</em> (1995), <em>Are We There Yet?</em> (2005), and <em>21 Jump Street</em> (2012). ',
+                            qAnswer: 'Ice Cube'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: '<em>Halloween</em> (1979), <em>True Lies</em> (1994), and <em>Everything Everywhere All at Once</em> (2022). ',
+                            qAnswer: 'Jamie Lee-Curtis'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: '<em>Possession</em> (1981), <em>Jurassic Park</em> (1993), and <em>Hunt for the Wilderpeople</em> (2016).',
+                            qAnswer: 'Sam Neill'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: '<em>Casino Royale</em> (2006), and <em>The Best Exotic Marigold Hotel</em> (2012), and <em>Philomena</em> (2013).',
+                            qAnswer: 'Judi Dench'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: '<em>Get Smart</em> (2008), <em>The Intern</em> (2015), and <em>The Witches</em> (2020).',
+                            qAnswer: 'Anne Hathaway'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: '<em>Inspector Gadget</em> (1999), <em>Eurotrip</em> (2004), and <em>17 Again</em> (2009).',
+                            qAnswer: 'Michelle Trachtenberg'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: "<em>She's the Man</em> (2006), <em>Dear John</em> (2010), and <em>Blink Twice</em> (2024). ",
+                            qAnswer: 'Channing Tatum'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: "<em>Charlie's Angels</em> (2000), <em>Moon</em> (2009), and <em>Three Billboards Outside Ebbing, Missouri</em> (2018).",
+                            qAnswer: 'Sam Rockwell'
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: '<em>Apocalypse Now</em> (1979), <em>The Matrix</em> (1999), and <em>Contagion</em> (2011).',
+                            qAnswer: 'Laurence Fishburne'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: "<em>When Harry Met Sally...</em> (1989), <em>Sleepless in Seattle</em>, <em></em> (1993), and <em>You've Got Mail</em> (1998).",
+                            qAnswer: 'Meg Ryan'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: '<em>Over the Hedge</em> (2006), <em>The Big Short</em> (2015), and <em>Beautiful Boy</em> (2018). ',
+                            qAnswer: 'Steve Carrell'
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: '<em>The Italian Job</em> (1969), <em>Children of Men</em> (2006), and <em>The Dark Knight</em> (2008).',
+                            qAnswer: 'Michael Caine'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: "<em>My Own Private Idaho</em> (1991), <em>The Devil's Advocate</em> (1997), and <em>The Lake House</em> (2006). ",
+                            qAnswer: 'Keanu Reeves'
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: '<em>School Ties</em> (1992), <em>We Bought a Zoo</em> (2011), and <em>Interstellar</em> (2014).',
+                            qAnswer: 'Matt Damon'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: '<em>Chronicle</em> (2012), <em>Black Panther</em> (2018), and <em>Creed III</em> (2023).',
+                            qAnswer: 'Michael B. Jordan'
+                        }
+                    ]
+                },
+                {
+                    quiz_id: 'Country Letter Sequences',
+                    quiz_title: 'This country has a letter sequence, who do they share it with?',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: "Rwanda begins its name with a 'rw' letter sequence. Which other country contains the same sequence elsewhere in its name?",
+                            qAnswer: 'Norway'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: "Zambia begins its name with a 'za' letter sequence - name two of the three remaining countries' names who feature the same sequence elsewhere.",
+                            qAnswer: '(Two of) Kazakhstan, Mozambique, and Tanzania'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: "Azerbaijan features a 'ze' letter sequence in its name - name two of the five other countries to do so.",
+                            qAnswer: '(Two of) Belize, Bosnia and Herzegovina, Czechia, New Zealand, Switzerland'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: "Name two of the three countries whose names feature an 'lg' letter sequence.",
+                            qAnswer: '(Two of) Algeria, Belgium, and Bulgaria'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: "Fiji has an 'ij' letter sequence in its name - which other country does the same?",
+                            qAnswer: 'Azerbaijan'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: "Denmark ends its name with an 'rk' letter sequence - name any of the three countries that also feature it.",
+                            qAnswer: '(Any of) Burkina Faso, Türkiye, or Turkmenistan'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: "Côte d'Ivoire is only of only three countries to show-off an 'iv' letter sequence. Name either of the others. ",
+                            qAnswer: '(Either of) Bolivia and Maldives'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: "Sao Tome and Principe is one of only two countries to flaunt a 'pr' letter sequence. Which is the other?",
+                            qAnswer: 'Cyprus'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: "Antigua and Barbuda is one of four nations that contains an 'rb' letter sequence. Name two of the others.",
+                            qAnswer: '(Two of) Azerbaijan, Barbados, and Serbia '
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: "Argentina is one of only four countries to feature an 'rg' letter sequence. Name any of the others.",
+                            qAnswer: '(Any of) Georgia, Kyrgyzstan, and Luxembourg'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: "Vanuatu's name contains a 'va' letter sequence, a quirk it shares with only four other countries. Name two of them.",
+                            qAnswer: '(Two of) Vatican City, El Salvador, Moldova, Slovakia, and Tuvalu'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: "Excluding England, only one country possess a 'gl' letter sequence in its name. Which is it?",
+                            qAnswer: 'Bangladesh'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: "Azerbaijan starts its name with an 'az' letter sequence - name either of the countries to feature it elsewhere.",
+                            qAnswer: '(Either of) Brazil or Kazakhstan'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: "Greece contains a 'gr' letter sequence in its name, with only three other countries doing the same. Name any of them.",
+                            qAnswer: '(Any of) Grenada, Montenegro, or St Vincent and Grenadines'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: "Burundi is one of six country names to have 'di' pop up as a letter sequence. Name two of the others.  ",
+                            qAnswer: '(Two of) Cambodia, India, Maldives, Saudi Arabia, and St Vincent and Grenadines'
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: "Switzerland is one of two countries that features an 'rl' letter sequence in its name. Which is the other?",
+                            qAnswer: 'The Netherlands'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: "Which is the only country in the world whose name features a 'ty' letter sequence?",
+                            qAnswer: 'Vatican City'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: "Russia starts its name with a stunning 'ru' letter sequence. List three of the seven country names that store it elsewhere.",
+                            qAnswer: '(Three of) Belarus, Brunei, Burundi, Cyprus, Nauru, Peru, and Uruguay'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: "Hungary kicks off its name with a 'hu' letter sequence. Name either of the country names that whack it elsewhere.",
+                            qAnswer: '(Either of) Bhutan or Lithuania'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: "Fiji ends its name with a 'ji' letter sequence - name either of the countries that stash it elsewhere.",
+                            qAnswer: '(Either of) Djibouti or Tajikistan'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: "Andorra has an 'rr' letter sequence in its name - which is the only other nation to do the same?",
+                            qAnswer: 'Sierra Leone'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: "Cape Verde has an 'ap' letter sequence in its name. Name two of the three other countries to do the same.",
+                            qAnswer: '(Two of) Japan, Papua New Guinea, and Singapore'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: "Brunei is one of only 2 countries with an 'ei' letter sequence in its name. Name the other one. ",
+                            qAnswer: 'Liechtenstein '
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: "The Bahamas is one of only two countries with an 'ah' letter sequence. Name the other. ",
+                            qAnswer: 'Bahrain'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: "Ghana does it - which is the only other country to feature a 'gh' letter sequence in its name?",
+                            qAnswer: 'Afghanistan'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: "French Polynesia slides a 'po' letter sequence into its name. Name two of the three countries to feature it elsewhere.",
+                            qAnswer: '(Two of) Poland, Portugal, and Singapore'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: "Croatia begins its name with a gorgeous 'cr' letter sequence. Name either of the countries that indulge it elsewhere.",
+                            qAnswer: '(Either of) Democractic Republic of the Congo or Micronesia'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: "Togo and Tonga both start their names with 'to' letter sequences - name any of the four to feature the sequence elsewhere.",
+                            qAnswer: '(Any of) Estonia, Equatorial Guinea, Saõ Tomé and Príncipe, and Trinidad and Tobago'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: "Ethiopia has a 'pi' letter sequence hidden in its name. Which is the only other country to do so?",
+                            qAnswer: 'Philippines'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: "Iran, Iraq, and Ireland all start with 'ir' letter sequences. Name either of the countries that hide it elsewhere.",
+                            qAnswer: '(Either of) Kiribati or United Arab Emirates'
+                        }
+                    ]
+                },
+                {
+                    quiz_id: 'Most Streamed On Spotify',
+                    quiz_title: 'As of October 1 2025, what is the most streamed song on Spotify by:',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: 'Rüfüs Du Sol',
+                            qAnswer: 'Innerbloom'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: 'Drake',
+                            qAnswer: 'One Dance'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: 'Midnight Oil',
+                            qAnswer: 'Beds Are Burning'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: 'Taylor Swift',
+                            qAnswer: 'Cruel Summer'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: 'Britney Spears',
+                            qAnswer: 'Toxic'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: 'Azealia Banks',
+                            qAnswer: '212'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: 'Ariana Grande',
+                            qAnswer: '7 rings'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: 'Crowded House',
+                            qAnswer: "Don't Dream It's Over"
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: "Sinead O'Connor",
+                            qAnswer: 'Nothing Compares 2 U'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: 'Olivia Rodrigo',
+                            qAnswer: 'drivers license'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: 'Fleetwood Mac',
+                            qAnswer: 'Dreams'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: 'INXS',
+                            qAnswer: 'Need You Tonight'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: 'Macklemore',
+                            qAnswer: "Can't Hold Us"
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: 'Miley Cyrus',
+                            qAnswer: 'Flowers'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: 'Daft Punk',
+                            qAnswer: 'Get Lucky'
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: 'Childish Gambino',
+                            qAnswer: 'Redbone'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: 'Frank Ocean',
+                            qAnswer: 'Pink + White'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: 'The Rolling Stones',
+                            qAnswer: 'Paint It, Black'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: 'Coldplay',
+                            qAnswer: 'Something Just Like This'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: 'AC/DC',
+                            qAnswer: 'Highway To Hell'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: 'Lana Del Rey',
+                            qAnswer: 'Summertime Sadness'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: 'Usher',
+                            qAnswer: 'Yeah!'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: 'Billy Joel',
+                            qAnswer: 'Uptown Girl'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: 'Paramore',
+                            qAnswer: 'Still Into You'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: 'David Bowie',
+                            qAnswer: 'Under Pressure'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: 'Billie Eilish',
+                            qAnswer: 'lovely'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: 'The Beatles',
+                            qAnswer: ' Here Comes the Sun'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: 'Village People',
+                            qAnswer: 'YMCA'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: 'SZA',
+                            qAnswer: 'All The Stars'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: 'Radiohead',
+                            qAnswer: 'Creep'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: 'Tyler, the Creator',
+                            qAnswer: 'See You Again'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: 'Kylie Minogue',
+                            qAnswer: "Can't Get You out of My Head"
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: 'My Chemical Romance',
+                            qAnswer: 'Teenagers'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: 'Kendrick Lamar',
+                            qAnswer: 'HUMBLE.'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: 'ABBA',
+                            qAnswer: 'Dancing Queen'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: 'Post Malone',
+                            qAnswer: 'Sunflower'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: 'Bon Iver',
+                            qAnswer: 'exile'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: 'Hozier',
+                            qAnswer: 'Take Me to Church'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: 'Joni Mitchell',
+                            qAnswer: 'Big Yellow Taxi'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: 'U2',
+                            qAnswer: 'With or Without You'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: 'Flume',
+                            qAnswer: 'Never Be Like You'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: 'Elton John',
+                            qAnswer: 'Cold Heart - PNAU remix'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: 'Bee Gees',
+                            qAnswer: "Stayin' Alive"
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: 'Yothu Yindi',
+                            qAnswer: 'Treaty'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: 'Justin Bieber',
+                            qAnswer: 'STAY'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: 'Katy Perry',
+                            qAnswer: 'Dark Horse'
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: 'Clairo',
+                            qAnswer: 'Sofia'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: 'Bob Dylan',
+                            qAnswer: "Knockin' On Heaven's Door"
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: 'Lil Nas X',
+                            qAnswer: 'INDUSTRY BABY'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: 'Johnny Cash',
+                            qAnswer: 'Hurt'
+                        }
+                    ]
+                },
+                {
+                    quiz_id: "Questions #50's",
+                    quiz_title: 'Fifty multiple choice - a nice way to finish the quiz',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: 'Which of the following is <u>not</u> personal data you can track using the Apple Health app: a) loss of smell, b) frustration, c) runny nose, or d) zinc consumption? ',
+                            qAnswer: 'b) frustration'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: 'Which of these is <u>not</u> a title in the extended <em>Planet of the Apes</em> series - a) <em>War for the Planet of the Apes</em>, b) <em>Beneath the Planet of the Apes</em>, c) <em>Dawn of the Planet of the Apes</em>, or d) <em>Orbit of the Planet of the Apes</em>?',
+                            qAnswer: 'd) <em>Orbit of the Planet of the Apes</em>'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: 'Which of the following is <u>not</u> an app pre-installed on an iPhone: a) Stocks, b) Podcasts, c) Find My, or d) YouTube?',
+                            qAnswer: 'd) Youtube'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: 'Which of the following is not the real title of a <em>Goosebumps</em> novel: a) <em>Night of the Living Dummy</em>, b) <em>Welcome to Camp Nightmare</em>, c) <em>The Haunted Mask</em>, or d) <em>Boo! Says Dead Grandma</em>?',
+                            qAnswer: 'd) <em>Boo! Says Dead Grandma</em>'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: "Which of these films is <u>not</u> based on a work by Shakespeare: a) <em>My Own Private Idaho</em> (1991), b) <em>10 Things I Hate About You</em> (1999), c), <em>She's the Man</em> (2006), or d) <em>American Pie</em> (1999)?",
+                            qAnswer:
+                                "d) <em>American Pie</em><br /> (<em>My Own Private Idaho</em> is derived from <em>Henry IV: Part I</em>, <em>10 Things I Hate About You</em> is derived from <em>The Taming of the Shrew</em>, and <em>She's the Man</em> is derived from <em>Twelfth Night</em>)"
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: 'Which of the following films is <u>not</u> based on a story from Stephen King: a) <em>The Green Mile</em>, b) <em>The Shawshank Redemption</em>, c) <em>Stand By Me</em>, or d) <em>Donnie Darko</em>? ',
+                            qAnswer: 'd) <em>Donnie Darko</em>'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: "Which of the following is <u>not</u> a 'loggable' exercise on Strava - a) Basketball, b) Canoe, c) Ice Skating, or d) Tennis?",
+                            qAnswer: 'a) Basketball'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: 'Which of the following is <u>not</u> a real chemical element: a) Francium (Fr), b) Thorium (Th), c) Samarium (Sm), or d) Titum (Tt)?',
+                            qAnswer: 'd) Titum (Tt)'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: 'Which of the following words does <u>not</u> appear in a <em>Harry Potter</em> novel: a) eyelash, b) menu, c) camera, or d) jaws?',
+                            qAnswer: 'a) eyelash'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: 'Which of the following is <u>not</u> one of the Ten Commandments: a) you shall not make idols, b) you shall not steal, c) you shall not evade confession, or d) you shall not murder?',
+                            qAnswer: 'c) you shall not evade confession'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: 'Which of the following is <u>not</u> a G20 nation : a) Indonesia, b) Ireland, c) Russia, or d) Türkiye?',
+                            qAnswer: 'b) Ireland'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: 'Which of the following is <u>not</u> the given name of someone within twenty places of receiving the British throne: a) August, b) Lilibet, c) Prudence, or d) Sienna?',
+                            qAnswer: 'c) Prudence'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: 'Many major companies paid zero tax in Australia in the 2022-23 financial year - which of the following <u>did</u>: a) Adani, b) BHP, c) Canva, or d) Santos?',
+                            qAnswer: 'b) BHP'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: "Which of the following is <u>not</u> an example of a 'found footage' horror film: a) <em>The Blair Witch Project</em>, b) <em>Cloverfield</em>, c) <em>Paranormal Activity</em>, or d) <em>Scream</em>?",
+                            qAnswer: 'd) <em>Scream</em>'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: "Which of the following is <u>not</u> an academic publication from Rachael 'Raygun' Gunn: a) <em>Where the #bgirls at? Politics of (in)visibility in breaking culture</em>, b) <em>Noctural paradox: how breakdancing reveals the potentials of the night</em>, c) <em>Golden generation: Gen Z's conceptions of breaking as an Olympic sport</em>, or d) <em>Mighty Morphin' Mega Battle: 1v1 Breaking</em>?",
+                            qAnswer: "c) <em>Golden generation: Gen Z's conceptions of breaking as an Olympic sport</em>"
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: 'Which of the following is <u>not</u> an offering available in the Masterfoods spice range: a) Avocado Smash Spice Blend, b) Everything Eggs Spice Blend, c) BBQ Sauce Essence, or d) Schnitzel Mix Breadcrumbs?',
+                            qAnswer: 'c) BBQ Sauce Essence'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: 'Which of these is <u>not</u> a fashion brand sharing a name with its founder: a) Balenciaga, b) Bulgari, c) Chanel, or d) Prada?',
+                            qAnswer: 'b) Bulgari (it was founded by Sotirios Voulgaris)'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: "Which of the following is <u>not</u> one of WikiHow's <em>12 Great Ways to Meet Someone To Date In Real Life</em>: a) 'Make eye contact with people while you're out'; b) 'Accidentally bump someone you think is attractive'; c) 'Introduce yourself to people who seem interesting'; d) 'Strike up a conversation about what's happening around you'?",
+                            qAnswer: "b) 'Accidentally bump into someone you think is attractive'"
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: "Which of the following words did <u>not</u> appear Martin Luther King's 'I Have a Dream' speech: a) vicious, b) mountainside, or c) character, or d) sleep?",
+                            qAnswer: 'd) sleep'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: 'Which of the following does <em>HealthDirect</em> <u>not</u> cite as an underlying cause of vomiting - a) COVID-19, b) pancreatitis, c) vitamins, or d) whiplash?',
+                            qAnswer: 'd) whiplash'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: 'Which of the following was <u>not</u> a historical nickname for the Fitzroy Football Club, prior to a merger to become the Brisbane Lions: a) Bandits, b) Gorillas, c) Maroons, or d) Lions? ',
+                            qAnswer: 'a) Bandits'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: 'Which of the following, according to the National Capital Authority, was <u>not</u> considered as a possible name for the city that became Canberra: a) Kangaremu, b) Wheatwoolgold, c) Bushtopia, or d) Sydmelperadlbrisho?',
+                            qAnswer: 'c) Bushtopia'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: 'Which of the following stars did <u>not</u> guest star in <em>Friends</em>: a) Bruce Willis, b) Brad Pitt, c) Christina Applegate, or d) Charlize Theron?',
+                            qAnswer: 'd) Charlize Theron'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: 'Which of the following does <em>WebMD</em> <u>not</u> describe as a hangover cure: a) eating carbs, b) drinking Korean pear juice, c) drinking caffeine in moderation, or d) inducing vomiting?',
+                            qAnswer: 'd) inducing vomiting'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: "Which of the following <u>doesn't</u> appear on Wikipedia's <em>List of psychotherapies</em> article: a) attack therapy, b) backflip therapy, c) chess therapy , or d) sandplay therapy?",
+                            qAnswer: 'b) backflip therapy'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: 'Which of the following is <u>not</u> a recommendation from the <em>Mayo Clinic</em> for men looking to enhance their fertility: a) avoiding alcohol, b) avoiding lubricants, c) avoiding saunas and hot tubs, or d) doing push-ups? ',
+                            qAnswer: 'd) doing push-ups'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: "Per the drug's official website, which of the following is <u>not</u> a possible side effect of Ozempic: a) changes in vision, b) low blood sugar, c) gauntness in the face, or d) kidney problems/failure? ",
+                            qAnswer: 'c) gauntness in the face'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: 'Which of the following is <u>not</u> the subtitle of an Austin Powers films: a) <em>International Man of Mystery</em>, b) <em>The Spy Who Shagged Me</em>, c) <em>License to Shag</em>, or d) <em>Goldmember</em>?',
+                            qAnswer: 'c) <em>License to Shag</em>'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: 'Which of the following is <u>not</u> the title of a Hallmark Christmas film: a) <em>A Carol for Two</em>, b) <em>Operation Nutcracker</em>, c) <em>Single All the Way</em>, or d) <em>Santa Be or Not to Be</em>?',
+                            qAnswer: 'd) <em>Santa Be or Not to Be</em>'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: "Which of the following has <u>not</u> been a tagline on Facebook's home page: a) 'It's free and always will be', b) 'It's quick and easy', c) 'Your friends, all in one place', or d) 'Facebook helps you connect and share with the people in your life'?",
+                            qAnswer: "c) 'Your friends, all in one place'"
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: "Per various sources, which of the following is <u>not</u> considered a possible origin point for the expression 'mind your p's and q's': a) schoolchildren being mindful of writing those letters in the right orientation; b) bartenders being mindful about the pints and quarts consumed by patrons; c) being mindful of one's etiquette around princes and queens; or d) English customers being mindful of spending pences and quarter-pences? ",
+                            qAnswer: "c) being mindful of one's etiquette around princes and queens"
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: 'Which of the following has <u>not</u> been the first name of an Australian Prime Minister: a) Andrew, b) Ben, c) Donald, or d) George? ',
+                            qAnswer: 'c) Donald'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: 'Which of the following is <u>not</u> a way for a batter to be dismissed in cricket: a) handling the ball, b) hitting the ball twice, c) hitting the ball into the opposing stumps, or d) obstructing a fielder?',
+                            qAnswer: 'c) hitting the ball into the opposing stumps'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: "Which of the following towns is <u>not</u> home to a McDonald's restaurant: a) Broome, WA b) Casino, QLD, c) Ceduna, SA, or d) Mornington, VIC?",
+                            qAnswer: 'c) Ceduna, SA'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: 'Per the Geneva Academy of International Law, which of the following countries is <u>not</u> currently experiencing an armed conflict: a) Cyprus, b) Morocco, c) the Philippines, or d) Vietnam?',
+                            qAnswer: 'd) Vietnam'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: "Which of the following people has <u>not</u> appeared on Australia's <em>I'm a Celebrity... Get Me Out of Here!</em>: a) Natalie Bassingthwaighte, b) Abbie Chatfield, c) Marcia Hines, or d) Shane Warne?",
+                            qAnswer: 'c) Marcia Hines'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: 'Which of the following is <u>not</u> part of the female anatomy: a) fimbriae, b) mons veneris, c) ovarian ligament, or d) quercus suber?',
+                            qAnswer: 'd) quercus suber'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: "Per <em>Better Health Channel</em>, which of the following foods <u>doesn't</u> cause flatulence: a) dairy products, b) dried fruits, c) jams and spreads, or d) vegetables?",
+                            qAnswer: 'c) jams and spreads'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: 'Which of the following is <u>not</u> a real AI companion app: a) aiAllure, b) DreamGF, c) GamerGirl, or d) Kupid AI? ',
+                            qAnswer: 'c) GamerGirl'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: "Which of the following did <u>not</u> appear on SBS's list of <em>Great Things Australia Took From NZ and Will Forever Claim as its Own</em>: a) Phar Lap, b) Pavlova, c) Russell Crowe, or d) the Hills Hoist?",
+                            qAnswer: 'd) the Hills Hoist'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: "Which of the following is <u>not</u> the name of a protein supplement retailer in Australia: a) Massive Joe's, b) the Shred Shop, c) Supps R Us, or d) Xtreme Warehouse? ",
+                            qAnswer: 'b) the Shred Shop'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: "Which of the following is <u>not</u> a country that's had a female president, prime minister, or chancellor: a) Brazil, b) Canada, c) Spain, or d) Türkiye?",
+                            qAnswer: 'c) Spain'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: "By production, which of the following was <u>not</u> one of the world's top ten car manufacturers in 2024? a) Toyota b) Ford c) BYD d) Mercedes",
+                            qAnswer: 'd) Mercedes'
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: 'Which of the following is <u>not</u> a number found in the Fibonacci sequence - a) 2, b) 6, c) 13, d) 89?',
+                            qAnswer: 'b) 6'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: 'Which of the following is <u>not</u> part of the anatomy of a physical book: a) endpapers, b) flag-print, c) head-band, or d) hinge?',
+                            qAnswer: 'b) flag-print (endpapers are the blank pages often found at the end of a book; the head-bands and tail-bands are fabric connecting the paper to the spine; and the hinge connects the cover to the spine)'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: "Which of the following is <u>not</u> considered poor etiquette in Chinese culture, per SBS's <em>Cultural Atlas</em>: a) giving a mirror as a gift, b) tipping a service worker, c) arriving to someone's house unannounced, or d) eating the last item on a tray?",
+                            qAnswer: "c) arriving to someone's house unannounced (this is considered welcome in informal settings)"
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: "Which of the following is <u>not</u> an issue participants are asked about when completing the ABC's Vote Compass ahead of the 2025 election - a) Australia's relationship with China, b) the trustworthiness of Pauline Hanson, c) working-from-home arrangements, or d) transgender women in sport?",
+                            qAnswer: 'c) working-from-home arrangements'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: "Per Wikipedia, which of the following is <u>not</u> a culturally specific April Fools' prank: a) in Portugal, calling someone to tell them they've won the lottery, b) in Sweden, publishing a false story in a newspaper that ends with 'April, April, you silly fool!', c) in Italy, attaching a paper fish to a victim's back and yelling 'April fish!', or d) in Ireland, entrusting a victim with an 'important letter' to give to someone - only for the letter to say 'send the fool further', which then sends them on to another accomplice?",
+                            qAnswer: "a) in Portugal, calling someone to tell them they'd won the lottery"
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: "Almost every federal Member of Parliament owns a property - but ten don't. Which of the following <u>does</u>: a) Adam Bandt, b) Max Chandler-Mather, c) Bob Katter, or d) Jacinta Namijinpa Price?",
+                            qAnswer: 'a) Adam Bandt'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: 'Which of the following is <u>not</u> a party vying for the senate in the 2025 federal election: a) Australian Sex Party, b) Legalise Cannabis, c) Shooters, Fishers, and Farmers, or d) Socialist Alliance?',
+                            qAnswer: 'a) Australian Sex Party'
+                        }
+                    ]
+                },
+                {
+                    quiz_id: 'Foreign Translations',
+                    quiz_title: 'These three terms are all foreign translations of which English word?',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: '<em>Cinque</em> (Ita.), <em>fünf</em> (Ger.), and <em>finf</em> (Yid.)',
+                            qAnswer: 'Five'
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: '<em>Petit-déjeuner</em> (Lat.), <em>frühstück</em> (Ger.) and <em>café da manhã</em> (Por.) ',
+                            qAnswer: 'Breakfast'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: '<em>Cerebro</em> (Esp.), <em>beyin<em> (Tür.), and <em>enkéfalos</em> (Gre.)',
+                            qAnswer: 'Brain'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: '<em>Elektronnaya pochta</em> (Rus.), <em>emel</em> (Mal.), and <em>xīmel</em> (Thai)',
+                            qAnswer: 'Email'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: '<em>Paard</em> (Dut.), <em>cavalla</em> (Ita.), and <em>equus</em> (Lat.) ',
+                            qAnswer: 'Horse'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: '<em>Chatte</em> (Fr.), <em>cattus</em> (Lat.), and <em>Mæw</em> (Thai)',
+                            qAnswer: 'Cat'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: '<em>Madre</em> (Esp.), <em>mor</em> (Dan.), and <em>mutter</em> (Ger.)',
+                            qAnswer: 'Mother'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: '<em>Amico</em> (Ita.), <em>yūjin</em> (Jap.) and <em>drug</em> (Rus.)',
+                            qAnswer: 'Friend'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: '<em>Capello</em> (Ita)., <em>hut</em> (Deu.), and <em>chapéu</em> (Por.)',
+                            qAnswer: 'Hat'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: '<em>Pàjaro</em> (Esp.), <em>vogel</em> (Deu.), and <em>avis</em> (Lat.)',
+                            qAnswer: 'Bird'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: '<em>Bonne nuit</em> (Fr.), <em>gute nacht</em> (Deu.), and <em>godnatt</em> (Swe.)',
+                            qAnswer: 'Good night'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: '<em>Stift</em> (Deu.), <em>stylo</em> (Fr.), and <em>pero</em> (Cze.)',
+                            qAnswer: 'Pen'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: '<em>Ondergoed</em> (Dut.), <em>biancheria intima</em> (Ita.), and <em></em>undertøy</em> (Nor.)',
+                            qAnswer: 'Underwear'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: '<em>Année</em> (Fr.), <em>jahr</em> (Deu.), and <em>annus</em> (Lat.)',
+                            qAnswer: 'Year'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: '<em>Kohvi</em> (Est.), <em>caife</em> (Iri.), and <em>capulus</em> (Lat.)',
+                            qAnswer: 'Coffee'
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: '<em>Bibliothèque</em> (Fr.), <em>kütüphane</em> (Tür.), and <em>layiburari</em> (Tso.)',
+                            qAnswer: 'Library'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: '<em>Fleur</em> (Fr.), <em>blume</em> (Deu.), and <em>fiore</em> (Ita.)',
+                            qAnswer: 'Flower'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: '<em>Journal</em> (Fr.), <em>zeitung</em> (Deu.), and <em>krant</em> (Dut.)',
+                            qAnswer: 'Newspaper'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: '<em>Rot</em> (Deu.), <em>rosso</em> (Ita.), and <em>rouge<em> (Fr.)',
+                            qAnswer: 'Red'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: '<em>Nuotare</em> (Ita.), <em>zwemmen</em> (Dut.), and <em>svømme</em> (Dan.)',
+                            qAnswer: 'Swim/swimming'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: '<em>Ampoule</em> (Fr.), <em>lux bulbus</em> (Lat.), <em>làmpa</em> (Gr.)',
+                            qAnswer: 'Light bulb'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: '<em>Sonno</em> (Ita.),<em>sofa</em> (Ice.), and <em>slaap</em> (Dut.)',
+                            qAnswer: 'Sleep'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: '<em>Pescare</em> (Ita.), <em>sakana</em> (Jap.), and <em>fisk</em> (Dan.)',
+                            qAnswer: 'Fish'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: '<em>Syv</em> (Dan.), <em>sept</em> (Fr.), and <em>eptá</em> (Gr.)',
+                            qAnswer: 'Seven'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: '<em>Dòng sông</em> (Viet.), <em>fluss</em> (Deu.), and <em>rio</em> (Por.)',
+                            qAnswer: 'River'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: '<em>Kartoffel</em> (Deu.), <em>pomme de terre</em> (Fr.), and <em>batata</em> (Por.)',
+                            qAnswer: 'Potato'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: '<em>Quente</em> (Por.), <em>heiß</em> (Deu.), <em>caliente</em> (Esp.)',
+                            qAnswer: 'Hot'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: '<em>Escuela</em> (Esp.), <em>école</em> (Fr.), and <em>szkola</em> (Pol.)',
+                            qAnswer: 'School'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: '<em>Tiergarten</em> (Deu.), <em>dierentuin</em> (Dut.), and <em>sùgh</em> (Gae.)',
+                            qAnswer: 'Zoo'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: '<em>Nase</em> (Deu.), <em>nariz</em> (Esp.), and <em>neus</em> (Dut.)',
+                            qAnswer: 'Nose'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: '<em>Berg</em> (Deu.), <em>jabal</em> (Ara.), and <em>montagne</em> (Fr.)',
+                            qAnswer: 'Mountain'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: '<em>Lait</em> (Fr.), <em>milch</em> (Deu.), and <em>leche</em> (Esp.)',
+                            qAnswer: 'Milk'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: '<em>Omicidio</em> (Ita.), <em>mord</em> (Dan.), and <em>meurtre</em> (Fr.)',
+                            qAnswer: 'Murder'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: '<em>Dito</em> (Ita.), <em>doigt</em> (Fr.). and <em>digitus</em> (Lat.)',
+                            qAnswer: 'Finger'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: '<em>Zug</em> (Deu.), <em>treno</em> (Ita.), and <em>tog</em> (Nor.)',
+                            qAnswer: 'Train'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: '<em>Giatrós</em> (Gr.), <em>médecin</em> (Fr.), and <em>dochtúir</em> (Iri.)',
+                            qAnswer: 'Doctor'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: '<em>Mogi</em> (Kor.), <em>moustique</em> (Fr.), and <em>mygga</em> (Swe.)',
+                            qAnswer: 'Mosquito'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: '<em>Albero</em> (It.), <em>arbre</em> (Fr.) and <em>baum</em> (Deu.)',
+                            qAnswer: 'Tree'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: '<em>Badezimmer</em> (Deu.), <em>sal de bain</em> (Fr.), and <em>baño</em> (Esp.)',
+                            qAnswer: 'Bathroom'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: '<em>Desayuno</em> (Esp.), <em>frühstück</em> (Deu.), and <em>petit-déjeuner</em> (Fr.)',
+                            qAnswer: 'Breakfast'
+                        },
+                        {
+                            qNum: 41,
+                            qTitle: '<em>Kinitó tiléfono</em> (Gr.), <em>matkapuhelin</em> (Fin.) and <em>Handy</em> (Deu.)',
+                            qAnswer: 'Mobile phone'
+                        },
+                        {
+                            qNum: 42,
+                            qTitle: '<em>Eau</em> (Fr.), <em>wasser</em> (Deu.), and <em>agua</em> (Esp.)',
+                            qAnswer: 'Water'
+                        },
+                        {
+                            qNum: 43,
+                            qTitle: '<em>Schwester</em> (Deu.), <em>sœur</em> (Fr.), and <em>systur</em> (Ice.)',
+                            qAnswer: 'Sister'
+                        },
+                        {
+                            qNum: 44,
+                            qTitle: '<em>Haarschnitt</em> (Deu.), <em>corte de pelo</em> (Esp.) and <em>taglio di capelli</em> (It.)',
+                            qAnswer: 'Haircut'
+                        },
+                        {
+                            qNum: 45,
+                            qTitle: '<em>Flugzeug</em> (Deu.), <em>avion</em> (Fr.), and <em>ajruplan</em> (Mlt.)',
+                            qAnswer: 'Aeroplane'
+                        },
+                        {
+                            qNum: 46,
+                            qTitle: '<em>Krankenhaus</em> (Ger), <em>Ospedale</em> (Ita), and <em>Sykehus</em> (Nwg)',
+                            qAnswer: 'Hospital'
+                        },
+                        {
+                            qNum: 47,
+                            qTitle: '<em>Contabile</em> (Ita.), <em>computantis</em> (Lat.) and <em>comptable</em> (Deu.)',
+                            qAnswer: 'Accountant'
+                        },
+                        {
+                            qNum: 48,
+                            qTitle: '<em>Sacco di fagioli</em> (It.), <em>sitzsack</em> (Deu.) and <em>bīnbaggu</em> (Jap.)',
+                            qAnswer: 'Beanbag'
+                        },
+                        {
+                            qNum: 49,
+                            qTitle: '<em>Locale notturno</em>, (It.), <em>klub nocny</em> (Pol.), and <em>naito kurabu</em> (Jap.)',
+                            qAnswer: 'Nightclub'
+                        },
+                        {
+                            qNum: 50,
+                            qTitle: '<em>Dent</em> (Fr.), <em>Zahn</em> (Deu.), and <em>tand</em> (Swe.)',
+                            qAnswer: 'Tooth'
+                        }
+                    ]
+                },
+                {
+                    quiz_id: 'Spelling',
+                    quiz_title: 'We love Guy Montgomery, and he loves spelling',
+                    questions: [
+                        {
+                            qNum: 1,
+                            qTitle: 'Correctly spell the first name of T..... Chalamet, who has appeared in films including <em>Little Women</em> (2019) and <em>Dune</em> (2021).',
+                            qAnswer: 'Timothée '
+                        },
+                        {
+                            qNum: 2,
+                            qTitle: 'Correctly spell the surname of George, a celebrity chef who judged <em>MasterChef Australia</em> for numerous seasons.',
+                            qAnswer: 'Calombaris'
+                        },
+                        {
+                            qNum: 3,
+                            qTitle: "In the Nativity story, the Three Wise Men bring gold, frankincense, and a third thing. Spell the third thing's name correctly.",
+                            qAnswer: 'Myrrh'
+                        },
+                        {
+                            qNum: 4,
+                            qTitle: 'Correctly spell the surname of Matthew, an American actor known for his work in <em>Dallas Buyers Club</em>, <em>Interstellar</em>, and <em>True Detective</em>. ',
+                            qAnswer: 'McConaughey'
+                        },
+                        {
+                            qNum: 5,
+                            qTitle: 'Correctly spell the surname of Annastacia, a former Premier of Queensland.',
+                            qAnswer: 'Palaszczuk'
+                        },
+                        {
+                            qNum: 6,
+                            qTitle: 'Correctly spell the surname of Justin, a long-serving Prime Minister of Canada.',
+                            qAnswer: 'Trudeau'
+                        },
+                        {
+                            qNum: 7,
+                            qTitle: "Correctly spell the name of Malaysia's capital city.",
+                            qAnswer: 'Kuala Lumpur'
+                        },
+                        {
+                            qNum: 8,
+                            qTitle: "It's pronounced 'oo-zay' - how do you spell the Albanian surname of Adem, the coach of the AFL's Richmond Tigers?",
+                            qAnswer: 'Yze'
+                        },
+                        {
+                            qNum: 9,
+                            qTitle: "Per the most common spelling, which two words did a Nashville woman use to virally describe 'a move in bed that makes a man go crazy every time'?  ",
+                            qAnswer: 'Hawk tuah'
+                        },
+                        {
+                            qNum: 10,
+                            qTitle: 'Spell the first name of Sir Starmer, who was elected to the office of British Prime Minister in 2024.',
+                            qAnswer: 'Keir'
+                        },
+                        {
+                            qNum: 11,
+                            qTitle: 'Correctly spell the surname of Scarlett, an actress whose credits include <em>Lost in Translation</em> and <em>Black Widow</em>.',
+                            qAnswer: 'Johansson'
+                        },
+                        {
+                            qNum: 12,
+                            qTitle: 'Correctly spell the first name of G... Maxwell, an associate of Jeffrey Epstein.',
+                            qAnswer: 'Ghislaine'
+                        },
+                        {
+                            qNum: 13,
+                            qTitle: 'Correctly spell the surname of Magda S..., a comedic actress known for her role in <em>Kath & Kim</em>.',
+                            qAnswer: 'Szubanski'
+                        },
+                        {
+                            qNum: 14,
+                            qTitle: 'Emphysema, or emphesyma - which is the correct spelling for the lung condition?',
+                            qAnswer: 'Emphysema'
+                        },
+                        {
+                            qNum: 15,
+                            qTitle: 'Correctly spell the surname of J. Robert, a scientist best known for developing the atomic bomb.',
+                            qAnswer: 'Oppenheimer'
+                        },
+                        {
+                            qNum: 16,
+                            qTitle: 'Correctly spell the surname of Peter, the current Premier of South Australia.',
+                            qAnswer: 'Malinauskas'
+                        },
+                        {
+                            qNum: 17,
+                            qTitle: 'Piccolo, or picollo - what is the correct spelling for the musical instrument?',
+                            qAnswer: 'Piccolo'
+                        },
+                        {
+                            qNum: 18,
+                            qTitle: 'Correctly spell the surname of a Volodymyr, the President of Ukraine.',
+                            qAnswer: 'Zelenskyy'
+                        },
+                        {
+                            qNum: 19,
+                            qTitle: 'Correctly spell H...nas, a Brazillian brand of thongs.',
+                            qAnswer: 'Havaianas'
+                        },
+                        {
+                            qNum: 20,
+                            qTitle: 'Entrepreneur, or entreproneur - how should you correctly spell the name of a business operator?',
+                            qAnswer: 'Entrepreneur'
+                        },
+                        {
+                            qNum: 21,
+                            qTitle: "Correctly spell the full name of China's current president.",
+                            qAnswer: 'Xi Jinping'
+                        },
+                        {
+                            qNum: 22,
+                            qTitle: 'Stationary, or stationery - which is the correct spelling for an adjective describing something staying still?',
+                            qAnswer: 'Stationary'
+                        },
+                        {
+                            qNum: 23,
+                            qTitle: "Correctly spell the first name of Modi, India's current Prime Minister.",
+                            qAnswer: 'Narendra'
+                        },
+                        {
+                            qNum: 24,
+                            qTitle: 'Correctly spell the Slovenian surname of Tanya P..., the federal Minister for Environment and Water.',
+                            qAnswer: 'Plibersek'
+                        },
+                        {
+                            qNum: 25,
+                            qTitle: 'Correctly spell the surname of Arnold, an actor whose credits include <em>The Terminator</em> and <em>Jingle All the Way</em>.',
+                            qAnswer: 'Schwarzenegger'
+                        },
+                        {
+                            qNum: 26,
+                            qTitle: 'Correctly spell the misspelt name of an Australian pop star: Troy Sivan.',
+                            qAnswer: 'Troye Sivan'
+                        },
+                        {
+                            qNum: 27,
+                            qTitle: 'Mussel, or muscel - how do you correctly spell the name of an edible mollusc?',
+                            qAnswer: 'Mussel'
+                        },
+                        {
+                            qNum: 28,
+                            qTitle: "Correctly spell J..., one of South Africa's three capitals.",
+                            qAnswer: 'Johannesburg'
+                        },
+                        {
+                            qNum: 29,
+                            qTitle: "Correctly spell the surname of Benito M..., who served as Italy's fascist dictator during World War II.",
+                            qAnswer: 'Mussolini'
+                        },
+                        {
+                            qNum: 30,
+                            qTitle: 'Correctly spell the surname of Travis K..., the gridiron-playing beau of Taylor Swift.',
+                            qAnswer: 'Kelce'
+                        },
+                        {
+                            qNum: 31,
+                            qTitle: 'Correctly spell pn...a, a lung-based illness that placed Pope Francis in a critical condition.',
+                            qAnswer: 'Pneumonia'
+                        },
+                        {
+                            qNum: 32,
+                            qTitle: '<em>Ted Lasso</em> has been renewed for a fourth season - correctly spell the surname of Jason, who plays the title character.',
+                            qAnswer: 'Sudeikis'
+                        },
+                        {
+                            qNum: 33,
+                            qTitle: 'Correctly spell t..., the name of a hearing condition whose sufferers constantly hear a non-existent ringing or buzzing noise.',
+                            qAnswer: 'Tinnitus'
+                        },
+                        {
+                            qNum: 34,
+                            qTitle: 'YSL is one of the most famous initialisms in fashion - correctly spell what it stands for. ',
+                            qAnswer: 'Yves Saint Laurent'
+                        },
+                        {
+                            qNum: 35,
+                            qTitle: 'Correctly spell the first name of J... Phoenix, an actor whose works include <em>Joker</em> and <em>Inherent Vice</em>.',
+                            qAnswer: 'Joaquin'
+                        },
+                        {
+                            qNum: 36,
+                            qTitle: 'Correctly spell S…, the current first name of the Federal Opposition Leader - keeping in mind she changed her name to numerologically improve her destiny.',
+                            qAnswer: 'Sussan'
+                        },
+                        {
+                            qNum: 37,
+                            qTitle: 'Correctly spell the name of an Italian luxury fashion house often abbreviated to D&G.',
+                            qAnswer: 'Dolce & Gabbana'
+                        },
+                        {
+                            qNum: 38,
+                            qTitle: "Correctly spell s...s, a stone coffin where you'd find a late Egyptian pharaoh.",
+                            qAnswer: 'Sarcophagus'
+                        },
+                        {
+                            qNum: 39,
+                            qTitle: 'Correctly spell r...oid, an autoimmune variant of arthritis.',
+                            qAnswer: 'Rheumatoid'
+                        },
+                        {
+                            qNum: 40,
+                            qTitle: 'Mold, or mould - in Commonwealth English, which is the correct spelling for a kind of fungus?',
+                            qAnswer: 'Mould'
+                        }
+                    ]
+                }
+            ];
+
+            function createTabs() {
+                var cont = document.getElementById('navBar');
+
+                for (let i = 0; i < quizzes.length; i++) {
+                    var tab = document.createElement('button');
+                    if (i === 0) {
+                        tab.className = 'navTabs active';
+                    } else {
+                        tab.className = 'navTabs';
+                    }
+                    tab.id = 'tab_' + i;
+                    tab.innerText = quizzes[i].quiz_id;
+                    tab.addEventListener('click', function () {
+                        handleTabClick(i);
+                    });
+                    cont.appendChild(tab);
+                }
+            }
+
+            function createQuizContainers() {
+                var page = document.getElementById('load');
+                var cont = document.createElement('div');
+                cont.className = 'quizContainer';
+                page.appendChild(cont);
+
+                for (let i = 0; i < quizzes.length; i++) {
+                    var quiz = document.createElement('div');
+                    if (i === 0) {
+                        quiz.className = 'quiz active';
+                    } else {
+                        quiz.className = 'quiz';
+                    }
+                    quiz.id = 'quiz_' + (i + 1);
+                    cont.appendChild(quiz);
+                    var title = document.createElement('h2');
+                    title.id = 'quizTitle_' + i;
+                    title.className = 'quizTitle';
+                    title.innerText = quizzes[i].quiz_title;
+                    quiz.appendChild(title);
+                    createQuiz(i, quizzes[i].questions);
+                }
+            }
+
+            function createQuiz(id, questions) {
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < questions.length; i++) {
+                    let idCode = id + 1 + '_' + (i + 1);
+                    var questionDiv = document.createElement('div');
+                    questionDiv.className = 'question';
+                    questionDiv.id = 'question_' + idCode;
+
+                    var accordionButton = document.createElement('button');
+                    accordionButton.className = 'accordionButton';
+                    accordionButton.id = 'button_' + idCode;
+
+                    var dotSpan = document.createElement('span');
+                    dotSpan.className = 'dot';
+                    dotSpan.id = 'dot_' + idCode;
+
+                    var dotText = document.createTextNode(' ');
+                    dotSpan.appendChild(dotText);
+
+                    var questionText = document.createElement('span');
+                    questionText.innerHTML = '<b>' + (i + 1) + '. </b>' + questions[i].qTitle;
+                    accordionButton.appendChild(dotSpan);
+                    accordionButton.appendChild(questionText);
+                    accordionButton.onclick = toggleAccordion;
+
+                    var clickPanel = document.createElement('div');
+                    clickPanel.className = 'panel';
+
+                    var answerButton = document.createElement('button');
+                    answerButton.className = 'genericButton';
+                    answerButton.textContent = 'Click for answer';
+                    answerButton.onclick = togglePanel;
+
+                    var answerPanel = document.createElement('div');
+                    answerPanel.className = 'panel answer';
+
+                    var answerText = document.createElement('p');
+                    answerText.className = 'answerText';
+                    answerText.innerHTML = questions[i].qAnswer;
+
+                    var correctButton = document.createElement('button');
+                    correctButton.className = 'genericButton';
+                    correctButton.id = 'correct_' + idCode;
+                    correctButton.textContent = 'Correct';
+                    correctButton.onclick = function () {
+                        disableButton(1, id, i);
+                        incrementScore(1, id, i);
+                        removeDot(id + 1, i + 1);
+                    };
+
+                    var incorrectButton = document.createElement('button');
+                    incorrectButton.className = 'genericButton';
+                    incorrectButton.id = 'incorrect_' + idCode;
+                    incorrectButton.textContent = 'Incorrect';
+                    incorrectButton.onclick = function () {
+                        disableButton(2, id, i);
+                        incrementScore(2, id, i);
+                        removeDot(id + 1, i + 1);
+                    };
+
+                    quiz[id].appendChild(questionDiv);
+                    questionDiv.appendChild(accordionButton);
+                    questionDiv.appendChild(clickPanel);
+                    clickPanel.appendChild(answerButton);
+                    clickPanel.appendChild(answerPanel);
+                    answerPanel.appendChild(answerText);
+                    answerPanel.appendChild(correctButton);
+                    answerPanel.appendChild(incorrectButton);
+                }
+            }
+
+            function createScore() {
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < quizzes.length; i++) {
+                    var scoreDiv = document.createElement('div');
+                    scoreDiv.className = 'score';
+                    scoreDiv.id = 'score_' + (i + 1);
+                    scoreDiv.innerHTML = 'Score: <span id="scoreCount_' + (i + 1) + '">0</span> / <span id="totalCount_' + (i + 1) + '">0</span>';
+                    quiz[i].appendChild(scoreDiv);
+                }
+            }
+
+            function toggleAccordion() {
+                this.classList.toggle('active');
+                var panel = this.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function togglePanel() {
+                this.classList.toggle('reveal');
+                var panel = this.nextElementSibling;
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function handleTabClick(tabIndex) {
+                var tab = document.getElementsByClassName('navTabs');
+                var quiz = document.getElementsByClassName('quiz');
+                for (let i = 0; i < quiz.length; i++) {
+                    if (i === tabIndex) {
+                        tab[i].classList.add('active');
+                        quiz[i].classList.add('active');
+                    } else {
+                        tab[i].classList.remove('active');
+                        quiz[i].classList.remove('active');
+                    }
+                }
+            }
+
+            function disableButton(buttonNum, quiz, pairNum) {
+                var buttonKey = quiz + 1 + '_' + (pairNum + 1);
+                var buttonPair = buttons[buttonKey];
+                var correctButton = buttonPair.correct;
+                var incorrectButton = buttonPair.incorrect;
+
+                if (buttonNum === 1) {
+                    correctButton.disabled = true;
+                    correctButton.classList.add('correct');
+                    incorrectButton.disabled = false;
+                    incorrectButton.classList.remove('incorrect');
+                } else if (buttonNum === 2) {
+                    incorrectButton.disabled = true;
+                    incorrectButton.classList.add('incorrect');
+                    correctButton.disabled = false;
+                    correctButton.classList.remove('correct');
+                }
+            }
+
+            function incrementScore(num, quiz, pairNum) {
+                var buttonKey = quiz + 1 + '_' + (pairNum + 1);
+                if (num === 1) {
+                    if (!correctClicked[buttonKey] && !incorrectClicked[buttonKey]) {
+                        scoreCount[quiz]++;
+                        totalCount[quiz]++;
+                        correctClicked[buttonKey] = true;
+                    } else if (incorrectClicked[buttonKey]) {
+                        scoreCount[quiz]++;
+                        correctClicked[buttonKey] = true;
+                    }
+                } else if (num === 2) {
+                    if (!correctClicked[buttonKey] && !incorrectClicked[buttonKey]) {
+                        totalCount[quiz]++;
+                        incorrectClicked[buttonKey] = true;
+                    } else if (correctClicked[buttonKey] && !incorrectClicked[buttonKey]) {
+                        scoreCount[quiz]--;
+                        incorrectClicked[buttonKey] = true;
+                    } else if (correctClicked[buttonKey]) {
+                        scoreCount[quiz]--;
+                        incorrectClicked[buttonKey] = true;
+                    }
+                }
+                for (let i = 0; i < quizzes.length; i++) {
+                    var score = document.getElementById(`scoreCount_${i + 1}`);
+                    var total = document.getElementById(`totalCount_${i + 1}`);
+                    score.innerText = scoreCount[i];
+                    total.innerText = totalCount[i];
+                }
+            }
+
+            function removeDot(quiz, pairNum) {
+                var dot = document.getElementById(`dot_${quiz}_${pairNum}`);
+                dot.classList.add('removed');
+            }
+
+            function initPage() {
+                createTabs();
+                createQuizContainers();
+                createScore();
+                for (var i = 0; i < quizzes.length; i++) {
+                    for (var j = 0; j < quizzes[i].questions.length; j++) {
+                        var buttonKey = i + 1 + '_' + (j + 1);
+                        var buttonPair = {
+                            correct: document.getElementById(`correct_${i + 1}_${j + 1}`),
+                            incorrect: document.getElementById(`incorrect_${i + 1}_${j + 1}`),
+                            dot: document.getElementById(`dot_${i + 1}_${j + 1}`)
+                        };
+                        buttons[buttonKey] = buttonPair;
+                    }
+                }
+            }
+
+            let scoreCount = Array(quizzes.length).fill(0);
+            let totalCount = Array(quizzes.length).fill(0);
+            var buttons = {};
+            var correctClicked = {};
+            var incorrectClicked = {};
+            var dotStatus = {};
+
+            initPage();
+
+            function openNav() {
+                document.getElementById('navBar').style.width = '70%';
+            }
+
+            function closeNav() {
+                document.getElementById('navBar').style.width = '0%';
+            }
+        </script>
+    </body>
+</html>

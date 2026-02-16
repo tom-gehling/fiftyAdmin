@@ -12,6 +12,7 @@ import {
 } from '@angular/fire/firestore';
 import { Observable, defer, firstValueFrom } from 'rxjs';
 import { QuizResult, QuizAnswer } from '../models/quizResult.model';
+import { TaggedUser } from '../models/quizSubmission.model';
 
 @Injectable({ providedIn: 'root' })
 export class QuizResultsService {
@@ -94,23 +95,52 @@ export class QuizResultsService {
     });
   }
 
-    /** 
+    /** Create a retro (manually recorded) result */
+  async createRetroResult(
+    quizId: string,
+    userId: string,
+    score: number,
+    totalQuestions: number,
+    taggedUsers: TaggedUser[]
+  ): Promise<string> {
+    const result: QuizResult = {
+      quizId,
+      userId,
+      status: 'completed',
+      startedAt: new Date(),
+      completedAt: new Date(),
+      totalQuestions,
+      score,
+      answers: [],
+      retro: true,
+      taggedUsers,
+    };
+
+    const resultsCollection = collection(this.firestore, this.collectionName);
+    const docRef = await addDoc(resultsCollection, result);
+    return docRef.id;
+  }
+
+  /**
    * Get summarized quiz score history for a user.
    * Returns an array of { quizId, score } objects for completed quizzes only.
    */
   async getUserQuizScoreHistory(userId: string): Promise<{ quizId: number; score: number | null }[]> {
+    // Use a simpler query with only two where clauses (avoids needing composite index)
     const q = query(
       collection(this.firestore, this.collectionName),
       where('userId', '==', userId),
-      where('status', '==', 'completed'),
-      where('quizId', '<=', 1000)
+      where('status', '==', 'completed')
     );
 
     const snapshot = await firstValueFrom(collectionData(q, { idField: 'resultId' }));
     const results = snapshot as QuizResult[];
 
+    // Filter for quizId <= 1000 in memory
+    const filteredResults = results.filter(r => Number(r.quizId) <= 1000);
+
     // Convert to { quizId, score }
-    const scores = results.map(r => ({
+    const scores = filteredResults.map(r => ({
       quizId: Number(r.quizId),
       score: r.score ?? null
     }));
