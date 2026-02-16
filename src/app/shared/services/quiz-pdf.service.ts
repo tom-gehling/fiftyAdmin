@@ -39,10 +39,6 @@ export class QuizPdfService {
     doc.setTextColor(fontColor.r, fontColor.g, fontColor.b);
     doc.text(title, this.PAGE_WIDTH / 2, 30, { align: 'center' });
 
-    // Accent line under title
-    doc.setDrawColor(accentColor.r, accentColor.g, accentColor.b);
-    doc.setLineWidth(2);
-    doc.line(this.MARGIN, 45, this.PAGE_WIDTH - this.MARGIN, 45);
 
     y = 60;
 
@@ -98,7 +94,7 @@ export class QuizPdfService {
       // Answer number with accent color
       doc.setFontSize(11);
       doc.setFont('Roboto', 'bold');
-      doc.setTextColor(accentColor.r, accentColor.g, accentColor.b);
+      doc.setTextColor(bgColor.r, bgColor.g, bgColor.b);
       doc.text(`A${index + 1}.`, this.MARGIN, y);
 
       // Answer text - handle | and <li> as line breaks
@@ -117,14 +113,6 @@ export class QuizPdfService {
         }
       }
       y = answerY + 6;
-
-      // Subtle separator line
-      if (index < quiz.questions.length - 1) {
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.3);
-        doc.line(this.MARGIN + 10, y, this.PAGE_WIDTH - this.MARGIN - 10, y);
-        y += 6;
-      }
     });
 
     // Notes below (if any)
@@ -139,12 +127,83 @@ export class QuizPdfService {
       y = this.addWrappedText(doc, notesText, y, 10, 'italic', { r: 80, g: 80, b: 80 });
     }
 
+    // Add answer sheet page
+    this.addAnswerSheet(doc, quiz.questions.length, bgColor, fontColor);
+
     // Footer on all pages
     this.addFooters(doc, bgColor, fontColor);
 
     // Generate filename
     const filename = this.generateFilename(quiz);
     doc.save(filename);
+  }
+
+  /**
+   * Add answer sheet page with lines for writing answers and score section
+   */
+  private addAnswerSheet(
+    doc: jsPDF,
+    questionCount: number,
+    bgColor: {r: number, g: number, b: number},
+    fontColor: {r: number, g: number, b: number}
+  ): void {
+    // Add new page for answer sheet
+    doc.addPage();
+    let y = this.MARGIN;
+
+    // Draw header bar
+    doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
+    doc.rect(0, 0, this.PAGE_WIDTH, 30, 'F');
+    doc.setFontSize(20);
+    doc.setFont('Roboto', 'bold');
+    doc.setTextColor(fontColor.r, fontColor.g, fontColor.b);
+    doc.text('ANSWER SHEET', this.PAGE_WIDTH / 2, 20, { align: 'center' });
+
+    y = 45;
+
+    // Instructions
+    doc.setFontSize(9);
+    doc.setFont('Roboto', 'italic');
+    doc.setTextColor(100, 100, 100);
+    doc.text('Write your answers on the lines below:', this.MARGIN, y);
+    y += 15;
+
+    // Answer lines
+    const lineHeight = 12;
+    const lineWidth = this.CONTENT_WIDTH - 25;
+
+    for (let i = 1; i <= questionCount; i++) {
+      // Check if we need a new page
+      if (y > this.PAGE_HEIGHT - 35) {
+        doc.addPage();
+        y = this.MARGIN;
+      }
+
+      // Question number
+      doc.setFontSize(11);
+      doc.setFont('Roboto', 'bold');
+      doc.setTextColor(bgColor.r, bgColor.g, bgColor.b);
+      doc.text(`${i}.`, this.MARGIN, y);
+
+      // Answer line
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.3);
+      doc.line(this.MARGIN + 10, y + 2, this.MARGIN + lineWidth, y + 2);
+
+      y += lineHeight;
+    }
+
+    // Score section at the end
+    y += 10;
+    if (y > this.PAGE_HEIGHT - 35) {
+      doc.addPage();
+      y = this.MARGIN;
+    }
+
+    doc.setFontSize(12);
+    doc.setFont('Roboto', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text(`Score: _______ / ${questionCount}`, this.MARGIN, y);
   }
 
   /**
