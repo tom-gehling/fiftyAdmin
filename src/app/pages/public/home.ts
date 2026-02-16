@@ -32,16 +32,16 @@ import { CommonModule } from '@angular/common';
       </div>
     </nav>
 
-    <!-- Diagonal green overlay with menu -->
-    <div class="green-overlay">
-      <!-- Menu buttons -->
-      <div class="menu-wrapper">
-        <div class="menu-buttons">
-          <button routerLink="/weekly-quiz" class="menu-btn">QUIZ</button>
-          <button routerLink="/login" class="menu-btn">FIFTY+</button>
-          <button routerLink="/findavenue" class="menu-btn">FIND A VENUE</button>
-          <button routerLink="/fiftyshop" class="menu-btn">SHOP</button>
-        </div>
+    <!-- Diagonal green overlay -->
+    <div class="green-overlay"></div>
+
+    <!-- Menu buttons -->
+    <div class="menu-wrapper">
+      <div class="menu-buttons">
+        <button routerLink="/weekly-quiz" class="menu-btn">QUIZ</button>
+        <button routerLink="/login" class="menu-btn">FIFTY+</button>
+        <button routerLink="/findavenue" class="menu-btn">FIND A VENUE</button>
+        <button routerLink="/fiftyshop" class="menu-btn">SHOP</button>
       </div>
     </div>
 
@@ -123,12 +123,6 @@ import { CommonModule } from '@angular/common';
       background-color: var(--fifty-green);
       z-index: 10;
       clip-path: polygon(35% 0, 100% 0, 100% 100%, 0% 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-end;
-      padding-left: 15%;
-      padding-bottom: 15%;
     }
 
     /* Deep shadow for green overlay - separate element to work with clip-path */
@@ -215,40 +209,42 @@ import { CommonModule } from '@angular/common';
       height: auto;
     }
 
-    /* Menu wrapper */
+    /* Menu wrapper - fixed to bottom right */
     .menu-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
+      position: fixed;
+      bottom: 3rem;
+      right: 2rem;
+      z-index: 150;
     }
 
     /* Menu buttons container - vertical stack */
     .menu-buttons {
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      width: 70%;
-      max-width: 300px;
+      gap: 10px;
+      width: auto;
+      max-width: 450px;
     }
 
     /* Individual buttons */
     .menu-btn {
       width: 100%;
-      height: 60px;
-      font-size: 1.5rem;
+      height: 90px;
+      font-size: 2rem;
       font-weight: bold;
       color: var(--fifty-pink);
       background: var(--fifty-green);
-      border: 2px solid var(--fifty-pink);
-      border-radius: 5px;
+      border: 3px solid var(--fifty-pink);
+      border-radius: 8px;
       cursor: pointer;
       text-transform: uppercase;
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      margin-left: 10px;
+      margin-right: 10px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.3);
       transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     }
 
@@ -261,13 +257,8 @@ import { CommonModule } from '@angular/common';
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .green-overlay {
-        width: 50%;
-        clip-path: polygon(50% 0, 100% 0, 100% 100%, 0% 100%);
-        padding-left: 8%;
-        padding-bottom: 8%;
-        justify-content: flex-end;
-        align-items: flex-end;
-        padding-right: 1rem;
+        width: 60%;
+        clip-path: polygon(35% 0, 100% 0, 100% 100%, 0% 100%);
       }
 
       .navbar {
@@ -281,29 +272,19 @@ import { CommonModule } from '@angular/common';
       }
 
       .menu-wrapper {
-        justify-content: flex-end;
-      }
-
-      .menu-buttons {
-        width: auto;
-        align-items: flex-end;
+        bottom: 2rem;
+        right: 1.5rem;
       }
 
       .menu-btn {
-        font-size: 1.1rem;
-        height: 45px;
-        padding: 0 1.5rem;
-        width: auto;
+        font-size: 1.8rem;
       }
     }
 
     @media (max-width: 480px) {
       .green-overlay {
-        width: 45%;
-        clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
-        padding-left: 5%;
-        padding-bottom: 6%;
-        padding-right: 0.75rem;
+        width: 60%;
+        clip-path: polygon(35% 0, 100% 0, 100% 100%, 0% 100%);
       }
 
       .navbar {
@@ -321,11 +302,27 @@ import { CommonModule } from '@angular/common';
         min-width: 250px;
       }
 
+      .menu-wrapper {
+        bottom: 1.5rem;
+        right: 1rem;
+      }
+
+      .menu-buttons {
+        gap: 7.5px;
+      }
+
       .menu-btn {
-        font-size: 0.9rem;
-        height: 40px;
-        padding: 0 1rem;
-        height: 45px;
+        height: 67.5px;
+        font-size: 1.5rem;
+        margin-left: 7.5px;
+        margin-right: 7.5px;
+        border-width: 2px;
+        border-radius: 6px;
+        box-shadow: 0 4.5px 11.25px rgba(0,0,0,0.3);
+      }
+
+      .menu-btn:hover {
+        box-shadow: 0 6px 12px rgba(0,0,0,0.4);
       }
     }
   `]

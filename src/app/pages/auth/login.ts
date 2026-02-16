@@ -65,34 +65,8 @@ import { firstValueFrom } from 'rxjs';
             </div>
 
             <div>
-              <!-- Social Sign-In Buttons -->
-              <div class="mb-6">
-                <p-button 
-                  label="Continue with Google" 
-                  icon="pi pi-google" 
-                  styleClass="w-full mb-3" 
-                  [outlined]="true"
-                  [loading]="loadingGoogle" 
-                  (click)="onGoogleSignIn()">
-                </p-button>
-                <p-button 
-                  label="Continue with Apple" 
-                  icon="pi pi-apple" 
-                  styleClass="w-full" 
-                  [outlined]="true"
-                  [loading]="loadingApple" 
-                  (click)="onAppleSignIn()">
-                </p-button>
-              </div>
 
-              <!-- Divider -->
-              <div class="flex items-center my-6">
-                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
-                <span class="px-4 text-surface-500 text-sm">or</span>
-                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
-              </div>
-
-              <!-- Display Name (only for registration) -->
+            <!-- Display Name (only for registration) -->
               <div *ngIf="isRegisterMode" class="mb-6">
                 <label for="displayName"
                   class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Display Name</label>
@@ -133,7 +107,36 @@ import { firstValueFrom } from 'rxjs';
                 (click)="onSubmit()">
               </p-button>
 
+              <!-- Divider -->
+              <div class="flex items-center my-6">
+                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
+                <span class="px-4 text-surface-500 text-sm">or</span>
+                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
+              </div>
+
+
+              <!-- Social Sign-In Buttons -->
+              <div class="mb-6">
+                <p-button 
+                  label="Continue with Google" 
+                  icon="pi pi-google" 
+                  styleClass="w-full mb-3" 
+                  [outlined]="true"
+                  [loading]="loadingGoogle" 
+                  (click)="onGoogleSignIn()">
+                </p-button>
+                <p-button 
+                  label="Continue with Apple" 
+                  icon="pi pi-apple" 
+                  styleClass="w-full" 
+                  [outlined]="true"
+                  [loading]="loadingApple" 
+                  (click)="onAppleSignIn()">
+                </p-button>
+              </div>
+
               <div *ngIf="error" class="text-red-500 mt-2 text-center">{{ error }}</div>
+
             </div>
           </div>
         </div>
