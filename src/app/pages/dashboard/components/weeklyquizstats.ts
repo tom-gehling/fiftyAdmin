@@ -234,7 +234,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
 
             // Populate quiz options for dropdown
             this.quizOptions = this.weeklyStats.map(stat => ({
-                label: `Quiz #${stat.quizId} (${stat.completedCount} completions)`,
+                label: `Quiz #${stat.quizId}`,
                 value: stat.quizId
             }));
 
@@ -398,8 +398,8 @@ export class WeeklyQuizStatsComponent implements OnInit {
             datasets: [{
                 label: 'Completions by City',
                 data: topCities.map(c => c.count),
-                backgroundColor: '#42A5F5',
-                borderColor: borderColor,
+                backgroundColor: '#4cfbab',
+                borderColor: '#4cfbab',
                 borderWidth: 1
             }]
         };
@@ -436,16 +436,16 @@ export class WeeklyQuizStatsComponent implements OnInit {
                 {
                     label: 'Average Score',
                     data: topPerformance.map(c => c.averageScore.toFixed(2)),
-                    backgroundColor: '#66BB6A',
-                    borderColor: '#66BB6A',
+                    backgroundColor: '#4cfbab',
+                    borderColor: '#4cfbab',
                     borderWidth: 2,
                     yAxisID: 'y',
                 },
                 {
                     label: 'Avg Time (seconds)',
                     data: topPerformance.map(c => c.averageTime.toFixed(0)),
-                    backgroundColor: '#FFA726',
-                    borderColor: '#FFA726',
+                    backgroundColor: '#fbe2df',
+                    borderColor: '#fbe2df',
                     borderWidth: 2,
                     yAxisID: 'y1',
                 }
