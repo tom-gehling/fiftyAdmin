@@ -102,7 +102,7 @@ export class UserSummaryWidget implements OnInit {
 
       // Quiz stats
       const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
-      const completed = results.filter(r => r.status === 'completed' && r.score != null && !r.retro);
+      const completed = results.filter(r => r.status === 'completed' && r.score != null);
       this.completedCount = completed.length;
 
       // Correct rate as percentage (score out of totalQuestions)
