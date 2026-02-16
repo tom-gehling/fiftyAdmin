@@ -39,7 +39,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
         <p-button
           *ngIf="!locked"
           icon="pi pi-download"
-          label="Download PDF"
+          label="Download"
           [outlined]="true"
           severity="secondary"
           (onClick)="downloadPdf()"
@@ -136,11 +136,11 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     .quizHeader {
+      position: relative;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
     }
 
     .quizTitle {
@@ -152,7 +152,10 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     .downloadButton {
-      margin-bottom: 10px;
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
     }
 
     .accordionButton {
@@ -496,8 +499,8 @@ private initializeQuizState(quiz: Quiz) {
   // ---------------------------------------------
   // DOWNLOAD PDF
   // ---------------------------------------------
-  downloadPdf() {
+  async downloadPdf() {
     if (!this.quiz) return;
-    this.quizPdfService.downloadQuizPdf(this.quiz);
+    await this.quizPdfService.downloadQuizPdf(this.quiz);
   }
 }

@@ -11,12 +11,16 @@ export class QuizPdfService {
   private readonly PAGE_HEIGHT = 297; // A4 height in mm
   private readonly MARGIN = 20;
   private readonly CONTENT_WIDTH = 170; // PAGE_WIDTH - 2 * MARGIN
+  private fontLoaded = false;
 
   /**
    * Generate and download a PDF for a quiz
    */
-  downloadQuizPdf(quiz: Quiz): void {
+  async downloadQuizPdf(quiz: Quiz): Promise<void> {
     const doc = new jsPDF();
+
+    // Load Unicode font if not already loaded
+    await this.loadUnicodeFont(doc);
     let y = this.MARGIN;
 
     // Get theme colors or defaults (green/pink theme)
@@ -31,7 +35,7 @@ export class QuizPdfService {
     // Title
     const title = quiz.quizTitle || `Quiz ${quiz.quizId}`;
     doc.setFontSize(28);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setTextColor(fontColor.r, fontColor.g, fontColor.b);
     doc.text(title, this.PAGE_WIDTH / 2, 30, { align: 'center' });
 
@@ -60,13 +64,13 @@ export class QuizPdfService {
 
       // Question number
       doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('Roboto', 'bold');
       doc.setTextColor(bgColor.r, bgColor.g, bgColor.b);
       doc.text(`Q${index + 1}.`, this.MARGIN, y);
 
       // Question text
       const questionText = this.stripHtml(q.question);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('Roboto', 'normal');
       doc.setTextColor(40, 40, 40);
       const questionLines = doc.splitTextToSize(questionText, this.CONTENT_WIDTH - 15);
       doc.text(questionLines, this.MARGIN + 15, y);
@@ -81,7 +85,7 @@ export class QuizPdfService {
     doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
     doc.rect(0, 0, this.PAGE_WIDTH, 30, 'F');
     doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setTextColor(fontColor.r, fontColor.g, fontColor.b);
     doc.text('ANSWERS', this.PAGE_WIDTH / 2, 20, { align: 'center' });
 
@@ -93,13 +97,13 @@ export class QuizPdfService {
 
       // Answer number with accent color
       doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('Roboto', 'bold');
       doc.setTextColor(accentColor.r, accentColor.g, accentColor.b);
       doc.text(`A${index + 1}.`, this.MARGIN, y);
 
       // Answer text - handle | and <li> as line breaks
       const answerText = this.formatAnswer(q.answer);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('Roboto', 'normal');
       doc.setTextColor(40, 40, 40);
 
       // Split by our line break marker and render each line
@@ -156,7 +160,7 @@ export class QuizPdfService {
     doc.setFillColor(bgColor.r, bgColor.g, bgColor.b);
     doc.rect(this.MARGIN, y - 5, this.CONTENT_WIDTH, 12, 'F');
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Roboto', 'bold');
     doc.setTextColor(fontColor.r, fontColor.g, fontColor.b);
     doc.text(text, this.PAGE_WIDTH / 2, y + 3, { align: 'center' });
     return y + 15;
@@ -195,7 +199,7 @@ export class QuizPdfService {
       doc.rect(0, this.PAGE_HEIGHT - 15, this.PAGE_WIDTH, 15, 'F');
 
       doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('Roboto', 'normal');
       doc.setTextColor(fontColor.r, fontColor.g, fontColor.b);
       doc.text(`Page ${i} of ${pageCount}`, this.PAGE_WIDTH / 2, this.PAGE_HEIGHT - 5, { align: 'center' });
       doc.text('Weekly Fifty', this.MARGIN, this.PAGE_HEIGHT - 5);
@@ -231,6 +235,12 @@ export class QuizPdfService {
   private formatAnswer(html: string): string {
     let text = html;
 
+    // Replace <br> and block elements with newlines to preserve spacing
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    text = text.replace(/<\/p>/gi, '\n');
+    text = text.replace(/<\/div>/gi, '\n');
+    text = text.replace(/<\/h[1-6]>/gi, '\n');
+
     // Replace <li> tags with line breaks
     text = text.replace(/<li[^>]*>/gi, '\n');
     text = text.replace(/<\/li>/gi, '');
@@ -242,6 +252,9 @@ export class QuizPdfService {
     const tmp = document.createElement('div');
     tmp.innerHTML = text;
     text = tmp.textContent || tmp.innerText || '';
+
+    // Clean up multiple spaces but preserve newlines
+    text = text.replace(/[^\S\n]+/g, ' ');
 
     // Clean up multiple newlines but preserve intentional ones
     text = text.replace(/\n\s*\n/g, '\n');
@@ -262,7 +275,7 @@ export class QuizPdfService {
     color: { r: number, g: number, b: number }
   ): number {
     doc.setFontSize(fontSize);
-    doc.setFont('helvetica', fontStyle);
+    doc.setFont('Roboto', fontStyle);
     doc.setTextColor(color.r, color.g, color.b);
 
     const lines = doc.splitTextToSize(text, this.CONTENT_WIDTH);
@@ -290,5 +303,53 @@ export class QuizPdfService {
       .replace(/\s+/g, '_')
       .substring(0, 50);
     return `${safeTitle}.pdf`;
+  }
+
+  /**
+   * Load a Unicode-compatible font into jsPDF
+   * Uses Roboto from Google Fonts which supports Cyrillic, Polish, and other extended characters
+   */
+  private async loadUnicodeFont(doc: jsPDF): Promise<void> {
+    if (this.fontLoaded) return;
+
+    try {
+      // Load Roboto Regular font
+      const regularUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf';
+      const regularResponse = await fetch(regularUrl);
+      const regularBlob = await regularResponse.blob();
+      const regularBase64 = await this.blobToBase64(regularBlob);
+
+      // Load Roboto Bold font
+      const boldUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAx05IsDqlA.ttf';
+      const boldResponse = await fetch(boldUrl);
+      const boldBlob = await boldResponse.blob();
+      const boldBase64 = await this.blobToBase64(boldBlob);
+
+      // Add the fonts to jsPDF
+      doc.addFileToVFS('Roboto-Regular.ttf', regularBase64.split(',')[1]);
+      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+
+      doc.addFileToVFS('Roboto-Bold.ttf', boldBase64.split(',')[1]);
+      doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
+
+      doc.setFont('Roboto', 'normal');
+
+      this.fontLoaded = true;
+    } catch (error) {
+      console.warn('Failed to load Unicode font, falling back to default:', error);
+      // Fall back to default font if loading fails
+    }
+  }
+
+  /**
+   * Convert Blob to Base64
+   */
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 }
