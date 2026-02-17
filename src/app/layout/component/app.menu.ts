@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
 import { AuthService } from '@/shared/services/auth.service';
+import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -22,12 +23,13 @@ import { filter } from 'rxjs/operators';
 export class AppMenu implements OnInit {
     model: MenuItem[] = [];
 
-    constructor(private auth: AuthService) {}
+    constructor(private auth: AuthService, private membershipService: MembershipService) {}
 
     ngOnInit() {
         this.auth.user$.pipe(filter(u => u !== undefined)).subscribe(() => this.buildMenu());
         this.auth.isMember$.subscribe(() => this.buildMenu());
         this.auth.isAdmin$.subscribe(() => this.buildMenu());
+        this.membershipService.membership$.subscribe(() => this.buildMenu());
     }
 
     buildMenu() {
@@ -66,14 +68,17 @@ export class AppMenu implements OnInit {
             ]
         };
 
-        // Fifty+ section (all fiftyPlus/admin)
+        // Fifty+ section — always visible, lock icons for restricted tiers
+        const tier = this.membershipService.currentMembership;
+        const showLock = tier === MembershipTier.None || tier === MembershipTier.Fifty;
+
         const fiftyPlusMenu: MenuItem = {
             label: 'Fifty+',
             items: [
                 { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/archives'] },
-                { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
-                { label: 'Collaborations', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/collabs'] },
-                { label: 'Question Quizzes', icon: 'pi pi-fw pi-list', routerLink: ['/fiftyPlus/questionQuizzes'] }
+                { label: 'Exclusives', icon: showLock ? 'pi pi-fw pi-lock' : 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
+                { label: 'Collaborations', icon: showLock ? 'pi pi-fw pi-lock' : 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/collabs'] },
+                { label: 'Question Quizzes', icon: showLock ? 'pi pi-fw pi-lock' : 'pi pi-fw pi-list', routerLink: ['/fiftyPlus/questionQuizzes'] }
             ]
         };
 
@@ -81,6 +86,6 @@ export class AppMenu implements OnInit {
         this.model = [homeMenu];
 
         if (isAdmin) this.model.push(adminMenu);
-        if (isMember || isAdmin) this.model.push(fiftyPlusMenu);
+        this.model.push(fiftyPlusMenu);
     }
 }

@@ -33,6 +33,7 @@ import {
   setPersistence,
 } from 'firebase/auth';
 import { BehaviorSubject } from 'rxjs';
+import { MembershipService, MembershipTier } from './membership.service';
 
 export interface AppUser {
   uid: string;
@@ -46,12 +47,14 @@ export interface AppUser {
   followers: string[];
   following: string[];
   loginCount: number;
+  membershipTier?: 'None' | 'Fifty' | 'FiftyGold' | 'Admin';
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private auth = inject(Auth);
   private firestore = inject(Firestore);
+  private membershipService = inject(MembershipService);
 
   public user$ = new BehaviorSubject<AppUser | null>(null);
   public isMember$ = new BehaviorSubject(false);
@@ -67,6 +70,7 @@ export class AuthService {
         this.user$.next(null);
         this.isMember$.next(false);
         this.isAdmin$.next(false);
+        this.membershipService.setMembership(MembershipTier.None);
       }
       this.initialized$.next(true);
     });
@@ -185,6 +189,7 @@ export class AuthService {
     this.user$.next(null);
     this.isAdmin$.next(false);
     this.isMember$.next(false);
+    this.membershipService.setMembership(MembershipTier.None);
   }
 
   get currentUserId(): string | null {
@@ -236,8 +241,24 @@ export class AuthService {
       updatedAt: serverTimestamp(),
     }, { merge: true });
 
+    // Determine effective membership tier
+    const firestoreTier = snapshot.exists() ? snapshot.data()?.['membershipTier'] : null;
+    let effectiveTier: MembershipTier;
+    if (isAdmin) {
+      effectiveTier = MembershipTier.Admin;
+    } else if (firestoreTier === 'FiftyGold') {
+      effectiveTier = MembershipTier.FiftyGold;
+    } else if (firestoreTier === 'Fifty') {
+      effectiveTier = MembershipTier.Fifty;
+    } else {
+      effectiveTier = MembershipTier.None;
+    }
+
+    appUser.membershipTier = effectiveTier;
+
     this.isAdmin$.next(isAdmin);
     this.isMember$.next(appUser.isMember);
+    this.membershipService.setMembership(effectiveTier);
 
     return appUser;
   }

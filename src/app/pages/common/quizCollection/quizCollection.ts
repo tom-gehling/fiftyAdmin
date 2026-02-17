@@ -40,6 +40,7 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
             <li
               *ngFor="let quiz of quizHeaders; let i = index"
               [class.active]="isQuizSelected(quiz.quizId)"
+              [class.locked]="isLocked(i)"
               [ngStyle]="getQuizItemStyle(quiz)"
               (click)="selectQuiz(quizIdToString(quiz.quizId))"
             >
@@ -49,6 +50,7 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
               </span>
               <div class="flex items-center gap-1">
                 <i
+                  *ngIf="!isLocked(i) && membershipTier !== MembershipTier.None"
                   class="pi pi-pencil text-sm cursor-pointer hover:opacity-70"
                   title="Manually record score"
                   (click)="openRetroModal(quiz, $event)">
@@ -112,6 +114,10 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
     .quiz-list li:hover:not(.active) {
       opacity: 0.8;
     }
+
+    .quiz-list li.locked {
+      opacity: 0.5;
+    }
   `]
 })
 export class QuizCollectionComponent implements OnInit, OnChanges {
@@ -122,7 +128,8 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
   drawerVisible = false;
   quizHeaders: { quizId: string; quizTitle?: string; theme?: QuizTheme }[] = [];
   completedQuizIds = new Set<string>();
-  membershipTier: MembershipTier = MembershipTier.Fifty;
+  membershipTier: MembershipTier = MembershipTier.None;
+  MembershipTier = MembershipTier;
 
   constructor(
     private auth: Auth,
@@ -135,37 +142,47 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
   ) {}
 
   async ngOnInit() {
-    this.membershipService.membership$.subscribe(tier => this.membershipTier = tier);
-    // Step 1: Get the current user
-    onAuthStateChanged(this.auth, async user => {
-      if (!user) return;
+    this.membershipService.membership$.subscribe(tier => {
+      this.membershipTier = tier;
+      // Re-evaluate lock state for the selected quiz
+      if (this.selectedQuizId) {
+        const index = this.quizHeaders.findIndex(q => String(q.quizId) === this.selectedQuizId);
+        if (index !== -1) this.selectedQuizLocked = this.isLocked(index) || this.isRestricted(index);
+      }
+    });
 
-      // Step 2: Fetch completed quizzes for this user
+    // Load quiz headers regardless of auth state
+    this.loadQuizHeaders();
+
+    // Load completed quiz IDs only if authenticated
+    onAuthStateChanged(this.auth, async user => {
+      if (!user) {
+        this.completedQuizIds.clear();
+        return;
+      }
       const results = await firstValueFrom(this.quizResultsService.getUserResults(user.uid));
       results?.forEach(r => {
         if (r.status === 'completed') this.completedQuizIds.add(r.quizId);
       });
+    });
+  }
 
-      // Step 3: Fetch quizzes headers
-      let fetchHeaders$;
-      switch (this.quizType) {
-        case 'archives': fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true); break;
-        case 'exclusives': fetchHeaders$ = this.quizzesService.getExclusives(true); break;
-        case 'collaborations': fetchHeaders$ = this.quizzesService.getCollaborations(true); break;
-        case 'questions': fetchHeaders$ = this.quizzesService.getQuestionQuizzes(true); break;
-        default: fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true);
-      }
-      fetchHeaders$.subscribe(headers => {
-    this.quizHeaders = headers;
-
-    // Auto-select quiz from route or default to first
-    // Convert to string for comparison since route params are strings but quizId is a number
-    if (this.selectedQuizId && headers.some(q => String(q.quizId) === this.selectedQuizId)) {
-      this.selectQuiz(this.selectedQuizId, false); // Don't update URL on init
-    } else if (headers.length) {
-      this.selectQuiz(String(headers[0].quizId), false); // Don't update URL on init
+  private loadQuizHeaders() {
+    let fetchHeaders$;
+    switch (this.quizType) {
+      case 'archives': fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true); break;
+      case 'exclusives': fetchHeaders$ = this.quizzesService.getExclusives(true); break;
+      case 'collaborations': fetchHeaders$ = this.quizzesService.getCollaborations(true); break;
+      case 'questions': fetchHeaders$ = this.quizzesService.getQuestionQuizzes(true); break;
+      default: fetchHeaders$ = this.quizzesService.getArchiveQuizzes(true);
     }
-  });
+    fetchHeaders$.subscribe(headers => {
+      this.quizHeaders = headers;
+      if (this.selectedQuizId && headers.some(q => String(q.quizId) === this.selectedQuizId)) {
+        this.selectQuiz(this.selectedQuizId, false);
+      } else if (headers.length) {
+        this.selectQuiz(String(headers[0].quizId), false);
+      }
     });
   }
 
@@ -186,7 +203,7 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
   if (index === -1) return; // invalid id
 
   this.selectedQuizId = id;
-  this.selectedQuizLocked = this.isLocked(index);
+  this.selectedQuizLocked = this.isLocked(index) || this.isRestricted(index);
   this.drawerVisible = false;
 
   // Update the URL to reflect the selected quiz
@@ -209,24 +226,44 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
   }
 
   isLocked(index: number): boolean {
-  // Premium/Gold/Admin have full access
-  if (this.membershipTier !== MembershipTier.Fifty) {
+  // Premium (FiftyGold) and Admin have full access
+  if (this.membershipTier === MembershipTier.FiftyGold || this.membershipTier === MembershipTier.Admin) {
     return false;
   }
 
+  // Basic (Fifty) tier: full archives, locked on everything else
+  if (this.membershipTier === MembershipTier.Fifty) {
+    switch (this.quizType) {
+      case 'archives':
+        return false;
+      case 'exclusives':
+      case 'collaborations':
+      case 'questions':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // Non-member (None): only most recent 3 archive quizzes, everything else locked
   switch (this.quizType) {
     case 'archives':
-      // Only last 3 weekly quizzes accessible
       return index >= 3;
     case 'exclusives':
     case 'collaborations':
     case 'questions':
-      // All restricted for "Fifty" members
       return true;
     default:
       return false;
   }
 }
+
+  /** Quiz is selectable in the drawer but displayed with restrictions (3 Qs, no download, no scoring) */
+  isRestricted(index: number): boolean {
+    if (this.membershipTier !== MembershipTier.None) return false;
+    // Non-members: first 3 archives are accessible but restricted
+    return this.quizType === 'archives' && index < 3;
+  }
 
   openRetroModal(quiz: { quizId: string; quizTitle?: string; theme?: QuizTheme }, event: Event) {
     event.stopPropagation();

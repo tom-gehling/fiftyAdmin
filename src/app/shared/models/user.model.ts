@@ -10,6 +10,7 @@ export interface AppUser {
   followers: string[];
   following: string[];
   loginCount: number;
+  membershipTier?: 'None' | 'Fifty' | 'FiftyGold' | 'Admin';
 
   // Extra fields for placeholders / external integration
   externalQuizId?: string; // links the user to external quiz system

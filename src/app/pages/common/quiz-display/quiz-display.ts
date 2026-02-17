@@ -28,9 +28,15 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
       <!-- Locked message -->
       <ng-container *ngIf="locked">
-        <p class="text-center text-gray-300 text-lg font-bold mb-4">
-          Upgrade to Fifty+ and access the full quiz!
-        </p>
+        <div class="text-center mb-4 p-4 rounded-lg" style="background: rgba(0,0,0,0.3);">
+          <i class="pi pi-lock text-2xl text-gray-400 mb-2"></i>
+          <p class="text-gray-300 text-lg font-bold">
+            Upgrade to Fifty+ and access the full quiz!
+          </p>
+          <p class="text-gray-400 text-sm mt-1" *ngIf="quiz">
+            You're previewing 3 of {{ quiz.questions.length }} questions
+          </p>
+        </div>
       </ng-container>
 
       <!-- Title and Download -->

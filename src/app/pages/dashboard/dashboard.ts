@@ -13,12 +13,13 @@ import { QuizStatsWidgetComponent } from './components/quizstatswidget';
 import { UserQuizHistoryWidget } from "./components/userquizhistory";
 import { UserSummaryWidget } from "./components/usersummary";
 import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
+import { TierLockOverlayComponent } from '@/shared/components/tier-lock-overlay/tier-lock-overlay';
 import { RecentQuizzesWidget } from "./components/userrecentquizzes";
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget],
+    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget, TierLockOverlayComponent],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <!-- [x]: fiftyBorder to all widgets -->
@@ -28,8 +29,14 @@ import { RecentQuizzesWidget } from "./components/userrecentquizzes";
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-user-summary-widget />
                 <app-fifty-quizzes-dashboard />
-                <!-- <app-quiz-stats-widget *ngIf="membershipTier != MembershipTier.Fifty" /> -->
-                <app-user-quiz-history-widget *ngIf="membershipTier != MembershipTier.Fifty" />
+                <!-- <app-quiz-stats-widget /> -->
+                <div class="relative">
+                    <app-user-quiz-history-widget />
+                    <app-tier-lock-overlay
+                        *ngIf="membershipTier === MembershipTier.None || membershipTier === MembershipTier.Fifty"
+                        message="Upgrade to Fifty Gold to see your quiz stats">
+                    </app-tier-lock-overlay>
+                </div>
                 <!-- <app-best-selling-widget /> -->
             </div>
 
@@ -44,7 +51,7 @@ import { RecentQuizzesWidget } from "./components/userrecentquizzes";
     `
 })
 export class Dashboard {
-    membershipTier: MembershipTier = MembershipTier.FiftyGold;
+    membershipTier: MembershipTier = MembershipTier.None;
     MembershipTier = MembershipTier;
     constructor(public auth: AuthService, private membershipService: MembershipService) {}
     ngOnInit() {
