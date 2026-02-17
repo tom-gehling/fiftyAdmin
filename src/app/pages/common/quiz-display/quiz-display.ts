@@ -151,6 +151,11 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       color: var(--primary);
     }
 
+    .questionText {
+      display: contents;
+    }
+
+
     .downloadButton {
       position: absolute;
       right: 0;
