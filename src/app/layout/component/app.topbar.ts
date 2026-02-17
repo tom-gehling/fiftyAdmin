@@ -7,6 +7,7 @@ import { MenuModule } from 'primeng/menu';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { MenuItem } from 'primeng/api';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
@@ -39,7 +40,7 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
   <!-- Center: Logo -->
   <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center">
     <a class="flex items-center" routerLink="/">
-      <img src="assets/logos/fiftyAdminLogo.png" alt="Logo"
+      <img [src]="(isAdmin$ | async) ? 'assets/logos/fiftyAdminLogo.png' : 'assets/logos/fiftyplus.png'" alt="Logo"
         class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto object-contain"
       >
     </a>
@@ -63,6 +64,7 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
 })
 export class AppTopbar implements OnInit {
   profileItems: MenuItem[] = [];
+  isAdmin$!: Observable<boolean>;
 
   selectedMembership: MembershipTier = MembershipTier.Fifty; // default selection
 
@@ -71,7 +73,9 @@ export class AppTopbar implements OnInit {
     private authService: AuthService,
     private router: Router,
     private membershipService: MembershipService
-  ) {}
+  ) {
+    this.isAdmin$ = this.authService.isAdmin$;
+  }
 
   ngOnInit(): void {
     // Update selection from service
