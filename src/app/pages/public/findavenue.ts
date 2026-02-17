@@ -5,15 +5,14 @@ import { RouterModule } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
+import { AccordionModule } from 'primeng/accordion';
 import { DrawerModule } from 'primeng/drawer';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 
 import { VenueService } from '@/shared/services/venue.service';
 import { GoogleMapsService } from '@/shared/services/google-maps.service';
-import { Venue } from '@/shared/models/venue.model';
-import { VenueCardComponent } from './components/venue-card';
+import { Venue, VenueSchedule } from '@/shared/models/venue.model';
 import { PublicTopbarComponent } from './components/public-topbar';
 
 @Component({
@@ -26,11 +25,10 @@ import { PublicTopbarComponent } from './components/public-topbar';
     InputTextModule,
     SelectModule,
     ButtonModule,
-    CardModule,
+    AccordionModule,
     DrawerModule,
     IconFieldModule,
     InputIconModule,
-    VenueCardComponent,
     PublicTopbarComponent
   ],
   template: `
@@ -39,8 +37,8 @@ import { PublicTopbarComponent } from './components/public-topbar';
       <!-- Header -->
       <div class="venue-header">
         <div class="container mx-auto">
-          <h1 class="text-3xl md:text-4xl font-bold mb-1">Find a Quiz Venue</h1>
-          <p class="text-lg opacity-80">Discover quiz nights near you</p>
+          <h1 class="text-3xl md:text-4xl font-bold mb-1">Find a Quiz Night</h1>
+          <p class="text-lg opacity-80">Get your team to a quiz night near you</p>
         </div>
       </div>
 
@@ -103,35 +101,19 @@ import { PublicTopbarComponent } from './components/public-topbar';
             <!-- Sidebar Header -->
             <div class="sidebar-header">
               <h2 class="text-xl font-bold">
-                {{ selectedVenue ? 'Venue Details' : 'Venues (' + filteredVenues.length + ')' }}
+                Venues ({{ filteredVenues.length }})
               </h2>
             </div>
 
             <!-- Sidebar Content -->
             <div class="flex-1 overflow-y-auto p-4">
-              <div *ngIf="selectedVenue; else venueList">
-                <button
-                  pButton
-                  type="button"
-                  icon="pi pi-arrow-left"
-                  label="Back to list"
-                  class="back-btn mb-3"
-                  (click)="selectedVenue = null"
-                ></button>
-                <app-venue-card [venue]="selectedVenue"></app-venue-card>
+              <div *ngIf="filteredVenues.length === 0" class="empty-state">
+                No venues found
               </div>
 
-              <ng-template #venueList>
-                <div *ngIf="filteredVenues.length === 0" class="empty-state">
-                  No venues found
-                </div>
-
-                <div *ngFor="let venue of filteredVenues" class="mb-3">
-                  <div
-                    class="venue-list-item"
-                    [class.venue-list-item--active]="selectedVenue?.id === venue.id"
-                    (click)="selectVenue(venue)"
-                  >
+              <p-accordion [value]="selectedVenue?.id ?? ''" (valueChange)="onAccordionChange($event)" styleClass="venue-accordion">
+                <p-accordion-panel *ngFor="let venue of filteredVenues" [value]="venue.id!">
+                  <p-accordion-header>
                     <div class="venue-list-content">
                       <div class="venue-list-info">
                         <h3 class="venue-list-name">{{ venue.venueName }}</h3>
@@ -139,9 +121,9 @@ import { PublicTopbarComponent } from './components/public-topbar';
                           <i class="pi pi-map-marker mr-1"></i>
                           {{ venue.location.city }}
                         </p>
-                        <div *ngIf="venue.quizSchedules.length > 0" class="venue-list-schedule">
-                          <i class="pi pi-calendar mr-1"></i>
-                          {{ formatFirstSchedule(venue) }}
+                        <div *ngIf="getNextQuizDateForVenue(venue) as nextDate" class="venue-list-next-quiz">
+                          <i class="pi pi-clock mr-1"></i>
+                          Next Quiz: {{ nextDate | date:'EEE, MMM d' }}
                         </div>
                       </div>
                       <img
@@ -151,39 +133,74 @@ import { PublicTopbarComponent } from './components/public-topbar';
                         class="venue-list-img"
                       />
                     </div>
-                  </div>
-                </div>
-              </ng-template>
+                  </p-accordion-header>
+                  <p-accordion-content>
+                    <div class="venue-detail">
+                      <!-- Address -->
+                      <div class="venue-detail-row">
+                        <i class="pi pi-map-marker venue-detail-icon"></i>
+                        <div>
+                          <h4 class="venue-detail-label">Address</h4>
+                          <p class="venue-detail-value">
+                            {{ venue.location.address }}<br>
+                            {{ venue.location.city }}<span *ngIf="venue.location.state">, {{ venue.location.state }}</span>
+                            <span *ngIf="venue.location.postalCode"> {{ venue.location.postalCode }}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Phone -->
+                      <div *ngIf="venue.phoneNumber" class="venue-detail-row">
+                        <i class="pi pi-phone venue-detail-icon"></i>
+                        <div>
+                          <h4 class="venue-detail-label">Phone</h4>
+                          <a [href]="'tel:' + venue.phoneNumber" class="venue-detail-link">{{ venue.phoneNumber }}</a>
+                        </div>
+                      </div>
+
+                      <!-- Website -->
+                      <div *ngIf="venue.websiteUrl" class="venue-detail-row">
+                        <i class="pi pi-globe venue-detail-icon"></i>
+                        <div>
+                          <h4 class="venue-detail-label">Website</h4>
+                          <a [href]="venue.websiteUrl" target="_blank" class="venue-detail-link">{{ venue.websiteUrl }}</a>
+                        </div>
+                      </div>
+
+                      <!-- Quiz Schedules -->
+                      <div *ngIf="getActiveSchedules(venue).length > 0" class="venue-detail-row venue-detail-row--schedules">
+                        <i class="pi pi-calendar venue-detail-icon"></i>
+                        <div class="flex-1">
+                          <h4 class="venue-detail-label">Quiz Nights</h4>
+                          <div *ngFor="let schedule of getActiveSchedules(venue)" class="venue-detail-schedule">
+                            <p class="venue-detail-value">{{ formatSchedule(schedule) }}</p>
+                            <p *ngIf="schedule.notes" class="venue-detail-note">{{ schedule.notes }}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Directions link -->
+                      <a [href]="getDirectionsUrl(venue)" target="_blank" class="venue-detail-directions">
+                        <i class="pi pi-directions mr-2"></i> Get Directions
+                      </a>
+                    </div>
+                  </p-accordion-content>
+                </p-accordion-panel>
+              </p-accordion>
             </div>
           </div>
         </div>
 
         <!-- Mobile Drawer -->
-        <p-drawer [(visible)]="sidebarVisible" position="right" [style]="{ width: '90vw', maxWidth: '400px' }" header="{{ selectedVenue ? 'Venue Details' : 'Venues (' + filteredVenues.length + ')' }}" styleClass="venue-drawer">
+        <p-drawer [(visible)]="sidebarVisible" position="right" [style]="{ width: '90vw', maxWidth: '400px' }" header="Venues ({{ filteredVenues.length }})" styleClass="venue-drawer">
 
-          <div *ngIf="selectedVenue; else mobileVenueList">
-            <button
-              pButton
-              type="button"
-              icon="pi pi-arrow-left"
-              label="Back to list"
-              class="back-btn mb-3"
-              (click)="selectedVenue = null"
-            ></button>
-            <app-venue-card [venue]="selectedVenue"></app-venue-card>
+          <div *ngIf="filteredVenues.length === 0" class="empty-state">
+            No venues found
           </div>
 
-          <ng-template #mobileVenueList>
-            <div *ngIf="filteredVenues.length === 0" class="empty-state">
-              No venues found
-            </div>
-
-            <div *ngFor="let venue of filteredVenues" class="mb-3">
-              <div
-                class="venue-list-item"
-                [class.venue-list-item--active]="selectedVenue?.id === venue.id"
-                (click)="selectVenue(venue)"
-              >
+          <p-accordion [value]="selectedVenue?.id ?? ''" (valueChange)="onAccordionChange($event)" styleClass="venue-accordion">
+            <p-accordion-panel *ngFor="let venue of filteredVenues" [value]="venue.id!">
+              <p-accordion-header>
                 <div class="venue-list-content">
                   <div class="venue-list-info">
                     <h3 class="venue-list-name">{{ venue.venueName }}</h3>
@@ -203,9 +220,51 @@ import { PublicTopbarComponent } from './components/public-topbar';
                     class="venue-list-img"
                   />
                 </div>
-              </div>
-            </div>
-          </ng-template>
+              </p-accordion-header>
+              <p-accordion-content>
+                <div class="venue-detail">
+                  <div class="venue-detail-row">
+                    <i class="pi pi-map-marker venue-detail-icon"></i>
+                    <div>
+                      <h4 class="venue-detail-label">Address</h4>
+                      <p class="venue-detail-value">
+                        {{ venue.location.address }}<br>
+                        {{ venue.location.city }}<span *ngIf="venue.location.state">, {{ venue.location.state }}</span>
+                        <span *ngIf="venue.location.postalCode"> {{ venue.location.postalCode }}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div *ngIf="venue.phoneNumber" class="venue-detail-row">
+                    <i class="pi pi-phone venue-detail-icon"></i>
+                    <div>
+                      <h4 class="venue-detail-label">Phone</h4>
+                      <a [href]="'tel:' + venue.phoneNumber" class="venue-detail-link">{{ venue.phoneNumber }}</a>
+                    </div>
+                  </div>
+                  <div *ngIf="venue.websiteUrl" class="venue-detail-row">
+                    <i class="pi pi-globe venue-detail-icon"></i>
+                    <div>
+                      <h4 class="venue-detail-label">Website</h4>
+                      <a [href]="venue.websiteUrl" target="_blank" class="venue-detail-link">{{ venue.websiteUrl }}</a>
+                    </div>
+                  </div>
+                  <div *ngIf="getActiveSchedules(venue).length > 0" class="venue-detail-row venue-detail-row--schedules">
+                    <i class="pi pi-calendar venue-detail-icon"></i>
+                    <div class="flex-1">
+                      <h4 class="venue-detail-label">Quiz Nights</h4>
+                      <div *ngFor="let schedule of getActiveSchedules(venue)" class="venue-detail-schedule">
+                        <p class="venue-detail-value">{{ formatSchedule(schedule) }}</p>
+                        <p *ngIf="schedule.notes" class="venue-detail-note">{{ schedule.notes }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <a [href]="getDirectionsUrl(venue)" target="_blank" class="venue-detail-directions">
+                    <i class="pi pi-directions mr-2"></i> Get Directions
+                  </a>
+                </div>
+              </p-accordion-content>
+            </p-accordion-panel>
+          </p-accordion>
         </p-drawer>
 
         <!-- Loading State -->
@@ -393,19 +452,141 @@ import { PublicTopbarComponent } from './components/public-topbar';
       color: rgba(251, 226, 223, 0.8);
     }
 
+    .venue-list-next-quiz {
+      font-size: 0.85rem;
+      color: #fbe2dfcc;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+
+    .venue-list-next-quiz .pi {
+      color: #4cfbab;
+    }
+
     .venue-list-schedule .pi {
       color: #4cfbab;
     }
 
-    /* Back button */
-    .back-btn {
-      background: transparent !important;
-      border: none !important;
-      color: #4cfbab !important;
+    /* Venue accordion theming */
+    :host ::ng-deep .venue-accordion .p-accordionpanel {
+      margin-bottom: 0.75rem;
     }
 
-    .back-btn:hover {
+    :host ::ng-deep .venue-accordion .p-accordionheader {
+      background: var(--fifty-green) !important;
+      border: 1px solid #4cfbab;
+      border-radius: 8px;
       color: var(--fifty-pink) !important;
+      padding: 0.75rem 1rem;
+    }
+
+    :host ::ng-deep .venue-accordion .p-accordionheader:hover,
+    :host ::ng-deep .venue-accordion .p-accordionheader:focus,
+    :host ::ng-deep .venue-accordion .p-accordionheader:active {
+      background: rgba(76, 251, 171, 0.08) !important;
+      color: var(--fifty-pink) !important;
+    }
+
+    :host ::ng-deep .venue-accordion .p-accordionpanel-active .p-accordionheader,
+    :host ::ng-deep .venue-accordion .p-accordionpanel-active .p-accordionheader:hover {
+      background: rgba(76, 251, 171, 0.1) !important;
+      border-color: #4cfbab;
+      color: var(--fifty-pink) !important;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    :host ::ng-deep .venue-accordion .p-accordioncontent-content {
+      background: var(--fifty-green);
+      border: 1px solid #4cfbab;
+      border-top: none;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      padding: 0.75rem;
+    }
+
+    :host ::ng-deep .venue-accordion .p-accordionheader-toggle-icon {
+      color: #4cfbab;
+    }
+
+    /* Venue detail rows inside accordion */
+    .venue-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .venue-detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+    }
+
+    .venue-detail-icon {
+      color: #4cfbab;
+      font-size: 0.85rem;
+      margin-top: 0.15rem;
+      flex-shrink: 0;
+    }
+
+    .venue-detail-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #4cfbab;
+      margin-bottom: 0.1rem;
+    }
+
+    .venue-detail-value {
+      font-size: 0.85rem;
+      color: var(--fifty-pink);
+      line-height: 1.4;
+    }
+
+    .venue-detail-link {
+      font-size: 0.85rem;
+      color: var(--fifty-pink);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      word-break: break-all;
+    }
+
+    .venue-detail-link:hover {
+      color: #4cfbab;
+    }
+
+    .venue-detail-schedule {
+      padding: 0.4rem 0;
+    }
+
+    .venue-detail-schedule + .venue-detail-schedule {
+      border-top: 1px solid rgba(76, 251, 171, 0.2);
+    }
+
+    .venue-detail-note {
+      font-size: 0.75rem;
+      color: rgba(251, 226, 223, 0.6);
+      font-style: italic;
+      margin-top: 0.15rem;
+    }
+
+    .venue-detail-directions {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 0.25rem;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #4cfbab;
+      border-radius: 6px;
+      color: #4cfbab;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+
+    .venue-detail-directions:hover {
+      background: rgba(76, 251, 171, 0.1);
     }
 
     /* Empty state */
@@ -613,11 +794,26 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
   }
 
   selectVenue(venue: Venue): void {
+    // Toggle: clicking the same venue closes it
+    if (this.selectedVenue?.id === venue.id) {
+      this.selectedVenue = null;
+      return;
+    }
+
     this.selectedVenue = venue;
 
     // On mobile, show the sidebar
     if (window.innerWidth < 768) {
       this.sidebarVisible = true;
+    }
+  }
+
+  onAccordionChange(value: string | number | string[] | number[]): void {
+    const id = Array.isArray(value) ? String(value[0]) : String(value);
+    const venue = this.filteredVenues.find(v => v.id === id) || null;
+    this.selectedVenue = venue;
+    if (venue) {
+      this.panToMarker(venue);
     }
   }
 
@@ -679,5 +875,27 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
     if (activeSchedules.length === 0) return 'No active quiz nights';
 
     return this.googleMapsService.formatSchedule(activeSchedules[0]);
+  }
+
+  getNextQuizDateForVenue(venue: Venue): Date | null {
+    const activeSchedules = venue.quizSchedules?.filter(s => s.isActive) || [];
+    for (const schedule of activeSchedules) {
+      const date = this.googleMapsService.calculateNextQuizDate(schedule);
+      if (date) return date;
+    }
+    return null;
+  }
+
+  getActiveSchedules(venue: Venue): VenueSchedule[] {
+    return venue.quizSchedules?.filter(s => s.isActive) || [];
+  }
+
+  formatSchedule(schedule: VenueSchedule): string {
+    return this.googleMapsService.formatSchedule(schedule);
+  }
+
+  getDirectionsUrl(venue: Venue): string {
+    const { latitude, longitude } = venue.location;
+    return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
   }
 }
