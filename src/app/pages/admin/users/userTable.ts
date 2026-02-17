@@ -163,7 +163,6 @@ export class UserTableComponent implements OnInit {
   async loadUsers() {
     this.loading = true;
     const allUsers = await this.userService.getAllUsers();
-    console.log(allUsers);
 
     const rows: UserRow[] = [];
     for (const u of allUsers) {

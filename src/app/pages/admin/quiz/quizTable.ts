@@ -213,7 +213,6 @@ export class QuizTableComponent implements OnInit {
   }
 
   editQuiz(quiz: Quiz) {
-    console.log(quiz.id)
     this.router.navigate(['/fiftyPlus/admin/quizzes', quiz.id]);
   }
 

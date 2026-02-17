@@ -429,7 +429,6 @@ export class QuizStatsSummaryComponent implements OnInit {
       this.generateHourlyChartForRange(new Date(), new Date());
 
      // THINKING TIME GRAPH
-console.log(this.stats);
 
 const thinkingTimes = this.stats.avgTimeBetweenByQuestion || [];
 

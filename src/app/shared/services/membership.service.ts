@@ -26,6 +26,5 @@ export class MembershipService {
   // Set membership tier
   setMembership(tier: MembershipTier) {
     this.membershipSubject.next(tier);
-    console.log('Membership changed to:', tier);
   }
 }

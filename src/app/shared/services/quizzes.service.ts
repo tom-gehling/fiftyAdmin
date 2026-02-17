@@ -275,10 +275,6 @@ getQuizzesByQuizIds(quizIds: number[]): Observable<Quiz[]> {
     );
   });
 
-  console.log(observables.length === 1
-    ? observables[0]
-    : combineLatest(observables).pipe(map(arrays => arrays.flat())));
-
   return observables.length === 1
     ? observables[0]
     : combineLatest(observables).pipe(map(arrays => arrays.flat()));

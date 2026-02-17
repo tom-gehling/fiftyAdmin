@@ -439,7 +439,7 @@ async uploadNewImage(event: any) {
     theme: { ...this.form.get('theme')?.value }
   };
 
-  console.log(previewQuiz)
+  // console.log(previewQuiz)
 
   const ref: DynamicDialogRef = this.dialogService.open(QuizDisplayComponent, {
    showHeader: false,           // no title
