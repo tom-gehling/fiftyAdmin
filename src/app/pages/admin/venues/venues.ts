@@ -14,6 +14,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { InputNumberModule } from 'primeng/inputnumber';
 
 import { VenueService } from '@/shared/services/venue.service';
+import { StorageService } from '@/shared/services/storage.service';
 import { GoogleMapsService } from '@/shared/services/google-maps.service';
 import { NotifyService } from '@/shared/services/notify.service';
 import { Venue, VenueSchedule } from '@/shared/models/venue.model';
@@ -112,7 +113,7 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
           <span class="font-bold">{{ isEditing ? 'Edit Venue' : 'New Venue' }}</span>
         </ng-template>
 
-        <form [formGroup]="venueForm" class="p-fluid flex flex-col gap-4">
+        <form [formGroup]="venueForm" class="p-fluid flex flex-col gap-4 pt-2">
           <!-- Venue Name & Active -->
           <div class="flex gap-4 items-start">
             <p-floatlabel class="flex-1" variant="on">
@@ -139,27 +140,19 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
             <label for="address">Address *</label>
           </p-floatlabel>
 
-          <!-- City & Country (auto-filled from geocoding) -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- City, State & Country (auto-filled from geocoding) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <p-floatlabel variant="on">
               <input pInputText id="city" formControlName="city" class="w-full" />
               <label for="city">City</label>
             </p-floatlabel>
             <p-floatlabel variant="on">
+              <input pInputText id="state" formControlName="state" class="w-full" />
+              <label for="state">State</label>
+            </p-floatlabel>
+            <p-floatlabel variant="on">
               <input pInputText id="country" formControlName="country" class="w-full" />
               <label for="country">Country</label>
-            </p-floatlabel>
-          </div>
-
-          <!-- Latitude & Longitude (auto-filled) -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <p-floatlabel variant="on">
-              <p-inputnumber id="latitude" formControlName="latitude" [minFractionDigits]="6" [maxFractionDigits]="6" class="w-full"></p-inputnumber>
-              <label for="latitude">Latitude *</label>
-            </p-floatlabel>
-            <p-floatlabel variant="on">
-              <p-inputnumber id="longitude" formControlName="longitude" [minFractionDigits]="6" [maxFractionDigits]="6" class="w-full"></p-inputnumber>
-              <label for="longitude">Longitude *</label>
             </p-floatlabel>
           </div>
 
@@ -175,11 +168,29 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
             </p-floatlabel>
           </div>
 
-          <!-- Description -->
+          <!-- Notes -->
           <p-floatlabel variant="on">
             <textarea pTextarea id="description" formControlName="description" rows="3" class="w-full"></textarea>
-            <label for="description">Description</label>
+            <label for="description">Notes</label>
           </p-floatlabel>
+
+          <!-- Venue Image -->
+          <div>
+            <label class="font-semibold mb-2 block">Venue Image</label>
+            <div class="flex items-center gap-4">
+              <div *ngIf="imagePreview" class="relative">
+                <img [src]="imagePreview" alt="Venue image" class="w-32 h-32 object-cover rounded border" />
+                <button pButton type="button" icon="pi pi-times" class="p-button-rounded p-button-danger p-button-sm absolute -top-2 -right-2" (click)="removeImage()"></button>
+              </div>
+              <div *ngIf="!imagePreview" class="w-32 h-32 border border-dashed rounded flex items-center justify-center text-gray-400 cursor-pointer" (click)="imageInput.click()">
+                <i class="pi pi-image text-3xl"></i>
+              </div>
+              <div class="flex flex-col gap-2">
+                <button pButton type="button" [label]="imagePreview ? 'Change Image' : 'Upload Image'" icon="pi pi-upload" class="p-button-sm p-button-outlined" (click)="imageInput.click()"></button>
+                <input #imageInput type="file" accept="image/*" class="hidden" (change)="onImageSelected($event)" />
+              </div>
+            </div>
+          </div>
 
           <!-- Quiz Schedules -->
           <div formArrayName="quizSchedules">
@@ -283,6 +294,7 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
 })
 export class VenuesComponent implements OnInit, AfterViewInit {
   @ViewChild('addressInput') addressInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('imageInput') imageInput!: ElementRef<HTMLInputElement>;
 
   venues: Venue[] = [];
   filteredVenues: Venue[] = [];
@@ -294,6 +306,8 @@ export class VenuesComponent implements OnInit, AfterViewInit {
 
   venueForm!: FormGroup;
   autocomplete?: google.maps.places.Autocomplete;
+  imagePreview: string | null = null;
+  selectedImageFile?: File;
 
   scheduleTypes = [
     { label: 'Weekly', value: 'weekly' },
@@ -321,6 +335,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
 
   constructor(
     private venueService: VenueService,
+    private storageService: StorageService,
     private googleMapsService: GoogleMapsService,
     private notify: NotifyService,
     private fb: FormBuilder
@@ -341,6 +356,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
       venueName: ['', Validators.required],
       address: ['', Validators.required],
       city: [''],
+      state: [''],
       country: [''],
       latitude: [null, Validators.required],
       longitude: [null, Validators.required],
@@ -424,11 +440,31 @@ export class VenuesComponent implements OnInit, AfterViewInit {
       .join(', ');
   }
 
+  onImageSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    this.selectedImageFile = file;
+    const reader = new FileReader();
+    reader.onload = () => this.imagePreview = reader.result as string;
+    reader.readAsDataURL(file);
+  }
+
+  removeImage(): void {
+    this.imagePreview = null;
+    this.selectedImageFile = undefined;
+    if (this.imageInput) {
+      this.imageInput.nativeElement.value = '';
+    }
+  }
+
   openNewVenueDialog(): void {
     this.selectedVenue = null;
     this.isEditing = false;
     this.venueForm.reset({ isActive: true });
     this.quizSchedules.clear();
+    this.imagePreview = null;
+    this.selectedImageFile = undefined;
     this.venueDialog = true;
 
     // Initialize autocomplete after dialog opens
@@ -443,6 +479,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
       venueName: venue.venueName,
       address: venue.location.address,
       city: venue.location.city,
+      state: venue.location.state,
       country: venue.location.country,
       latitude: venue.location.latitude,
       longitude: venue.location.longitude,
@@ -451,6 +488,9 @@ export class VenuesComponent implements OnInit, AfterViewInit {
       description: venue.description,
       isActive: venue.isActive
     });
+
+    this.imagePreview = venue.imageUrl || null;
+    this.selectedImageFile = undefined;
 
     // Populate schedules
     this.quizSchedules.clear();
@@ -493,6 +533,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
       this.venueForm.patchValue({
         address: location.address,
         city: location.city,
+        state: location.state,
         country: location.country,
         latitude: location.latitude,
         longitude: location.longitude
@@ -514,11 +555,21 @@ export class VenuesComponent implements OnInit, AfterViewInit {
     this.saving = true;
     try {
       const formValue = this.venueForm.value;
+
+      let imageUrl = this.isEditing ? (this.selectedVenue?.imageUrl || '') : '';
+      if (this.selectedImageFile) {
+        const venueId = this.selectedVenue?.id || Date.now().toString();
+        imageUrl = await this.storageService.uploadVenueImage(this.selectedImageFile, venueId);
+      } else if (!this.imagePreview) {
+        imageUrl = '';
+      }
+
       const venueData: Partial<Venue> = {
         venueName: formValue.venueName,
         location: {
           address: formValue.address,
           city: formValue.city,
+          state: formValue.state,
           country: formValue.country,
           latitude: formValue.latitude,
           longitude: formValue.longitude
@@ -526,6 +577,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
         websiteUrl: formValue.websiteUrl,
         phoneNumber: formValue.phoneNumber,
         description: formValue.description,
+        imageUrl,
         isActive: formValue.isActive,
         quizSchedules: formValue.quizSchedules
       };

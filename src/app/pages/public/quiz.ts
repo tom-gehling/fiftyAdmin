@@ -5,23 +5,34 @@ import { firstValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 import { Quiz } from '@/shared/models/quiz.model';
+import { PublicTopbarComponent } from './components/public-topbar';
 
 @Component({
   selector: 'app-weekly-quiz',
   standalone: true,
-  imports: [CommonModule, QuizDisplayComponent],
-  template: `<div>
-    <div>
-
-
-    <app-quiz-display 
-      *ngIf="quiz"
-      [quiz]="quiz"
-      [locked]="false"
-      [previewMode]="true"
-
-    />
-  `
+  imports: [CommonModule, QuizDisplayComponent, PublicTopbarComponent],
+  template: `
+    <app-public-topbar />
+    <div class="page-content">
+      <app-quiz-display
+        *ngIf="quiz"
+        [quiz]="quiz"
+        [locked]="false"
+        [previewMode]="true"
+      />
+    </div>
+  `,
+  styles: [`
+    :host {
+      display: block;
+      min-height: 100vh;
+      background: var(--fifty-green);
+      color: var(--fifty-pink);
+    }
+    .page-content {
+      padding-top: 4.5rem;
+    }
+  `]
 })
 export class WeeklyQuizPage implements OnInit {
   quiz?: Quiz;

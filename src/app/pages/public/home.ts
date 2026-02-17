@@ -38,10 +38,10 @@ import { CommonModule } from '@angular/common';
     <!-- Menu buttons -->
     <div class="menu-wrapper">
       <div class="menu-buttons">
-        <button routerLink="/weekly-quiz" class="menu-btn">QUIZ</button>
+        <button routerLink="/weekly-quiz" class="menu-btn">THIS WEEK'S QUIZ</button>
         <button routerLink="/login" class="menu-btn">FIFTY+</button>
-        <button routerLink="/findavenue" class="menu-btn">FIND A VENUE</button>
-        <button routerLink="/fiftyshop" class="menu-btn">SHOP</button>
+        <button routerLink="/find-a-venue" class="menu-btn">FIND A VENUE</button>
+        <button routerLink="https://theweeklyfifty.com.au/pshop/" class="menu-btn">FIFTY SHOP</button>
       </div>
     </div>
 

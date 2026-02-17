@@ -136,18 +136,21 @@ export class VenueService {
         latitude: 0,
         longitude: 0
       },
-      websiteUrl: venueData.websiteUrl?.trim(),
-      phoneNumber: venueData.phoneNumber?.trim(),
-      email: venueData.email?.trim(),
+      websiteUrl: venueData.websiteUrl?.trim() || '',
+      phoneNumber: venueData.phoneNumber?.trim() || '',
+      email: venueData.email?.trim() || '',
       quizSchedules: venueData.quizSchedules || [],
       isActive: venueData.isActive ?? true,
       createdBy: currentUserId,
       createdAt: new Date(),
-      description: venueData.description?.trim(),
-      imageUrl: venueData.imageUrl,
-      tags: venueData.tags,
+      description: venueData.description?.trim() || '',
+      imageUrl: venueData.imageUrl || '',
+      tags: venueData.tags || [],
       capacity: venueData.capacity
     };
+
+    // Remove undefined fields (Firestore rejects undefined values)
+    Object.keys(newVenue).forEach(k => (newVenue as any)[k] === undefined && delete (newVenue as any)[k]);
 
     const docRef = await addDoc(this.collectionRef, newVenue);
     this.venues$.next([...this.venues$.value, { ...newVenue, id: docRef.id }]);

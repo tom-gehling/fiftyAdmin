@@ -13,6 +13,14 @@ export class StorageService {
     return getDownloadURL(storageRef);
   }
 
+  async uploadVenueImage(file: File, venueId: string): Promise<string> {
+    const filePath = `venue-images/${venueId}/${Date.now()}_${file.name}`;
+    const storageRef = ref(this.storage, filePath);
+
+    await uploadBytes(storageRef, file);
+    return getDownloadURL(storageRef);
+  }
+
   async getExistingImages(): Promise<string[]> {
     const baseRef = ref(this.storage, 'quiz-images');
 

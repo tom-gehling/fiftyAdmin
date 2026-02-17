@@ -7,11 +7,14 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DrawerModule } from 'primeng/drawer';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 
 import { VenueService } from '@/shared/services/venue.service';
 import { GoogleMapsService } from '@/shared/services/google-maps.service';
 import { Venue } from '@/shared/models/venue.model';
 import { VenueCardComponent } from './components/venue-card';
+import { PublicTopbarComponent } from './components/public-topbar';
 
 @Component({
   selector: 'app-find-a-venue',
@@ -25,23 +28,27 @@ import { VenueCardComponent } from './components/venue-card';
     ButtonModule,
     CardModule,
     DrawerModule,
-    VenueCardComponent
+    IconFieldModule,
+    InputIconModule,
+    VenueCardComponent,
+    PublicTopbarComponent
   ],
   template: `
-    <div class="venue-finder min-h-screen bg-surface-0 dark:bg-surface-900">
+    <app-public-topbar />
+    <div class="venue-finder">
       <!-- Header -->
-      <div class="bg-gradient-to-r from-[#677c73] to-[#4cfbab] text-white p-6">
+      <div class="venue-header">
         <div class="container mx-auto">
-          <h1 class="text-3xl md:text-4xl font-bold mb-2">Find a Quiz Venue</h1>
-          <p class="text-lg opacity-90">Discover quiz nights near you</p>
+          <h1 class="text-3xl md:text-4xl font-bold mb-1">Find a Quiz Venue</h1>
+          <p class="text-lg opacity-80">Discover quiz nights near you</p>
         </div>
       </div>
 
       <!-- Search & Filters -->
-      <div class="bg-white dark:bg-surface-800 shadow-md p-4">
+      <div class="filter-bar">
         <div class="container mx-auto flex flex-col md:flex-row gap-3">
-          <span class="p-input-icon-left flex-1">
-            <i class="pi pi-search"></i>
+          <p-iconfield class="flex-1">
+            <p-inputicon styleClass="pi pi-search" />
             <input
               pInputText
               type="text"
@@ -50,7 +57,18 @@ import { VenueCardComponent } from './components/venue-card';
               placeholder="Search venues or locations..."
               class="w-full"
             />
-          </span>
+          </p-iconfield>
+
+          <p-select
+            [(ngModel)]="selectedState"
+            [options]="stateOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Filter by state"
+            (onChange)="onFilterChange()"
+            [showClear]="true"
+            class="w-full md:w-48"
+          ></p-select>
 
           <p-select
             [(ngModel)]="selectedDay"
@@ -60,7 +78,7 @@ import { VenueCardComponent } from './components/venue-card';
             placeholder="Filter by quiz day"
             (onChange)="onFilterChange()"
             [showClear]="true"
-            class="w-full md:w-64"
+            class="w-full md:w-48"
           ></p-select>
 
           <button
@@ -69,21 +87,21 @@ import { VenueCardComponent } from './components/venue-card';
             icon="pi pi-list"
             label="Show List"
             (click)="sidebarVisible = true"
-            class="md:hidden"
+            class="show-list-btn md:hidden"
           ></button>
         </div>
       </div>
 
       <!-- Main Content -->
-      <div class="relative h-[calc(100vh-240px)] md:h-[calc(100vh-200px)]">
+      <div class="map-container">
         <!-- Google Map -->
         <div #mapElement class="absolute inset-0 w-full h-full"></div>
 
         <!-- Desktop Sidebar -->
-        <div class="hidden md:block absolute top-0 right-0 h-full w-96 bg-white dark:bg-surface-800 shadow-lg overflow-hidden z-10">
+        <div class="venue-sidebar hidden md:block">
           <div class="h-full flex flex-col">
             <!-- Sidebar Header -->
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="sidebar-header">
               <h2 class="text-xl font-bold">
                 {{ selectedVenue ? 'Venue Details' : 'Venues (' + filteredVenues.length + ')' }}
               </h2>
@@ -97,31 +115,41 @@ import { VenueCardComponent } from './components/venue-card';
                   type="button"
                   icon="pi pi-arrow-left"
                   label="Back to list"
-                  class="p-button-text mb-3"
+                  class="back-btn mb-3"
                   (click)="selectedVenue = null"
                 ></button>
                 <app-venue-card [venue]="selectedVenue"></app-venue-card>
               </div>
 
               <ng-template #venueList>
-                <div *ngIf="filteredVenues.length === 0" class="text-center text-gray-500 py-8">
+                <div *ngIf="filteredVenues.length === 0" class="empty-state">
                   No venues found
                 </div>
 
                 <div *ngFor="let venue of filteredVenues" class="mb-3">
                   <div
-                    class="p-4 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-surface-700 transition-colors"
-                    [class.bg-green-50]="selectedVenue?.id === venue.id"
+                    class="venue-list-item"
+                    [class.venue-list-item--active]="selectedVenue?.id === venue.id"
                     (click)="selectVenue(venue)"
                   >
-                    <h3 class="font-bold text-lg mb-1">{{ venue.venueName }}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      <i class="pi pi-map-marker mr-1"></i>
-                      {{ venue.location.city }}
-                    </p>
-                    <div *ngIf="venue.quizSchedules.length > 0" class="text-sm text-gray-700 dark:text-gray-300">
-                      <i class="pi pi-calendar mr-1"></i>
-                      {{ formatFirstSchedule(venue) }}
+                    <div class="venue-list-content">
+                      <div class="venue-list-info">
+                        <h3 class="venue-list-name">{{ venue.venueName }}</h3>
+                        <p class="venue-list-location">
+                          <i class="pi pi-map-marker mr-1"></i>
+                          {{ venue.location.city }}
+                        </p>
+                        <div *ngIf="venue.quizSchedules.length > 0" class="venue-list-schedule">
+                          <i class="pi pi-calendar mr-1"></i>
+                          {{ formatFirstSchedule(venue) }}
+                        </div>
+                      </div>
+                      <img
+                        *ngIf="venue.imageUrl"
+                        [src]="venue.imageUrl"
+                        [alt]="venue.venueName"
+                        class="venue-list-img"
+                      />
                     </div>
                   </div>
                 </div>
@@ -131,7 +159,7 @@ import { VenueCardComponent } from './components/venue-card';
         </div>
 
         <!-- Mobile Drawer -->
-        <p-drawer [(visible)]="sidebarVisible" position="right" [style]="{ width: '90vw', maxWidth: '400px' }" header="{{ selectedVenue ? 'Venue Details' : 'Venues (' + filteredVenues.length + ')' }}">
+        <p-drawer [(visible)]="sidebarVisible" position="right" [style]="{ width: '90vw', maxWidth: '400px' }" header="{{ selectedVenue ? 'Venue Details' : 'Venues (' + filteredVenues.length + ')' }}" styleClass="venue-drawer">
 
           <div *ngIf="selectedVenue; else mobileVenueList">
             <button
@@ -139,31 +167,41 @@ import { VenueCardComponent } from './components/venue-card';
               type="button"
               icon="pi pi-arrow-left"
               label="Back to list"
-              class="p-button-text mb-3"
+              class="back-btn mb-3"
               (click)="selectedVenue = null"
             ></button>
             <app-venue-card [venue]="selectedVenue"></app-venue-card>
           </div>
 
           <ng-template #mobileVenueList>
-            <div *ngIf="filteredVenues.length === 0" class="text-center text-gray-500 py-8">
+            <div *ngIf="filteredVenues.length === 0" class="empty-state">
               No venues found
             </div>
 
             <div *ngFor="let venue of filteredVenues" class="mb-3">
               <div
-                class="p-4 border rounded cursor-pointer hover:bg-gray-50 transition-colors"
-                [class.bg-green-50]="selectedVenue?.id === venue.id"
+                class="venue-list-item"
+                [class.venue-list-item--active]="selectedVenue?.id === venue.id"
                 (click)="selectVenue(venue)"
               >
-                <h3 class="font-bold text-lg mb-1">{{ venue.venueName }}</h3>
-                <p class="text-sm text-gray-600 mb-2">
-                  <i class="pi pi-map-marker mr-1"></i>
-                  {{ venue.location.city }}
-                </p>
-                <div *ngIf="venue.quizSchedules.length > 0" class="text-sm text-gray-700">
-                  <i class="pi pi-calendar mr-1"></i>
-                  {{ formatFirstSchedule(venue) }}
+                <div class="venue-list-content">
+                  <div class="venue-list-info">
+                    <h3 class="venue-list-name">{{ venue.venueName }}</h3>
+                    <p class="venue-list-location">
+                      <i class="pi pi-map-marker mr-1"></i>
+                      {{ venue.location.city }}
+                    </p>
+                    <div *ngIf="venue.quizSchedules.length > 0" class="venue-list-schedule">
+                      <i class="pi pi-calendar mr-1"></i>
+                      {{ formatFirstSchedule(venue) }}
+                    </div>
+                  </div>
+                  <img
+                    *ngIf="venue.imageUrl"
+                    [src]="venue.imageUrl"
+                    [alt]="venue.venueName"
+                    class="venue-list-img"
+                  />
                 </div>
               </div>
             </div>
@@ -171,22 +209,255 @@ import { VenueCardComponent } from './components/venue-card';
         </p-drawer>
 
         <!-- Loading State -->
-        <div *ngIf="loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20">
+        <div *ngIf="loading" class="loading-overlay">
           <div class="text-center">
-            <div class="w-16 h-16 border-4 border-t-4 border-gray-200 border-t-green-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p class="text-gray-600">Loading venues...</p>
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading venues...</p>
           </div>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .venue-finder {
-      width: 100%;
+    :host {
+      display: block;
+      min-height: 100vh;
+      background: var(--fifty-green);
     }
 
-    :host ::ng-deep .p-sidebar-content {
-      padding: 0;
+    h1, h2 {
+      background-color: var(--fifty-green);
+      color: var(--fifty-pink);
+    }
+
+    .venue-finder {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--fifty-green);
+      color: var(--fifty-pink);
+    }
+
+    /* Header */
+    .venue-header {
+      background: var(--fifty-green);
+      color: var(--fifty-pink);
+      padding: 1.5rem;
+      padding-top: 4rem;
+      border-bottom: 2px solid #4cfbab;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 1rem;
+    }
+
+    :host ::ng-deep .filter-bar .p-inputtext {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(76, 251, 171, 0.4);
+      color: var(--fifty-pink);
+    }
+
+    :host ::ng-deep .filter-bar .p-inputtext::placeholder {
+      color: rgba(251, 226, 223, 0.5);
+    }
+
+    :host ::ng-deep .filter-bar .p-inputtext:focus {
+      border-color: #4cfbab;
+      box-shadow: 0 0 0 2px rgba(76, 251, 171, 0.2);
+    }
+
+    :host ::ng-deep .filter-bar .p-select {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(76, 251, 171, 0.4);
+      color: var(--fifty-pink);
+    }
+
+    :host ::ng-deep .filter-bar .p-select .p-select-label {
+      color: var(--fifty-pink);
+    }
+
+    :host ::ng-deep .filter-bar .p-select .p-select-label.p-placeholder {
+      color: rgba(251, 226, 223, 0.5);
+    }
+
+    :host ::ng-deep .filter-bar .p-select:hover,
+    :host ::ng-deep .filter-bar .p-select.p-focus {
+      border-color: #4cfbab;
+    }
+
+    :host ::ng-deep .filter-bar .p-inputicon {
+      color: #4cfbab;
+    }
+
+    .show-list-btn {
+      background: transparent !important;
+      border: 2px solid #4cfbab !important;
+      color: #4cfbab !important;
+    }
+
+    .show-list-btn:hover {
+      background: rgba(76, 251, 171, 0.15) !important;
+    }
+
+    /* Map container */
+    .map-container {
+      position: relative;
+      height: calc(100vh - 160px);
+    }
+
+    @media (max-width: 768px) {
+      .map-container {
+        height: calc(100vh - 200px);
+      }
+    }
+
+    /* Sidebar */
+    .venue-sidebar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 24rem;
+      background: var(--fifty-green);
+      box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .sidebar-header {
+      padding: 1rem;
+      border-bottom: 2px solid #4cfbab;
+      color: var(--fifty-pink);
+    }
+
+    /* Venue list items */
+    .venue-list-item {
+      padding: 1rem;
+      border: 1px solid rgba(76, 251, 171, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .venue-list-item:hover {
+      background: rgba(76, 251, 171, 0.1);
+      border-color: #4cfbab;
+    }
+
+    .venue-list-item--active {
+      background: rgba(76, 251, 171, 0.15);
+      border-color: #4cfbab;
+    }
+
+    .venue-list-content {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .venue-list-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .venue-list-img {
+      width: 60px;
+      height: 60px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid rgba(76, 251, 171, 0.3);
+    }
+
+    .venue-list-name {
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+      color: var(--fifty-pink);
+    }
+
+    .venue-list-location {
+      font-size: 0.875rem;
+      color: rgba(251, 226, 223, 0.7);
+      margin-bottom: 0.5rem;
+    }
+
+    .venue-list-location .pi {
+      color: #4cfbab;
+    }
+
+    .venue-list-schedule {
+      font-size: 0.875rem;
+      color: rgba(251, 226, 223, 0.8);
+    }
+
+    .venue-list-schedule .pi {
+      color: #4cfbab;
+    }
+
+    /* Back button */
+    .back-btn {
+      background: transparent !important;
+      border: none !important;
+      color: #4cfbab !important;
+    }
+
+    .back-btn:hover {
+      color: var(--fifty-pink) !important;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      color: rgba(251, 226, 223, 0.5);
+      padding: 2rem 0;
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(103, 124, 115, 0.85);
+      z-index: 20;
+    }
+
+    .loading-spinner {
+      width: 4rem;
+      height: 4rem;
+      border: 4px solid rgba(251, 226, 223, 0.2);
+      border-top: 4px solid #4cfbab;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: var(--fifty-pink);
+    }
+
+    /* Mobile drawer styling */
+    :host ::ng-deep .venue-drawer .p-drawer-content {
+      background: var(--fifty-green);
+      color: var(--fifty-pink);
+    }
+
+    :host ::ng-deep .venue-drawer .p-drawer-header {
+      background: var(--fifty-green);
+      color: var(--fifty-pink);
+      border-bottom: 2px solid #4cfbab;
+    }
+
+    :host ::ng-deep .venue-drawer .p-drawer-close-button {
+      color: #4cfbab;
     }
 
     @media (max-width: 768px) {
@@ -211,6 +482,8 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
 
   searchQuery = '';
   selectedDay: number | null = null;
+  selectedState: string | null = null;
+  stateOptions: { label: string; value: string }[] = [];
 
   dayOptions = [
     { label: 'Sunday', value: 0 },
@@ -268,6 +541,7 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
       next: (venues) => {
         this.venues = venues;
         this.filteredVenues = venues;
+        this.buildStateOptions();
         this.addMarkers();
         this.loading = false;
       },
@@ -295,18 +569,24 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
         map: this.map,
         title: venue.venueName,
         icon: {
-          url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
-              <path fill="#677c73" d="M16 0C7.163 0 0 7.163 0 16c0 12 16 24 16 24s16-12 16-24C32 7.163 24.837 0 16 0z"/>
-              <circle cx="16" cy="16" r="6" fill="white"/>
-            </svg>
-          `),
-          scaledSize: new google.maps.Size(32, 40),
-          anchor: new google.maps.Point(16, 40)
+          url: 'assets/logos/twf.png',
+          scaledSize: new google.maps.Size(40, 40),
+          anchor: new google.maps.Point(20, 20)
         }
       });
 
       marker.addListener('click', () => {
+        const nextQuiz = this.formatFirstSchedule(venue);
+        this.infoWindow.setContent(`
+          <div style="font-family: sans-serif; padding: 4px; min-width: 160px;">
+            <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${venue.venueName}</div>
+            <div style="font-size: 12px; color: #555;">${venue.location.city}${venue.location.state ? ', ' + venue.location.state : ''}</div>
+            <div style="font-size: 12px; color: #333; margin-top: 4px;">
+              <strong>Next Quiz:</strong> ${nextQuiz}
+            </div>
+          </div>
+        `);
+        this.infoWindow.open(this.map, marker);
         this.selectVenue(venue);
         this.panToMarker(venue);
       });
@@ -359,6 +639,14 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
     this.filterVenues();
   }
 
+  buildStateOptions(): void {
+    const states = new Set<string>();
+    this.venues.forEach(v => {
+      if (v.location.state) states.add(v.location.state);
+    });
+    this.stateOptions = Array.from(states).sort().map(s => ({ label: s, value: s }));
+  }
+
   filterVenues(): void {
     this.filteredVenues = this.venues.filter(venue => {
       // Text search
@@ -367,11 +655,15 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
         venue.location.city.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
         venue.location.address.toLowerCase().includes(this.searchQuery.toLowerCase());
 
+      // State filter
+      const matchesState = this.selectedState === null ||
+        venue.location.state === this.selectedState;
+
       // Day filter
       const matchesDay = this.selectedDay === null ||
         venue.quizSchedules.some(s => s.dayOfWeek === this.selectedDay && s.isActive);
 
-      return matchesSearch && matchesDay;
+      return matchesSearch && matchesState && matchesDay;
     });
 
     this.addMarkers();

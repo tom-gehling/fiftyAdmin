@@ -4,7 +4,10 @@
       "Bash(npm install:*)",
       "Bash(npm uninstall:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(gsutil cors set:*)",
+      "Bash(gcloud --version:*)",
+      "Bash(firebase:*)"
     ]
   }
 }
