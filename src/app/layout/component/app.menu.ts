@@ -36,8 +36,13 @@ export class AppMenu implements OnInit {
 
         // Home / Dashboard
         const homeMenu: MenuItem = {
-            label: 'Home',
-            items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/fiftyPlus'] }]
+            label: 'The Weekly Fifty',
+            items: [
+                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/fiftyPlus'] },
+                    { label: 'This Week\'s Quiz', icon: 'pi pi-fw pi-question-circle', routerLink: ['/weekly-quiz'] },
+                    { label: 'Fifty Shop', icon: 'pi pi-fw pi-shopping-cart', url: 'https://theweeklyfifty.com.au/pshop', target: '_blank' },
+                    { label: 'Find A Venue', icon: 'pi pi-fw pi-map-marker', routerLink: ['/find-a-venue'] }
+                ]
         };
 
         // Admin section
@@ -48,15 +53,16 @@ export class AppMenu implements OnInit {
                     label: 'Stats',
                     icon: 'pi pi-fw pi-chart-line',
                     items: [
-                        { label: 'Total Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/stats/total'] },
-                        { label: 'Weekly Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/weekly'] }
+                        // { label: 'Total Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/stats/total'] },
+                        { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/weekly'] },
+                        { label: 'Location Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/total'] }
                     ]
                 },
-                { label: 'Quizzes', icon: 'pi pi-fw pi-question-circle', routerLink: ['/fiftyPlus/admin/quizzes'] },
+                { label: 'Quizzes', icon: 'pi pi-fw pi-pencil', routerLink: ['/fiftyPlus/admin/quizzes'] },
                 { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] },
-                { label: 'Venues', icon: 'pi pi-fw pi-map-marker', routerLink: ['/fiftyPlus/admin/venues'] },
+                { label: 'Submission Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
                 { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/admin/users'] },
-                { label: 'Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] }
+                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] }
             ]
         };
 
