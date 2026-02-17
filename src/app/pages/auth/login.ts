@@ -26,14 +26,24 @@ import { firstValueFrom } from 'rxjs';
   ],
   template: `
     <app-floating-configurator />
-    <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
-      <div class="flex flex-col items-center justify-center">
+    <div class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden relative">
+
+      <!-- Scrolling logo collage background -->
+      <div style="position: absolute; inset: 0; overflow: hidden; z-index: 0; display: flex; flex-direction: column; justify-content: space-around; padding: 16px 0; pointer-events: none;">
+        <div *ngFor="let row of logoRows" style="overflow: hidden; height: 100px; display: flex; align-items: center;">
+          <div class="logo-scroll-row" [style.animation-delay]="row.delay">
+            <img *ngFor="let logo of collageLogos" [src]="logo" class="logo-collage-img" alt="" draggable="false">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col items-center justify-center relative" style="z-index: 1;">
         <div
           style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
           <div class="w-full bg-surface-0 dark:bg-surface-900 py-20 px-8 sm:px-20" style="border-radius: 53px">
             <div class="text-center mb-8">
               <img
-  src="/assets/logos/fiftyAdminLogo.png"
+  src="/assets/logos/fiftyplus.png"
   alt="Fifty Admin Logo"
   class="mx-auto mb-4"
   style="width: 30vw; max-width: 200px; height: auto;"
@@ -41,7 +51,7 @@ import { firstValueFrom } from 'rxjs';
             </div>
 
             <!-- Mode Toggle -->
-            <div class="flex justify-center mb-6">
+            <!-- <div class="flex justify-center mb-6">
               <div class="flex bg-surface-100 dark:bg-surface-800 rounded-lg p-1">
                 <button
                   type="button"
@@ -62,37 +72,11 @@ import { firstValueFrom } from 'rxjs';
                   Register
                 </button>
               </div>
-            </div>
+            </div> -->
 
             <div>
-              <!-- Social Sign-In Buttons -->
-              <div class="mb-6">
-                <p-button 
-                  label="Continue with Google" 
-                  icon="pi pi-google" 
-                  styleClass="w-full mb-3" 
-                  [outlined]="true"
-                  [loading]="loadingGoogle" 
-                  (click)="onGoogleSignIn()">
-                </p-button>
-                <p-button 
-                  label="Continue with Apple" 
-                  icon="pi pi-apple" 
-                  styleClass="w-full" 
-                  [outlined]="true"
-                  [loading]="loadingApple" 
-                  (click)="onAppleSignIn()">
-                </p-button>
-              </div>
 
-              <!-- Divider -->
-              <div class="flex items-center my-6">
-                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
-                <span class="px-4 text-surface-500 text-sm">or</span>
-                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
-              </div>
-
-              <!-- Display Name (only for registration) -->
+            <!-- Display Name (only for registration) -->
               <div *ngIf="isRegisterMode" class="mb-6">
                 <label for="displayName"
                   class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Display Name</label>
@@ -133,7 +117,36 @@ import { firstValueFrom } from 'rxjs';
                 (click)="onSubmit()">
               </p-button>
 
+              <!-- Divider -->
+              <!-- <div class="flex items-center my-6">
+                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
+                <span class="px-4 text-surface-500 text-sm">or</span>
+                <div class="flex-1 border-t border-surface-300 dark:border-surface-700"></div>
+              </div> -->
+
+
+              <!-- Social Sign-In Buttons -->
+              <!-- <div class="mb-6">
+                <p-button 
+                  label="Continue with Google" 
+                  icon="pi pi-google" 
+                  styleClass="w-full mb-3" 
+                  [outlined]="true"
+                  [loading]="loadingGoogle" 
+                  (click)="onGoogleSignIn()">
+                </p-button>
+                <p-button 
+                  label="Continue with Apple" 
+                  icon="pi pi-apple" 
+                  styleClass="w-full" 
+                  [outlined]="true"
+                  [loading]="loadingApple" 
+                  (click)="onAppleSignIn()">
+                </p-button>
+              </div> -->
+
               <div *ngIf="error" class="text-red-500 mt-2 text-center">{{ error }}</div>
+
             </div>
           </div>
         </div>
@@ -142,6 +155,43 @@ import { firstValueFrom } from 'rxjs';
   `
 })
 export class Login {
+  readonly logos = [
+    '/assets/logos/2010s-clear-1.png',
+    '/assets/logos/EURO.png',
+    '/assets/logos/HOTTEST-20%20(1).png',
+    '/assets/logos/Movie.png',
+    '/assets/logos/SA.png',
+    '/assets/logos/Yearl-2023.png',
+    '/assets/logos/archivesLogo.png',
+    '/assets/logos/aussie.png',
+    '/assets/logos/boomer.png',
+    '/assets/logos/chrissy.png',
+    '/assets/logos/fiftyAdminLogo.png',
+    '/assets/logos/footy.png',
+    '/assets/logos/logo.png',
+    '/assets/logos/loser.png',
+    '/assets/logos/movie2.png',
+    '/assets/logos/olympic.png',
+    '/assets/logos/people50.png',
+    '/assets/logos/peoples.png',
+    '/assets/logos/reality.png',
+    '/assets/logos/specialsLogo.png',
+    '/assets/logos/spooky.png',
+    '/assets/logos/swifty%20(1).png',
+    '/assets/logos/twf.png',
+    '/assets/logos/weekly-hundred.png',
+    '/assets/logos/yearly-22022.png',
+    '/assets/logos/yeswequiz.png',
+  ];
+  // Duplicate for seamless infinite scroll loop
+  readonly collageLogos = [...this.logos, ...this.logos];
+  readonly logoRows = [
+    { delay: '0s' },
+    { delay: '-35s' },
+    { delay: '-17s' },
+    { delay: '-52s' },
+  ];
+
   email: string = '';
   password: string = '';
   confirmPassword: string = '';
