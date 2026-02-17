@@ -229,7 +229,7 @@ import { CommonModule } from '@angular/common';
     /* Individual buttons */
     .menu-btn {
       width: 100%;
-      height: 90px;
+      height: 60px;
       font-size: 2rem;
       font-weight: bold;
       color: var(--fifty-pink);
@@ -312,7 +312,7 @@ import { CommonModule } from '@angular/common';
       }
 
       .menu-btn {
-        height: 67.5px;
+        height: 60px;
         font-size: 1.5rem;
         margin-left: 7.5px;
         margin-right: 7.5px;
