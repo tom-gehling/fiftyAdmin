@@ -85,7 +85,7 @@ import { UserService } from '@/shared/services/user.service';
 
           </div>
           <div class="mt-4 text-muted-color text-sm">
-            Avg Score: {{ (averageScore * 50) | number:'1.2-2' }}
+            Avg Score: {{ averageScore | number:'1.1-2' }}
           </div>
         </ng-container>
       </div>
@@ -108,6 +108,9 @@ import { UserService } from '@/shared/services/user.service';
             >
               <i class="pi pi-users text-cyan-500 text-xl!"></i>
             </div>
+          </div>
+          <div class="mt-4 text-muted-color text-sm">
+            Joined in last week: {{ newMembersLast7Days }}
           </div>
         </ng-container>
       </div>
@@ -134,6 +137,7 @@ export class StatsWidget implements OnInit {
   averageScore = 0;
 
   memberCount = 0;
+  newMembersLast7Days = 0;
 
   // Loading flags
   loadingActiveQuiz = true;
@@ -205,8 +209,8 @@ export class StatsWidget implements OnInit {
       if (!this.activeQuiz?.quizId) return;
       const aggregate = await this.quizStatsService.getQuizAggregatesFirestore(String(this.activeQuiz.quizId));
       if (aggregate) {
-        this.totalSessions = aggregate.completedCount || 0;
-        this.averageScore = this.totalSessions > 0 ? (aggregate.totalScore || 0) / this.totalSessions : 0;
+        this.totalSessions = (aggregate.completedCount || 0) + (aggregate.inProgressCount || 0);
+        this.averageScore = aggregate.averageScore || 0;
       }
     } catch (error) {
       console.error('Error loading quiz stats:', error);
@@ -220,6 +224,13 @@ export class StatsWidget implements OnInit {
     try {
       const users = await this.userService.getAllUsers();
       this.memberCount = users.length;
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      this.newMembersLast7Days = users.filter(u => {
+        if (!u.createdAt) return false;
+        const created = u.createdAt instanceof Date ? u.createdAt : u.createdAt.toDate?.();
+        return created && created >= sevenDaysAgo;
+      }).length;
     } catch (error) {
       console.error('Error loading user count:', error);
     } finally {
