@@ -227,19 +227,26 @@ export class GoogleMapsService {
 
   /**
    * Get the nth occurrence of a day of week in a month
-   * e.g., 2nd Tuesday, 4th Friday
+   * e.g., 2nd Tuesday, 4th Friday, Last Friday (weekOfMonth = -1)
    */
   private getNthDayOfMonth(monthStart: Date, dayOfWeek: number, weekOfMonth: number): Date {
-    const firstDayOfMonth = new Date(monthStart.getFullYear(), monthStart.getMonth(), 1);
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+
+    if (weekOfMonth === -1) {
+      // Last occurrence: work backwards from the last day of the month
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+      const lastDayWeekday = lastDayOfMonth.getDay();
+      const daysBack = (lastDayWeekday - dayOfWeek + 7) % 7;
+      return new Date(year, month, lastDayOfMonth.getDate() - daysBack);
+    }
+
+    const firstDayOfMonth = new Date(year, month, 1);
     const firstDayWeekday = firstDayOfMonth.getDay();
-
-    // Calculate how many days until the first occurrence of the target day
     const daysUntilFirst = (dayOfWeek - firstDayWeekday + 7) % 7;
-
-    // Calculate the date of the nth occurrence
     const targetDate = 1 + daysUntilFirst + (weekOfMonth - 1) * 7;
 
-    return new Date(monthStart.getFullYear(), monthStart.getMonth(), targetDate);
+    return new Date(year, month, targetDate);
   }
 
   /**
@@ -257,7 +264,7 @@ export class GoogleMapsService {
         return `Every other ${days[schedule.dayOfWeek!]}${time}`;
 
       case 'monthly':
-        const weeks = ['', 'First', 'Second', 'Third', 'Fourth'];
+        const weeks: Record<number, string> = { 1: 'First', 2: 'Second', 3: 'Third', 4: 'Fourth', [-1]: 'Last' };
         return `${weeks[schedule.weekOfMonth!]} ${days[schedule.dayOfWeek!]}${time}`;
 
       case 'custom':

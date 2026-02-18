@@ -54,11 +54,11 @@ import { NotifyService } from '@/shared/services/notify.service';
       </div>
 
       <!-- Form List -->
-      <div *ngIf="!loading && filteredForms.length > 0; else loadingOrEmpty">
+      <div *ngIf="!loading && filteredForms.length > 0; else loadingOrEmpty" class="rounded-lg overflow-hidden">
         <div
-          *ngFor="let form of filteredForms"
-          style="display: flex !important; flex-direction:row; border: 1px solid var(--fifty-neon-green); gap: 20px;"
-          class="p-card mb-2 flex flex-row items-center justify-between cursor-pointer transition-colors"
+          *ngFor="let form of filteredForms; let first = first"
+          style="display: flex !important; flex-direction:row; background: rgba(255,255,255,0.04); box-shadow: 0 1px 3px rgba(0,0,0,0.15); gap: 20px; position: relative;"
+          class="flex flex-row items-center justify-between cursor-pointer transition-colors"
           [ngClass]="{
             'bg-surface-50 dark:bg-surface-700': selectedForm?.id === form?.id,
             'hover:bg-surface-100 dark:hover:bg-surface-600': selectedForm?.id !== form?.id
@@ -66,6 +66,7 @@ import { NotifyService } from '@/shared/services/notify.service';
           (click)="highlightRow(form)"
           (dblclick)="openForm(form)"
         >
+          <div *ngIf="!first" style="width:100%;height:1px;background:var(--fifty-neon-green);position:absolute;top:0;left:0"></div>
           <!-- Left: name + description -->
           <div class="flex flex-1 items-center gap-4 p-3">
             <div class="flex flex-col justify-center">

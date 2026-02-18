@@ -7,6 +7,7 @@ export interface VenueSchedule {
   endTime?: string; // e.g., "21:00"
   isActive: boolean;
   notes?: string;
+  exclusionDates?: Date[]; // Specific dates to skip in the recurring schedule
 }
 
 export interface VenueLocation {

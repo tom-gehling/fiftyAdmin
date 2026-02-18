@@ -1,9 +1,10 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { FormBuilder, FormGroup, FormArray, FormControl, AbstractControl, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { DialogModule } from 'primeng/dialog';
 import { CheckboxModule } from 'primeng/checkbox';
 import { FloatLabelModule } from 'primeng/floatlabel';
@@ -12,6 +13,7 @@ import { CardModule } from 'primeng/card';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { DatePickerModule } from 'primeng/datepicker';
 
 import { VenueService } from '@/shared/services/venue.service';
 import { StorageService } from '@/shared/services/storage.service';
@@ -26,9 +28,10 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
     CommonModule,
     ReactiveFormsModule,
     FormsModule,
-    TableModule,
     ButtonModule,
     InputTextModule,
+    IconFieldModule,
+    InputIconModule,
     DialogModule,
     CheckboxModule,
     FloatLabelModule,
@@ -36,7 +39,8 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
     CardModule,
     SelectModule,
     TextareaModule,
-    InputNumberModule
+    InputNumberModule,
+    DatePickerModule
   ],
   template: `
     <!-- Loading Spinner -->
@@ -46,60 +50,72 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
 
     <p-card class="flex flex-col flex-1 p-4">
       <!-- Header Actions -->
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Venue Management</h2>
-        <button pButton type="button" label="Add Venue" icon="pi pi-plus" (click)="openNewVenueDialog()"></button>
-      </div>
-
-      <!-- Search -->
-      <div class="mb-4">
-        <span class="p-input-icon-left w-full">
-          <i class="pi pi-search"></i>
-          <input pInputText type="text" [(ngModel)]="searchTerm" (input)="onSearch()" placeholder="Search venues..." class="w-full" />
-        </span>
+      <div class="flex flex-col sm:flex-row justify-between items-start md:items-center mb-4 gap-2">
+        <h2>Venues</h2>
+        <div class="flex flex-col sm:flex-row gap-2 ml-auto">
+          <p-iconfield class="flex-1 min-w-0 max-w-md">
+            <p-inputicon styleClass="pi pi-search" />
+            <input pInputText type="text" [(ngModel)]="searchTerm" (input)="onSearch()" placeholder="Search venues..." class="w-full" />
+          </p-iconfield>
+          <button pButton type="button" label="Add Venue" icon="pi pi-plus" (click)="openNewVenueDialog()"></button>
+        </div>
       </div>
 
       <!-- Venues Table -->
-      <p-table
-        [value]="filteredVenues"
-        [paginator]="true"
-        [rows]="10"
-        [rowsPerPageOptions]="[5, 10, 20]"
-        [globalFilterFields]="['venueName', 'location.city', 'location.address']"
-      >
-        <ng-template pTemplate="header">
-          <tr>
-            <th pSortableColumn="venueName">Venue Name <p-sortIcon field="venueName"></p-sortIcon></th>
-            <th class="hidden md:table-cell">City</th>
-            <th class="hidden lg:table-cell">Address</th>
-            <th class="hidden sm:table-cell">Quiz Days</th>
-            <th>Active</th>
-            <th>Actions</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-venue>
-          <tr>
-            <td>{{ venue.venueName }}</td>
-            <td class="hidden md:table-cell">{{ venue.location.city }}</td>
-            <td class="hidden lg:table-cell">{{ venue.location.address }}</td>
-            <td class="hidden sm:table-cell">{{ formatQuizDays(venue) }}</td>
-            <td>
-              <i [class]="venue.isActive ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"></i>
-            </td>
-            <td>
-              <div class="flex gap-2">
-                <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editVenue(venue)"></button>
-                <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="deleteVenue(venue)"></button>
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="6" class="text-center">No venues found</td>
-          </tr>
-        </ng-template>
-      </p-table>
+      <div *ngIf="filteredVenues.length > 0; else emptyVenues" class="overflow-x-auto rounded-lg">
+        <table class="w-full" style="border-collapse: separate; border-spacing: 0;">
+          <thead>
+            <tr style="background: rgba(255,255,255,0.06);">
+              <th class="text-left p-3 cursor-pointer select-none" (click)="sortBy('venueName')">
+                Venue Name <i class="pi" [ngClass]="getSortIcon('venueName')"></i>
+              </th>
+              <th class="text-left p-3 cursor-pointer select-none hidden md:table-cell" (click)="sortBy('state')">
+                State <i class="pi" [ngClass]="getSortIcon('state')"></i>
+              </th>
+              <th class="text-left p-3 select-none hidden sm:table-cell">Quiz Days</th>
+              <th class="text-center p-3 cursor-pointer select-none" (click)="sortBy('isActive')">
+                Active <i class="pi" [ngClass]="getSortIcon('isActive')"></i>
+              </th>
+              <th class="p-3 text-right">
+                <button
+                  *ngIf="isSorted"
+                  pButton
+                  icon="pi pi-filter-slash"
+                  class="p-button-text p-button-sm"
+                  (click)="clearSort()"
+                  title="Clear sorting"
+                ></button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let venue of filteredVenues"
+              class="cursor-pointer transition-colors"
+              [style.background]="selectedVenue?.id === venue.id ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)'"
+              style="border-bottom: 1px solid var(--fifty-neon-green);"
+              [ngClass]="{ 'hover:bg-surface-100 dark:hover:bg-surface-600': selectedVenue?.id !== venue.id }"
+              (click)="highlightVenue(venue)"
+            >
+              <td class="p-3 font-semibold">{{ venue.venueName }}</td>
+              <td class="p-3 hidden md:table-cell">{{ venue.location.state }}</td>
+              <td class="p-3 hidden sm:table-cell">{{ formatQuizDays(venue) }}</td>
+              <td class="p-3 text-center">
+                <i [class]="venue.isActive ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"></i>
+              </td>
+              <td class="p-3 text-right">
+                <div class="flex gap-2 justify-end">
+                  <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editVenue(venue); $event.stopPropagation()"></button>
+                  <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="deleteVenue(venue); $event.stopPropagation()"></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #emptyVenues>
+        <div class="text-center text-gray-500 py-4">No venues found</div>
+      </ng-template>
 
       <!-- Venue Dialog -->
       <p-dialog
@@ -248,12 +264,24 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
 
                 <!-- Start & End Time -->
                 <p-floatlabel variant="on">
-                  <input pInputText id="startTime{{ i }}" formControlName="startTime" type="time" class="w-full" />
+                  <p-datepicker
+                    id="startTime{{ i }}"
+                    formControlName="startTime"
+                    [timeOnly]="true"
+                    hourFormat="12"
+                    class="w-full"
+                  ></p-datepicker>
                   <label for="startTime{{ i }}">Start Time</label>
                 </p-floatlabel>
 
                 <p-floatlabel variant="on">
-                  <input pInputText id="endTime{{ i }}" formControlName="endTime" type="time" class="w-full" />
+                  <p-datepicker
+                    id="endTime{{ i }}"
+                    formControlName="endTime"
+                    [timeOnly]="true"
+                    hourFormat="12"
+                    class="w-full"
+                  ></p-datepicker>
                   <label for="endTime{{ i }}">End Time</label>
                 </p-floatlabel>
 
@@ -269,6 +297,28 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
                 <textarea pTextarea id="scheduleNotes{{ i }}" formControlName="notes" rows="2" class="w-full"></textarea>
                 <label for="scheduleNotes{{ i }}">Notes</label>
               </p-floatlabel>
+
+              <!-- Exclusion Dates -->
+              <div class="mt-3">
+                <div class="flex justify-between items-center mb-2">
+                  <label class="font-semibold text-sm">Excluded Dates</label>
+                  <button pButton type="button" label="Add Excluded Date" icon="pi pi-calendar-times" class="p-button-sm p-button-outlined" (click)="addExclusionDate(i)"></button>
+                </div>
+                <div formArrayName="exclusionDates">
+                  <div *ngFor="let dateCtrl of getExclusionDates(i).controls; let j = index" class="flex items-center gap-2 mb-2">
+                    <p-datepicker
+                      [formControlName]="j"
+                      placeholder="Select date to exclude"
+                      dateFormat="dd/mm/yy"
+                      class="flex-1"
+                    ></p-datepicker>
+                    <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm p-button-danger" (click)="removeExclusionDate(i, j)"></button>
+                  </div>
+                  <div *ngIf="getExclusionDates(i).length === 0" class="text-gray-500 text-sm italic">
+                    No exclusion dates added.
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div *ngIf="quizSchedules.length === 0" class="text-gray-500 text-center p-4 border border-dashed rounded">
@@ -279,7 +329,7 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
 
         <ng-template #footer>
           <p-button label="Cancel" [text]="true" severity="secondary" (click)="closeDialog()" [disabled]="saving" />
-          <p-button label="Save" [outlined]="true" severity="secondary" (click)="saveVenue()" [disabled]="saving || venueForm.invalid" />
+          <p-button label="Save" [outlined]="true" [severity]="saving || venueForm.invalid ? 'secondary' : 'success'" (click)="saveVenue()" [disabled]="saving || venueForm.invalid" />
         </ng-template>
       </p-dialog>
     </p-card>
@@ -303,6 +353,9 @@ export class VenuesComponent implements OnInit, AfterViewInit {
   isEditing = false;
   saving = false;
   searchTerm = '';
+  sortKey: 'venueName' | 'state' | 'isActive' = 'venueName';
+  sortAsc = true;
+  isSorted = false;
 
   venueForm!: FormGroup;
   autocomplete?: google.maps.places.Autocomplete;
@@ -330,7 +383,8 @@ export class VenuesComponent implements OnInit, AfterViewInit {
     { label: 'First', value: 1 },
     { label: 'Second', value: 2 },
     { label: 'Third', value: 3 },
-    { label: 'Fourth', value: 4 }
+    { label: 'Fourth', value: 4 },
+    { label: 'Last', value: -1 }
   ];
 
   constructor(
@@ -373,16 +427,54 @@ export class VenuesComponent implements OnInit, AfterViewInit {
   }
 
   createScheduleFormGroup(schedule?: VenueSchedule): FormGroup {
+    const exclusionDates = this.fb.array(
+      (schedule?.exclusionDates || []).map(d => {
+        const date = (d as any)?.toDate?.() ?? (d instanceof Date ? d : new Date(d as any));
+        return this.fb.control(date);
+      })
+    );
     return this.fb.group({
       type: [schedule?.type || 'weekly', Validators.required],
       dayOfWeek: [schedule?.dayOfWeek ?? null],
       weekOfMonth: [schedule?.weekOfMonth ?? null],
       customDates: [schedule?.customDates || []],
-      startTime: [schedule?.startTime || '19:00'],
-      endTime: [schedule?.endTime || '21:00'],
+      startTime: [this.timeStringToDate(schedule?.startTime || '19:00')],
+      endTime: [this.timeStringToDate(schedule?.endTime || '21:00')],
       isActive: [schedule?.isActive ?? true],
-      notes: [schedule?.notes || '']
+      notes: [schedule?.notes || ''],
+      exclusionDates
     });
+  }
+
+  getExclusionDates(scheduleIndex: number): FormArray {
+    return this.quizSchedules.at(scheduleIndex).get('exclusionDates') as FormArray;
+  }
+
+  addExclusionDate(scheduleIndex: number): void {
+    this.getExclusionDates(scheduleIndex).push(this.fb.control(null));
+  }
+
+  removeExclusionDate(scheduleIndex: number, dateIndex: number): void {
+    this.getExclusionDates(scheduleIndex).removeAt(dateIndex);
+  }
+
+  asFormControl(ctrl: AbstractControl): FormControl {
+    return ctrl as FormControl;
+  }
+
+  private timeStringToDate(timeStr: string): Date | null {
+    if (!timeStr) return null;
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const d = new Date();
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  }
+
+  private dateToTimeString(date: Date | null): string {
+    if (!date) return '';
+    const h = date.getHours().toString().padStart(2, '0');
+    const m = date.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m}`;
   }
 
   addSchedule(): void {
@@ -410,25 +502,61 @@ export class VenuesComponent implements OnInit, AfterViewInit {
     }
   }
 
+  highlightVenue(venue: Venue): void {
+    this.selectedVenue = venue;
+  }
+
+  sortBy(key: 'venueName' | 'state' | 'isActive'): void {
+    if (this.sortKey === key) {
+      this.sortAsc = !this.sortAsc;
+    } else {
+      this.sortKey = key;
+      this.sortAsc = true;
+    }
+    this.isSorted = true;
+    this.onSearch();
+  }
+
+  clearSort(): void {
+    this.sortKey = 'venueName';
+    this.sortAsc = true;
+    this.isSorted = false;
+    this.onSearch();
+  }
+
+  getSortIcon(key: 'venueName' | 'state' | 'isActive'): string {
+    if (this.sortKey !== key) return 'pi-sort-alt';
+    return this.sortAsc ? 'pi-sort-amount-up' : 'pi-sort-amount-down';
+  }
+
+  private applySorting(venues: Venue[]): Venue[] {
+    const dir = this.sortAsc ? 1 : -1;
+    return [...venues].sort((a, b) => {
+      switch (this.sortKey) {
+        case 'venueName': return dir * a.venueName.localeCompare(b.venueName);
+        case 'state': return dir * (a.location.state || '').localeCompare(b.location.state || '');
+        case 'isActive': return dir * (Number(b.isActive) - Number(a.isActive));
+        default: return 0;
+      }
+    });
+  }
+
   loadVenues(): void {
     this.venueService.getAllVenues().subscribe(venues => {
       this.venues = venues.filter(v => !v.deletedAt);
-      this.filteredVenues = this.venues;
+      this.filteredVenues = this.applySorting(this.venues);
     });
   }
 
   onSearch(): void {
-    if (!this.searchTerm.trim()) {
-      this.filteredVenues = this.venues;
-      return;
-    }
-
-    const term = this.searchTerm.toLowerCase();
-    this.filteredVenues = this.venues.filter(v =>
-      v.venueName.toLowerCase().includes(term) ||
-      v.location.city.toLowerCase().includes(term) ||
-      v.location.address.toLowerCase().includes(term)
-    );
+    const term = this.searchTerm.toLowerCase().trim();
+    const filtered = term
+      ? this.venues.filter(v =>
+          v.venueName.toLowerCase().includes(term) ||
+          (v.location.state || '').toLowerCase().includes(term)
+        )
+      : this.venues;
+    this.filteredVenues = this.applySorting(filtered);
   }
 
   formatQuizDays(venue: Venue): string {
@@ -579,7 +707,12 @@ export class VenuesComponent implements OnInit, AfterViewInit {
         description: formValue.description,
         imageUrl,
         isActive: formValue.isActive,
-        quizSchedules: formValue.quizSchedules
+        quizSchedules: formValue.quizSchedules.map((s: any) => ({
+          ...s,
+          startTime: this.dateToTimeString(s.startTime),
+          endTime: this.dateToTimeString(s.endTime),
+          exclusionDates: (s.exclusionDates || []).filter((d: any) => d != null)
+        }))
       };
 
       if (this.isEditing && this.selectedVenue?.id) {
