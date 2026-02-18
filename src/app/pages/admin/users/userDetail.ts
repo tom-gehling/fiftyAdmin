@@ -29,14 +29,9 @@ interface RecentQuiz {
     >
       <div *ngIf="user" class="flex flex-col gap-4">
         <!-- User Info -->
-        <div class="flex items-center gap-3">
-          <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-2xl">
-            <i class="pi pi-user"></i>
-          </span>
-          <div>
-            <h3 class="text-xl font-semibold m-0">{{ user.displayName || 'Unknown' }}</h3>
-            <div class="text-sm text-gray-500">{{ user.email || 'No email' }}</div>
-          </div>
+        <div>
+          <h3 class="text-xl font-semibold m-0">{{ user.displayName || 'Unknown' }}</h3>
+          <div class="text-sm text-gray-500">{{ user.email || 'No email' }}</div>
         </div>
 
         <div class="flex justify-center">

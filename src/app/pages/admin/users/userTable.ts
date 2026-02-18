@@ -16,12 +16,12 @@ interface UserRow {
   displayName: string;
   email: string;
   lastLoginAt: any;
-  loginCount: number;
+  membershipType: string;
   completedQuizzes: number;
   raw: any;
 }
 
-type SortKey = 'displayName' | 'loginCount' | 'lastLoginAt' | 'completedQuizzes';
+type SortKey = 'displayName' | 'membershipType' | 'lastLoginAt' | 'completedQuizzes';
 
 @Component({
   selector: 'app-user-table',
@@ -59,18 +59,16 @@ type SortKey = 'displayName' | 'loginCount' | 'lastLoginAt' | 'completedQuizzes'
         <table class="w-full" style="border-collapse: separate; border-spacing: 0;">
           <thead>
             <tr style="background: rgba(255,255,255,0.06);">
-              <th class="text-left p-3 cursor-pointer select-none" style="width: 40%;" (click)="sortBy('displayName')">
+              <th class="text-left p-3 cursor-pointer select-none" style="width: 35%;" (click)="sortBy('displayName')">
                 User <i class="pi" [ngClass]="getSortIcon('displayName')"></i>
               </th>
-              <th class="text-center p-3 cursor-pointer select-none" style="width: 15%;" (click)="sortBy('loginCount')">
-                Logins <i class="pi" [ngClass]="getSortIcon('loginCount')"></i>
+              <th class="text-center p-3 cursor-pointer select-none" style="width: 20%;" (click)="sortBy('membershipType')">
+                Membership Type <i class="pi" [ngClass]="getSortIcon('membershipType')"></i>
               </th>
               <th class="text-center p-3 cursor-pointer select-none" style="width: 20%;" (click)="sortBy('lastLoginAt')">
                 Last Login <i class="pi" [ngClass]="getSortIcon('lastLoginAt')"></i>
               </th>
-              <th class="text-center p-3 cursor-pointer select-none" style="width: 15%;" (click)="sortBy('completedQuizzes')">
-                Quizzes <i class="pi" [ngClass]="getSortIcon('completedQuizzes')"></i>
-              </th>
+
               <th class="p-3 text-right" style="width: 10%;">
                 <button
                   *ngIf="isSorted"
@@ -96,21 +94,16 @@ type SortKey = 'displayName' | 'loginCount' | 'lastLoginAt' | 'completedQuizzes'
               (dblclick)="openDetail(user)"
             >
               <td class="p-3">
-                <div class="flex items-center gap-3 min-w-0">
-                  <span class="flex items-center justify-center w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 shrink-0">
-                    <i class="pi pi-user"></i>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-semibold text-surface-900 dark:text-surface-100 truncate">
+                    {{ user.displayName || 'Unknown' }}
                   </span>
-                  <div class="flex flex-col min-w-0">
-                    <span class="font-semibold text-surface-900 dark:text-surface-100 truncate">
-                      {{ user.displayName || 'Unknown' }}
-                    </span>
-                    <span class="text-sm text-gray-500 truncate">{{ user.email || '' }}</span>
-                  </div>
+                  <span class="text-sm text-gray-500 truncate">{{ user.email || '' }}</span>
                 </div>
               </td>
-              <td class="p-3 text-center font-medium">{{ user.loginCount }}</td>
+              <td class="p-3 text-center font-medium">{{ user.membershipType }}</td>
               <td class="p-3 text-center font-medium">{{ formatDate(user.lastLoginAt) }}</td>
-              <td class="p-3 text-center font-medium">{{ user.completedQuizzes }}</td>
+
               <td class="p-3 text-right">
                 <button
                   pButton
@@ -168,16 +161,18 @@ export class UserTableComponent implements OnInit {
     for (const u of allUsers) {
       let completedQuizzes = 0;
       try {
-        // const results = await firstValueFrom(this.quizResultsService.getUserResults(u.uid));
-        // completedQuizzes = results.filter(r => r.status === 'completed').length;
+        const results = await firstValueFrom(this.quizResultsService.getUserResults(u.uid));
+        completedQuizzes = results.filter(r => r.status === 'completed').length;
       } catch {}
+
+      const membershipType = u.isAdmin ? 'Admin' : u.isMember ? 'Member' : 'Guest';
 
       rows.push({
         uid: u.uid,
         displayName: u.displayName ?? '',
         email: u.email ?? '',
         lastLoginAt: u.lastLoginAt ?? u.createdAt,
-        loginCount: u.loginCount ?? 0,
+        membershipType,
         completedQuizzes,
         raw: u
       });
@@ -228,8 +223,8 @@ export class UserTableComponent implements OnInit {
     const dir = this.sortAsc ? 1 : -1;
     return [...rows].sort((a, b) => {
       const key = this.sortKey;
-      if (key === 'displayName') {
-        return dir * a.displayName.localeCompare(b.displayName);
+      if (key === 'displayName' || key === 'membershipType') {
+        return dir * (a[key] as string).localeCompare(b[key] as string);
       }
       if (key === 'lastLoginAt') {
         return dir * (this.toTimestamp(a.lastLoginAt) - this.toTimestamp(b.lastLoginAt));
