@@ -18,7 +18,6 @@ import { PublicTopbarComponent } from './components/public-topbar';
         *ngIf="quiz"
         [quiz]="quiz"
         [locked]="false"
-        [previewMode]="true"
       />
     </div>
   `,
