@@ -54,6 +54,7 @@ import { CommonModule } from '@angular/common';
     :host {
       display: block;
       height: 100vh;
+      height: 100dvh;
       width: 100vw;
       background-color: #1a1a1a;
       color: var(--fifty-pink);
@@ -282,6 +283,10 @@ import { CommonModule } from '@angular/common';
     }
 
     @media (max-width: 480px) {
+      :host {
+        touch-action: none;
+      }
+
       .green-overlay {
         width: 60%;
         clip-path: polygon(35% 0, 100% 0, 100% 100%, 0% 100%);
@@ -299,26 +304,27 @@ import { CommonModule } from '@angular/common';
 
       .main-logo img {
         width: 80vw;
-        min-width: 250px;
+        min-width: 200px;
+        max-width: 350px;
       }
 
       .menu-wrapper {
-        bottom: 1.5rem;
-        right: 1rem;
+        bottom: 1rem;
+        right: 0.75rem;
       }
 
       .menu-buttons {
-        gap: 7.5px;
+        gap: 6px;
       }
 
       .menu-btn {
-        height: 60px;
-        font-size: 1.5rem;
-        margin-left: 7.5px;
-        margin-right: 7.5px;
+        height: 46px;
+        font-size: 1.2rem;
+        margin-left: 0;
+        margin-right: 0;
         border-width: 2px;
         border-radius: 6px;
-        box-shadow: 0 4.5px 11.25px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       }
 
       .menu-btn:hover {

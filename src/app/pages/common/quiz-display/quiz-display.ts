@@ -42,15 +42,15 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       <!-- Title and Download -->
       <div class="quizHeader">
         <div class="quizTitle">{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}</div>
-        <p-button
-          *ngIf="!locked"
-          icon="pi pi-download"
-          label="Download"
-          [outlined]="false"
-          severity="primary"
-          (onClick)="downloadPdf()"
-          class="downloadButton">
-        </p-button>
+        <div *ngIf="!locked" class="downloadRow">
+          <p-button
+            icon="pi pi-download"
+            label="Download"
+            [outlined]="false"
+            (onClick)="downloadPdf()"
+            class="downloadButton">
+          </p-button>
+        </div>
       </div>
 
       <!-- Notes Above -->
@@ -78,7 +78,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
           </div>
 
           <!-- Answer & buttons -->
-          <div *ngIf="answerRevealed[i]" class="panel answer">
+          <div *ngIf="questionClicked[i] && answerRevealed[i]" class="panel answer">
             <p [innerHTML]="q.answer"></p>
 
             <ng-container *ngIf="!locked">
@@ -218,11 +218,14 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     .quizHeader {
-      position: relative;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
       margin-bottom: 20px;
+    }
+
+    .downloadRow {
+      display: flex;
+      justify-content: center;
     }
 
     .quizTitle {
@@ -242,11 +245,14 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       display: inline;
     }
 
-    .downloadButton {
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
+    :host ::ng-deep .downloadButton .p-button {
+      background-color: var(--tertiary);
+      border-color: var(--tertiary);
+      color: var(--secondary);
+    }
+
+    :host ::ng-deep .downloadButton .p-button:hover {
+      filter: brightness(0.9);
     }
 
     .notes {
