@@ -45,8 +45,7 @@ export class QuizPdfService {
     // Notes above (if any)
     if (quiz.notesAbove) {
       const notesText = this.stripHtml(quiz.notesAbove);
-      doc.setTextColor(80, 80, 80);
-      y = this.addWrappedText(doc, notesText, y, 10, 'italic', { r: 80, g: 80, b: 80 });
+      y = this.addWrappedText(doc, notesText, y, 12, 'normal', { r: 40, g: 40, b: 40 }, 'center');
       y += 10;
     }
 
@@ -124,7 +123,7 @@ export class QuizPdfService {
       doc.line(this.MARGIN, y, this.PAGE_WIDTH - this.MARGIN, y);
       y += 10;
       const notesText = this.stripHtml(quiz.notesBelow);
-      y = this.addWrappedText(doc, notesText, y, 10, 'italic', { r: 80, g: 80, b: 80 });
+      y = this.addWrappedText(doc, notesText, y, 12, 'normal', { r: 40, g: 40, b: 40 }, 'center');
     }
 
     // Add answer sheet page
@@ -331,7 +330,8 @@ export class QuizPdfService {
     y: number,
     fontSize: number,
     fontStyle: 'normal' | 'bold' | 'italic',
-    color: { r: number, g: number, b: number }
+    color: { r: number, g: number, b: number },
+    align: 'left' | 'center' = 'left'
   ): number {
     doc.setFontSize(fontSize);
     doc.setFont('Roboto', fontStyle);
@@ -345,7 +345,11 @@ export class QuizPdfService {
         doc.addPage();
         y = this.MARGIN;
       }
-      doc.text(line, this.MARGIN, y);
+      if (align === 'center') {
+        doc.text(line, this.PAGE_WIDTH / 2, y, { align: 'center' });
+      } else {
+        doc.text(line, this.MARGIN, y);
+      }
       y += lineHeight;
     }
 

@@ -40,7 +40,6 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
             <li
               *ngFor="let quiz of quizHeaders; let i = index"
               [class.active]="isQuizSelected(quiz.quizId)"
-              [ngStyle]="getQuizItemStyle(quiz)"
               (click)="selectQuiz(quizIdToString(quiz.quizId))"
             >
               <span>
@@ -246,16 +245,6 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
         this.completedQuizIds.add(quiz.quizId);
       }
     });
-  }
-
-  getQuizItemStyle(quiz: { quizId: string; quizTitle?: string; theme?: QuizTheme }): Record<string, string> {
-    if (!quiz.theme) {
-      return {};
-    }
-    return {
-      'border-color': quiz.theme.tertiaryColor || '#4cfbab',
-      'color': quiz.theme.tertiaryColor || '#4cfbab'
-    };
   }
 
   // Helper method to check if a quiz is selected (handles number/string comparison)

@@ -364,7 +364,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
 
   scheduleTypes = [
     { label: 'Weekly', value: 'weekly' },
-    { label: 'Biweekly', value: 'biweekly' },
+    { label: 'Fortnightly', value: 'biweekly' },
     { label: 'Monthly', value: 'monthly' },
     { label: 'Custom Dates', value: 'custom' }
   ];
