@@ -162,8 +162,6 @@ easiestQuestions: { number: number; question: string; correctRate: number }[] = 
           (this.quiz?.questions || []).map(q => [q.questionId, q.question])
         );
 
-        console.log(questionMap)
-
         // Map hardest questions with question text
         this.hardestQuestions = this.stats.hardestQuestions.map(h => ({
           number: Number(h.questionId),

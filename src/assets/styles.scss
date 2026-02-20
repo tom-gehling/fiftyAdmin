@@ -32,3 +32,12 @@
   // --green: #4cfbab;
   //       --black: #282828;
   //       --pink: #fbe2df !important;
+
+html{
+  background-color: #677c73;
+}
+
+/* Google Maps Places Autocomplete dropdown */
+.pac-container {
+  z-index: 100000 !important;
+}

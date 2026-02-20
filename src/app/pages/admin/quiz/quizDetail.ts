@@ -34,6 +34,8 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { QuizTagsService } from '@/shared/services/quizTags.service';
 import { QuizTag } from '@/shared/models/quizTags.model';
 import { NotifyService } from '@/shared/services/notify.service';
+import { SubmissionFormService } from '@/shared/services/submission-form.service';
+import { SubmissionForm } from '@/shared/models/submissionForm.model';
 import { firstValueFrom } from 'rxjs';
 import { MenuItem } from 'primeng/api';
 import { TextareaModule } from 'primeng/textarea';
@@ -78,6 +80,7 @@ export class QuizDetailComponent implements OnInit {
   quizImagePreview: string | null = null;
   availableTags: QuizTag[] = [];
   selectedTags: QuizTag[] = [];
+  availableSubmissionForms: { label: string; value: string }[] = [];
   tabSelected: string = '0';
   QuizTypeEnum = QuizTypeEnum;
   saving: boolean = false;
@@ -125,7 +128,8 @@ export class QuizDetailComponent implements OnInit {
     private dialogService: DialogService,
     private quizTagService: QuizTagsService,
     private notify: NotifyService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private submissionFormService: SubmissionFormService
   ) {}
 
   ngOnInit(): void {
@@ -144,6 +148,11 @@ export class QuizDetailComponent implements OnInit {
     // Load tags
     this.quizTagService.getAllTags().subscribe(tags => {
       this.availableTags = tags;
+    });
+
+    // Load submission forms
+    this.submissionFormService.getActiveFormsForDropdown().subscribe(forms => {
+      this.availableSubmissionForms = forms;
     });
 
     this.loadExistingImages();   
@@ -244,6 +253,7 @@ async uploadNewImage(event: any) {
       notesAbove: [quiz.notesAbove || ''],
       notesBelow: [quiz.notesBelow || ''],
       imageUrl: [quiz.imageUrl || ''],
+      submissionFormId: [quiz.submissionFormId || null],
     });
 
     // Sync SpeedDial menus initially
@@ -429,7 +439,7 @@ async uploadNewImage(event: any) {
     theme: { ...this.form.get('theme')?.value }
   };
 
-  console.log(previewQuiz)
+  // console.log(previewQuiz)
 
   const ref: DynamicDialogRef = this.dialogService.open(QuizDisplayComponent, {
    showHeader: false,           // no title

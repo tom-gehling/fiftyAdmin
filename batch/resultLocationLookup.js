@@ -1,7 +1,8 @@
 const admin = require('firebase-admin');
 const path = require('path');
-const maxmind = require('maxmind'); // <-- GeoLite2
-const luxon = require('luxon');
+const maxmind = require('maxmind');
+const xlsx = require('xlsx');
+const fs = require('fs');
 
 const serviceAccount = require(path.join(__dirname, '../secrets/adminSDK.json'));
 
@@ -15,10 +16,9 @@ try {
 }
 
 const db = admin.firestore();
-const quizIds = ['184'];
+const quizIds = ['185'];
 const geoLitePath = path.join(__dirname, 'GeoLite/GeoLite2-City.mmdb');
 
-// Helper function to format seconds into HH:MM:SS
 function formatSecondsToHMS(seconds) {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -26,14 +26,26 @@ function formatSecondsToHMS(seconds) {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+function getTopAndBottomByScore(data, n = 5) {
+    const arr = Object.entries(data).map(([key, value]) => ({
+        key,
+        ...value,
+        avgScore: parseFloat(value.avgScore)
+    }));
+    const top = [...arr].sort((a, b) => b.avgScore - a.avgScore).slice(0, n);
+    const bottom = [...arr].sort((a, b) => a.avgScore - b.avgScore).slice(0, n);
+    return { top, bottom };
+}
+
 async function getLocationData() {
     const geoLookup = await maxmind.open(geoLitePath);
 
-    // Count and time accumulators
-    const countryCounts = {};
-    const countryTimes = {};
-    const cityCounts = {};
-    const cityTimes = {};
+    const countryCounts = {},
+        countryTimes = {},
+        countryScores = {};
+    const cityCounts = {},
+        cityTimes = {},
+        cityScores = {};
 
     for (const quizId of quizIds) {
         let snapshot;
@@ -48,72 +60,87 @@ async function getLocationData() {
         for (const doc of snapshot.docs) {
             const data = doc.data();
             const ip = data.ip;
-            let geo = null;
-
-            if (ip) geo = geoLookup.get(ip);
+            const geo = ip ? geoLookup.get(ip) : null;
 
             const country = geo?.country?.names?.en || 'Unknown';
             const city = geo?.city?.names?.en || 'Unknown';
             const cityKey = `${city}, ${country}`;
 
-            // Completion time in seconds
-            let completedAt = data.completedAt && data.completedAt.toDate ? data.completedAt.toDate() : new Date(data.completedAt);
-            let startedAt = data.startedAt && data.startedAt.toDate ? data.startedAt.toDate() : new Date(data.startedAt);
-            let duration = (completedAt - startedAt) / 1000; // seconds
+            const completedAt = data.completedAt?.toDate ? data.completedAt.toDate() : new Date(data.completedAt);
+            const startedAt = data.startedAt?.toDate ? data.startedAt.toDate() : new Date(data.startedAt);
+            let duration = (completedAt - startedAt) / 1000;
             if (duration < 0 || !startedAt || !completedAt) duration = 0;
 
-            // Update country counts & times
+            const score = data.score || 0;
+
             countryCounts[country] = (countryCounts[country] || 0) + 1;
             countryTimes[country] = (countryTimes[country] || 0) + duration;
+            countryScores[country] = (countryScores[country] || 0) + score;
 
-            // Update city counts & times
             cityCounts[cityKey] = (cityCounts[cityKey] || 0) + 1;
             cityTimes[cityKey] = (cityTimes[cityKey] || 0) + duration;
+            cityScores[cityKey] = (cityScores[cityKey] || 0) + score;
         }
     }
 
-    // Sort country counts alphabetically and format avg time
     const sortedCountries = Object.keys(countryCounts)
-        .sort((a, b) => a.localeCompare(b))
+        .sort()
         .reduce((obj, key) => {
-            const avgSeconds = countryTimes[key] / countryCounts[key];
             obj[key] = {
                 count: countryCounts[key],
-                avgTime: formatSecondsToHMS(avgSeconds)
+                avgTime: formatSecondsToHMS(countryTimes[key] / countryCounts[key]),
+                avgScore: (countryScores[key] / countryCounts[key]).toFixed(2)
             };
             return obj;
         }, {});
 
-    // Sort city counts alphabetically by country, then city and format avg time
     const sortedCities = Object.keys(cityCounts)
-        .sort((a, b) => {
-            const [cityA, countryA] = a.split(', ').map((s) => s.toLowerCase());
-            const [cityB, countryB] = b.split(', ').map((s) => s.toLowerCase());
-
-            if (countryA === countryB) return cityA.localeCompare(cityB);
-            return countryA.localeCompare(countryB);
-        })
+        .sort()
         .reduce((obj, key) => {
-            const avgSeconds = cityTimes[key] / cityCounts[key];
             obj[key] = {
                 count: cityCounts[key],
-                avgTime: formatSecondsToHMS(avgSeconds)
+                avgTime: formatSecondsToHMS(cityTimes[key] / cityCounts[key]),
+                avgScore: (cityScores[key] / cityCounts[key]).toFixed(2)
             };
             return obj;
         }, {});
 
-    console.log('\n--- Country Counts + Avg Completion Time (HH:MM:SS) ---');
-    console.log(sortedCountries);
+    const countryScoreExtremes = getTopAndBottomByScore(sortedCountries, 5);
+    const cityScoreExtremes = getTopAndBottomByScore(sortedCities, 5);
 
-    console.log('\n--- City Counts + Avg Completion Time (HH:MM:SS) ---');
-    console.log(sortedCities);
+    // --- Create Excel with xlsx ---
+    const workbook = xlsx.utils.book_new();
+
+    function addSheet(sheetName, data) {
+        let wsData;
+        if (Array.isArray(data)) {
+            // For top/bottom arrays
+            wsData = data.map((d) => ({ Key: d.key, Count: d.count, AvgTime: d.avgTime, AvgScore: d.avgScore }));
+        } else {
+            // For objects
+            wsData = Object.entries(data).map(([key, value]) => ({
+                Key: key,
+                Count: value.count,
+                AvgTime: value.avgTime,
+                AvgScore: value.avgScore
+            }));
+        }
+        const ws = xlsx.utils.json_to_sheet(wsData);
+        xlsx.utils.book_append_sheet(workbook, ws, sheetName);
+    }
+
+    addSheet('Countries', sortedCountries);
+    addSheet('Cities', sortedCities);
+    addSheet('Countries Top_Bottom', [...countryScoreExtremes.top, ...countryScoreExtremes.bottom]);
+    addSheet('Cities Top_Bottom', [...cityScoreExtremes.top, ...cityScoreExtremes.bottom]);
+
+    const filename = `Quiz ${quizIds[0]} Location Stats.xlsx`;
+    xlsx.writeFile(workbook, filename);
+    console.log(`✅ Excel file created: ${filename}`);
 }
 
 getLocationData()
-    .then(() => {
-        console.log('All done!');
-        process.exit(0);
-    })
+    .then(() => process.exit(0))
     .catch((err) => {
         console.error('❌ Unexpected error:', err);
         process.exit(1);

@@ -21,10 +21,16 @@ import { Dashboard } from './app/pages/dashboard/dashboard';
 import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
 
 // Admin pages
-import { StatsDashboard } from '@/pages/dashboard/statsDashboard';
+import { TotalStats } from '@/pages/dashboard/totalStats';
+import { WeeklyStats } from '@/pages/dashboard/weeklyStats';
 import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
+import { VenuesComponent } from '@/pages/admin/venues/venues';
+import { SubmissionFormTableComponent } from '@/pages/admin/submissionForms/submissionFormTable';
+import { SubmissionFormDetailComponent } from '@/pages/admin/submissionForms/submissionFormDetail';
+import { UserTableComponent } from '@/pages/admin/users/userTable';
+import { ProfilePage } from '@/pages/profile/profile';
 
 // Guards
 import { AuthGuard } from '@/shared/guards/authGuard';
@@ -54,8 +60,8 @@ export const appRoutes: Routes = [
   { path: 'login', component: Login },
   { path: 'signup', component: Landing },
 
-  // User public → protected crossover
-  { path: 'profile/:userId', component: Landing, canActivate: [AuthGuard] },
+  // User profile
+  { path: 'profile/:userId', component: ProfilePage, canActivate: [AuthGuard] },
 
   // Checkout
   { path: 'checkout', component: Landing, canActivate: [AuthGuard] },
@@ -71,6 +77,7 @@ export const appRoutes: Routes = [
     canActivate: [AuthGuard],
     children: [
       { path: 'fiftyPlus', component: Dashboard },
+      { path: 'fiftyPlus/profile', component: ProfilePage },
 
       { path: 'fiftyPlus/archives', component: FiftyPageComponent, data: { type: 1, title: 'Archives' } },
       { path: 'fiftyPlus/archives/:quizid', component: FiftyPageComponent, data: { type: 1 } },
@@ -91,10 +98,21 @@ export const appRoutes: Routes = [
         path: 'fiftyPlus/admin',
         canActivate: [AdminGuard],
         children: [
-          { path: 'stats', component: StatsDashboard },
+          {
+            path: 'stats',
+            children: [
+              { path: 'total', component: TotalStats },
+              { path: 'weekly', component: WeeklyStats },
+              { path: '', redirectTo: 'total', pathMatch: 'full' }
+            ]
+          },
           { path: 'quizzes', component: QuizTableComponent },
           { path: 'quizzes/:id', component: QuizDetailComponent },
           { path: 'quizTags', component: QuizTagsComponent },
+          { path: 'venues', component: VenuesComponent },
+          { path: 'submissionForms', component: SubmissionFormTableComponent },
+          { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
+          { path: 'users', component: UserTableComponent },
         ]
       }
     ]

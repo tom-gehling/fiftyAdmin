@@ -99,7 +99,8 @@ export class QuizzesService {
 
     getQuizByQuizId(quizId: string): Observable<Quiz | undefined> {
   const quizzesRef = collection(this.firestore, this.collectionName);
-  const q = query(quizzesRef, where('quizId', '==', quizId));
+  const numericId = Number(quizId);
+  const q = query(quizzesRef, where('quizId', '==', isNaN(numericId) ? quizId : numericId));
 
   return from(getDocs(q)).pipe(
     map(snapshot => {
@@ -156,7 +157,7 @@ getArchiveQuizzes(getHeader: boolean = false): Observable<any[]> {
         });
 
       if (getHeader) {
-        return archiveQuizzes.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }));
+        return archiveQuizzes.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }));
       }
 
       return archiveQuizzes;
@@ -170,7 +171,7 @@ getExclusives(getHeader: boolean = false): Observable<any[]> {
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.FiftyPlus);
       return getHeader
-        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }))
         : list;
     })
   );
@@ -181,7 +182,7 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.Collab);
       return getHeader
-        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }))
         : list;
     })
   );
@@ -192,7 +193,7 @@ getQuestionQuizzes(getHeader: boolean = false): Observable<any[]> {
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.QuestionType);
       return getHeader
-        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle }))
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }))
         : list;
     })
   );
@@ -273,10 +274,6 @@ getQuizzesByQuizIds(quizIds: number[]): Observable<Quiz[]> {
       map(snapshot => snapshot.docs.map(doc => ({ ...(doc.data() as Quiz), id: doc.id })))
     );
   });
-
-  console.log(observables.length === 1
-    ? observables[0]
-    : combineLatest(observables).pipe(map(arrays => arrays.flat())));
 
   return observables.length === 1
     ? observables[0]

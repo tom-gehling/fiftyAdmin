@@ -10,6 +10,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectModule } from 'primeng/select';
+import { QuizResultsService } from '@/shared/services/quiz-result.service';
 
 import type { TooltipItem } from 'chart.js';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -164,6 +165,21 @@ declare const google: any;
   </ng-container>
 </div>
 
+<!-- SCORE DISTRIBUTION CHART -->
+<div class="card mb-4 p-4 fiftyBorder w-full">
+  <div class="flex justify-between items-center mb-2">
+    <span class="block text-surface-0 font-medium text-xl">Score Distribution</span>
+  </div>
+  <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
+    <p-chart
+      type="bar"
+      [data]="scoreDistChartData"
+      [options]="scoreDistChartOptions"
+      class="w-full h-72 md:h-96"
+    ></p-chart>
+  </ng-container>
+</div>
+
 <!-- QUESTION PERFORMANCE CHART -->
 <div class="card mb-4 p-4 fiftyBorder w-full">
   <div class="flex justify-between items-center mb-2">
@@ -289,6 +305,8 @@ export class QuizStatsSummaryComponent implements OnInit {
 
   thinkingTimeChartData: any;
   thinkingTimeChartOptions: any;
+  scoreDistChartData: any;
+  scoreDistChartOptions: any;
 
   hardestQuestions: { number: number; question: string; correctRate: number }[] = [];
   easiestQuestions: { number: number; question: string; correctRate: number }[] = [];
@@ -306,6 +324,7 @@ export class QuizStatsSummaryComponent implements OnInit {
   constructor(
     private quizzesService: QuizzesService,
     private quizStatsService: QuizStatsService,
+    private quizResultsService: QuizResultsService,
     private sanitizer: DomSanitizer
   ) {}
 
@@ -356,7 +375,11 @@ export class QuizStatsSummaryComponent implements OnInit {
 
   private async loadStats(quizId?: string) {
     if (!quizId) return;
-    this.stats = await this.quizStatsService.getQuizAggregatesFirestore(quizId);
+    const [stats] = await Promise.all([
+      this.quizStatsService.getQuizAggregatesFirestore(quizId),
+      this.buildScoreDistribution(quizId)
+    ]);
+    this.stats = stats;
     if (!this.stats) return;
 
     this.averageTimeHHMMSS = this.formatSecondsToHHMMSS(this.stats.averageTime || 0);
@@ -429,7 +452,6 @@ export class QuizStatsSummaryComponent implements OnInit {
       this.generateHourlyChartForRange(new Date(), new Date());
 
      // THINKING TIME GRAPH
-console.log(this.stats);
 
 const thinkingTimes = this.stats.avgTimeBetweenByQuestion || [];
 
@@ -484,6 +506,55 @@ this.thinkingTimeChartOptions = {
       };
       this.locationChartOptions = { responsive: true, plugins: { legend: { position: 'bottom' } } };
     }, 300);
+  }
+
+  private async buildScoreDistribution(quizId: string) {
+    const results = await firstValueFrom(this.quizResultsService.getQuizResults(quizId));
+    const completed = results.filter(r => r.status === 'completed' && r.score != null);
+
+    const counts = new Array(51).fill(0);
+    for (const r of completed) {
+      const score = Math.min(Math.max(r.score!, 0), 50);
+      counts[score]++;
+    }
+
+    this.scoreDistChartData = {
+      labels: Array.from({ length: 51 }, (_, i) => String(i)),
+      datasets: [{
+        label: 'Users',
+        data: counts,
+        backgroundColor: this.fiftyNeonGreen,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    };
+
+    this.scoreDistChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      aspectRatio: 0.8,
+      plugins: {
+        legend: { labels: { color: this.textColor } },
+        tooltip: {
+          callbacks: {
+            label: (tooltipItem: TooltipItem<'bar'>) => `Sessions: ${tooltipItem.formattedValue}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Score', color: this.textMutedColor },
+          ticks: { color: this.textMutedColor },
+          grid: { color: 'transparent', borderColor: 'transparent' }
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Number of Sessions', color: this.textMutedColor },
+          ticks: { color: this.textMutedColor, stepSize: 1 },
+          grid: { color: this.borderColor, borderColor: 'transparent', drawTicks: false }
+        }
+      }
+    };
   }
 
   private generateHourlyChartForRange(startDate: Date, endDate: Date) {

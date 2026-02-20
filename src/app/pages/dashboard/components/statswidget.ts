@@ -6,6 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 import { Timestamp } from 'firebase/firestore';
 import { QuizStatsService } from '@/shared/services/quiz-stats.service';
+import { UserService } from '@/shared/services/user.service';
 
 @Component({
   standalone: true,
@@ -19,7 +20,7 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
           <div>
             <span class="block text-muted-color font-medium mb-2">Active Weekly Quiz</span>
             <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
-              #{{ activeQuiz?.quizTitle || activeQuiz?.quizId }}
+              {{ activeQuiz?.quizTitle || activeQuiz?.quizId }}
             </div>
           </div>
           <div class="mt-4 text-muted-color text-sm">
@@ -62,7 +63,7 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
           <div class="flex justify-between items-center">
             <div>
               <span class="block text-muted-color font-medium mb-2">
-                #{{ activeQuiz?.quizTitle || activeQuiz?.quizId }} Completed Sessions
+                {{ activeQuiz?.quizTitle || activeQuiz?.quizId }} Completed Sessions
               </span>
               <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
                 {{ totalSessions }}
@@ -84,7 +85,7 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 
           </div>
           <div class="mt-4 text-muted-color text-sm">
-            Avg Score: {{ (averageScore * 50) | number:'1.2-2' }}
+            Avg Score: {{ averageScore | number:'1.1-2' }}
           </div>
         </ng-container>
       </div>
@@ -96,7 +97,7 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
         <ng-container *ngIf="!loadingMembers; else loadingSpinner">
           <div class="flex justify-between items-center">
             <div>
-              <span class="block text-muted-color font-medium mb-2">Fifty+ Member Count</span>
+              <span class="block text-muted-color font-medium mb-2">Fifty+ Members</span>
               <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
                 {{ memberCount }}
               </div>
@@ -108,9 +109,8 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
               <i class="pi pi-users text-cyan-500 text-xl!"></i>
             </div>
           </div>
-          <div class="mt-4">
-            <span class="text-primary font-medium">{{ memberIncrease }}%</span>
-            <span class="text-muted-color"> since last week</span>
+          <div class="mt-4 text-muted-color text-sm">
+            Joined in last week: {{ newMembersLast7Days }}
           </div>
         </ng-container>
       </div>
@@ -127,6 +127,7 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 export class StatsWidget implements OnInit {
   private quizzesService = inject(QuizzesService);
   private quizStatsService = inject(QuizStatsService);
+  private userService = inject(UserService);
 
   activeQuiz: Quiz | null = null;
   nextQuizReady: boolean | null = null;
@@ -136,7 +137,7 @@ export class StatsWidget implements OnInit {
   averageScore = 0;
 
   memberCount = 0;
-  memberIncrease = 0;
+  newMembersLast7Days = 0;
 
   // Loading flags
   loadingActiveQuiz = true;
@@ -205,11 +206,12 @@ export class StatsWidget implements OnInit {
   async loadQuizStats() {
     this.loadingStats = true;
     try {
-      // Wait until we have an active quiz
       if (!this.activeQuiz?.quizId) return;
-      const stats = await this.quizStatsService.getQuizTotalStats(String(this.activeQuiz.quizId));
-      this.totalSessions = stats?.totalSessions ?? 0;
-      this.averageScore = this.averageScore = stats?.averageScore ?? 0;
+      const aggregate = await this.quizStatsService.getQuizAggregatesFirestore(String(this.activeQuiz.quizId));
+      if (aggregate) {
+        this.totalSessions = (aggregate.completedCount || 0) + (aggregate.inProgressCount || 0);
+        this.averageScore = aggregate.averageScore || 0;
+      }
     } catch (error) {
       console.error('Error loading quiz stats:', error);
     } finally {
@@ -220,10 +222,17 @@ export class StatsWidget implements OnInit {
   async loadMembers() {
     this.loadingMembers = true;
     try {
-      // simulate async fetch
-      await new Promise(r => setTimeout(r, 500));
-      this.memberCount = Math.floor(Math.random() * (4000 - 2000 + 1)) + 2000;
-      this.memberIncrease = Math.floor(Math.random() * (20 - 1 + 1)) + 1;
+      const users = await this.userService.getAllUsers();
+      this.memberCount = users.length;
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      this.newMembersLast7Days = users.filter(u => {
+        if (!u.createdAt) return false;
+        const created = u.createdAt instanceof Date ? u.createdAt : u.createdAt.toDate?.();
+        return created && created >= sevenDaysAgo;
+      }).length;
+    } catch (error) {
+      console.error('Error loading user count:', error);
     } finally {
       this.loadingMembers = false;
     }

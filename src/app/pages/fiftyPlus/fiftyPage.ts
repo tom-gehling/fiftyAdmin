@@ -27,12 +27,26 @@ export class FiftyPageComponent implements OnInit {
 
     // Read static route data
     const typeNum = this.route.snapshot.data['type'];
-    this.title = this.route.snapshot.data['title'];
+    this.title = this.route.snapshot.data['title'] || this.getDefaultTitle(typeNum);
     this.quizType = typeMap[typeNum] ?? 'archives';
 
-    // Read optional quiz ID from route params
+    // Get initial quiz ID from route snapshot (synchronous)
+    this.selectedQuizId = this.route.snapshot.paramMap.get('quizid') ?? undefined;
+
+    // Listen to route param changes reactively (for when URL changes while on same page)
     this.route.paramMap.subscribe(params => {
-      this.selectedQuizId = params.get('id') ?? undefined;
+      const quizId = params.get('quizid');
+      this.selectedQuizId = quizId ?? undefined;
     });
+  }
+
+  private getDefaultTitle(typeNum: number): string {
+    const titles: Record<number, string> = {
+      1: 'Archives',
+      2: 'Exclusives',
+      3: 'Collaborations',
+      4: 'Question Quizzes'
+    };
+    return titles[typeNum] || 'Quizzes';
   }
 }

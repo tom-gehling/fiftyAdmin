@@ -1,14 +1,27 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { PublicTopbarComponent } from './components/public-topbar';
 
 @Component({
     selector: 'app-fifty-shop',
     standalone: true,
-    imports: [RouterModule],
+    imports: [RouterModule, PublicTopbarComponent],
     template: `
-        <div class="bg-surface-0 dark:bg-surface-900">
+        <app-public-topbar />
+        <div class="page-content">
            Fifty Shop
         </div>
-    `
+    `,
+    styles: [`
+        :host {
+            display: block;
+            min-height: 100vh;
+            background: var(--fifty-green);
+            color: var(--fifty-pink);
+        }
+        .page-content {
+            padding: 4.5rem 1.5rem 1.5rem;
+        }
+    `]
 })
 export class FiftyShopPage {}
