@@ -84,9 +84,9 @@ const ROUTE_LABELS: Record<string, string> = {
       align-items: center;
       justify-content: space-between;
       padding: 0.5rem 1.5rem;
-      background: transparent;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: var(--fifty-green);
+      // backdrop-filter: blur(12px);
+      // -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(251, 226, 223, 0.15);
     }
 
@@ -95,6 +95,22 @@ const ROUTE_LABELS: Record<string, string> = {
       background: transparent !important;
       border: none !important;
       padding: 0 !important;
+    }
+
+    :host ::ng-deep .p-breadcrumb-item-link {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: var(--p-breadcrumb-item-gap);
+      transition: background var(--p-breadcrumb-transition-duration), color var(--p-breadcrumb-transition-duration), outline-color var(--p-breadcrumb-transition-duration), box-shadow var(--p-breadcrumb-transition-duration);
+      border-radius: var(--p-breadcrumb-item-border-radius);
+      outline-color: transparent;
+      color: var(--fifty-pink, #fbe2df);
+    }
+
+    :host ::ng-deep .p-breadcrumb-item-icon {
+      color: var(--fifty-pink, #fbe2df);
+      transition: inherit;
     }
 
     :host ::ng-deep .public-breadcrumb .p-breadcrumb-list {
@@ -190,8 +206,8 @@ const ROUTE_LABELS: Record<string, string> = {
       right: 0;
       z-index: 999;
       background: rgba(0, 0, 0, 0.9);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      // backdrop-filter: blur(12px);
+      // -webkit-backdrop-filter: blur(12px);
       padding: 1rem 1.5rem;
       flex-direction: column;
       gap: 0.75rem;

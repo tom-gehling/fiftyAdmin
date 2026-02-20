@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
-import { AccordionModule } from 'primeng/accordion';
+import { PanelModule } from 'primeng/panel';
 import { DrawerModule } from 'primeng/drawer';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
@@ -25,7 +25,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
     InputTextModule,
     SelectModule,
     ButtonModule,
-    AccordionModule,
+    PanelModule,
     DrawerModule,
     IconFieldModule,
     InputIconModule,
@@ -93,7 +93,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
       <!-- Main Content -->
       <div class="map-container">
         <!-- Google Map -->
-        <div #mapElement class="absolute inset-0 w-full h-full"></div>
+        <div #mapElement class="flex-1 h-full"></div>
 
         <!-- Desktop Sidebar -->
         <div class="venue-sidebar hidden md:block">
@@ -111,10 +111,15 @@ import { PublicTopbarComponent } from './components/public-topbar';
                 No venues found
               </div>
 
-              <p-accordion [value]="selectedVenue?.id ?? ''" (valueChange)="onAccordionChange($event)" styleClass="venue-accordion">
-                <p-accordion-panel *ngFor="let venue of filteredVenues" [value]="venue.id!">
-                  <p-accordion-header>
-                    <div class="venue-list-content">
+              <div class="venue-panels">
+                <p-panel
+                  *ngFor="let venue of filteredVenues"
+                  [toggleable]="true"
+                  [collapsed]="venueCollapsed[venue.id!] !== false"
+                  (collapsedChange)="onPanelToggle(venue, $event)"
+                  styleClass="venue-panel">
+                  <ng-template #header>
+                    <div class="venue-panel-header-content">
                       <div class="venue-list-info">
                         <h3 class="venue-list-name">{{ venue.venueName }}</h3>
                         <p class="venue-list-location">
@@ -133,60 +138,58 @@ import { PublicTopbarComponent } from './components/public-topbar';
                         class="venue-list-img"
                       />
                     </div>
-                  </p-accordion-header>
-                  <p-accordion-content>
-                    <div class="venue-detail">
-                      <!-- Address -->
-                      <div class="venue-detail-row">
-                        <i class="pi pi-map-marker venue-detail-icon"></i>
-                        <div>
-                          <h4 class="venue-detail-label">Address</h4>
-                          <p class="venue-detail-value">
-                            {{ venue.location.address }}<br>
-                            {{ venue.location.city }}<span *ngIf="venue.location.state">, {{ venue.location.state }}</span>
-                            <span *ngIf="venue.location.postalCode"> {{ venue.location.postalCode }}</span>
-                          </p>
-                        </div>
+                  </ng-template>
+                  <div class="venue-detail">
+                    <!-- Address -->
+                    <div class="venue-detail-row">
+                      <i class="pi pi-map-marker venue-detail-icon"></i>
+                      <div>
+                        <h4 class="venue-detail-label">Address</h4>
+                        <p class="venue-detail-value">
+                          {{ venue.location.address }}<br>
+                          {{ venue.location.city }}<span *ngIf="venue.location.state">, {{ venue.location.state }}</span>
+                          <span *ngIf="venue.location.postalCode"> {{ venue.location.postalCode }}</span>
+                        </p>
                       </div>
-
-                      <!-- Phone -->
-                      <div *ngIf="venue.phoneNumber" class="venue-detail-row">
-                        <i class="pi pi-phone venue-detail-icon"></i>
-                        <div>
-                          <h4 class="venue-detail-label">Phone</h4>
-                          <a [href]="'tel:' + venue.phoneNumber" class="venue-detail-link">{{ venue.phoneNumber }}</a>
-                        </div>
-                      </div>
-
-                      <!-- Website -->
-                      <div *ngIf="venue.websiteUrl" class="venue-detail-row">
-                        <i class="pi pi-globe venue-detail-icon"></i>
-                        <div>
-                          <h4 class="venue-detail-label">Website</h4>
-                          <a [href]="venue.websiteUrl" target="_blank" class="venue-detail-link">{{ venue.websiteUrl }}</a>
-                        </div>
-                      </div>
-
-                      <!-- Quiz Schedules -->
-                      <div *ngIf="getActiveSchedules(venue).length > 0" class="venue-detail-row venue-detail-row--schedules">
-                        <i class="pi pi-calendar venue-detail-icon"></i>
-                        <div class="flex-1">
-                          <h4 class="venue-detail-label">Quiz Nights</h4>
-                          <div *ngFor="let schedule of getActiveSchedules(venue)" class="venue-detail-schedule">
-                            <p class="venue-detail-value">{{ formatSchedule(schedule) }}</p>
-                            <p *ngIf="schedule.notes" class="venue-detail-note">{{ schedule.notes }}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Directions link -->
-                      <a [href]="getDirectionsUrl(venue)" target="_blank" class="venue-detail-directions">
-                        <i class="pi pi-directions mr-2"></i> Get Directions
-                      </a>
                     </div>
-                  </p-accordion-content>
-                </p-accordion-panel>
-              </p-accordion>
+
+                    <!-- Phone -->
+                    <div *ngIf="venue.phoneNumber" class="venue-detail-row">
+                      <i class="pi pi-phone venue-detail-icon"></i>
+                      <div>
+                        <h4 class="venue-detail-label">Phone</h4>
+                        <a [href]="'tel:' + venue.phoneNumber" class="venue-detail-link">{{ venue.phoneNumber }}</a>
+                      </div>
+                    </div>
+
+                    <!-- Website -->
+                    <div *ngIf="venue.websiteUrl" class="venue-detail-row">
+                      <i class="pi pi-globe venue-detail-icon"></i>
+                      <div>
+                        <h4 class="venue-detail-label">Website</h4>
+                        <a [href]="venue.websiteUrl" target="_blank" class="venue-detail-link">{{ venue.websiteUrl }}</a>
+                      </div>
+                    </div>
+
+                    <!-- Quiz Schedules -->
+                    <div *ngIf="getActiveSchedules(venue).length > 0" class="venue-detail-row venue-detail-row--schedules">
+                      <i class="pi pi-calendar venue-detail-icon"></i>
+                      <div class="flex-1">
+                        <h4 class="venue-detail-label">Quiz Nights</h4>
+                        <div *ngFor="let schedule of getActiveSchedules(venue)" class="venue-detail-schedule">
+                          <p class="venue-detail-value">{{ formatSchedule(schedule) }}</p>
+                          <p *ngIf="schedule.notes" class="venue-detail-note">{{ schedule.notes }}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Directions link -->
+                    <a [href]="getDirectionsUrl(venue)" target="_blank" class="venue-detail-directions">
+                      <i class="pi pi-directions mr-2"></i> Get Directions
+                    </a>
+                  </div>
+                </p-panel>
+              </div>
             </div>
           </div>
         </div>
@@ -198,10 +201,15 @@ import { PublicTopbarComponent } from './components/public-topbar';
             No venues found
           </div>
 
-          <p-accordion [value]="selectedVenue?.id ?? ''" (valueChange)="onAccordionChange($event)" styleClass="venue-accordion">
-            <p-accordion-panel *ngFor="let venue of filteredVenues" [value]="venue.id!">
-              <p-accordion-header>
-                <div class="venue-list-content">
+          <div class="venue-panels">
+            <p-panel
+              *ngFor="let venue of filteredVenues"
+              [toggleable]="true"
+              [collapsed]="venueCollapsed[venue.id!] !== false"
+              (collapsedChange)="onPanelToggle(venue, $event)"
+              styleClass="venue-panel">
+              <ng-template #header>
+                <div class="venue-panel-header-content">
                   <div class="venue-list-info">
                     <h3 class="venue-list-name">{{ venue.venueName }}</h3>
                     <p class="venue-list-location">
@@ -220,51 +228,49 @@ import { PublicTopbarComponent } from './components/public-topbar';
                     class="venue-list-img"
                   />
                 </div>
-              </p-accordion-header>
-              <p-accordion-content>
-                <div class="venue-detail">
-                  <div class="venue-detail-row">
-                    <i class="pi pi-map-marker venue-detail-icon"></i>
-                    <div>
-                      <h4 class="venue-detail-label">Address</h4>
-                      <p class="venue-detail-value">
-                        {{ venue.location.address }}<br>
-                        {{ venue.location.city }}<span *ngIf="venue.location.state">, {{ venue.location.state }}</span>
-                        <span *ngIf="venue.location.postalCode"> {{ venue.location.postalCode }}</span>
-                      </p>
-                    </div>
+              </ng-template>
+              <div class="venue-detail">
+                <div class="venue-detail-row">
+                  <i class="pi pi-map-marker venue-detail-icon"></i>
+                  <div>
+                    <h4 class="venue-detail-label">Address</h4>
+                    <p class="venue-detail-value">
+                      {{ venue.location.address }}<br>
+                      {{ venue.location.city }}<span *ngIf="venue.location.state">, {{ venue.location.state }}</span>
+                      <span *ngIf="venue.location.postalCode"> {{ venue.location.postalCode }}</span>
+                    </p>
                   </div>
-                  <div *ngIf="venue.phoneNumber" class="venue-detail-row">
-                    <i class="pi pi-phone venue-detail-icon"></i>
-                    <div>
-                      <h4 class="venue-detail-label">Phone</h4>
-                      <a [href]="'tel:' + venue.phoneNumber" class="venue-detail-link">{{ venue.phoneNumber }}</a>
-                    </div>
-                  </div>
-                  <div *ngIf="venue.websiteUrl" class="venue-detail-row">
-                    <i class="pi pi-globe venue-detail-icon"></i>
-                    <div>
-                      <h4 class="venue-detail-label">Website</h4>
-                      <a [href]="venue.websiteUrl" target="_blank" class="venue-detail-link">{{ venue.websiteUrl }}</a>
-                    </div>
-                  </div>
-                  <div *ngIf="getActiveSchedules(venue).length > 0" class="venue-detail-row venue-detail-row--schedules">
-                    <i class="pi pi-calendar venue-detail-icon"></i>
-                    <div class="flex-1">
-                      <h4 class="venue-detail-label">Quiz Nights</h4>
-                      <div *ngFor="let schedule of getActiveSchedules(venue)" class="venue-detail-schedule">
-                        <p class="venue-detail-value">{{ formatSchedule(schedule) }}</p>
-                        <p *ngIf="schedule.notes" class="venue-detail-note">{{ schedule.notes }}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <a [href]="getDirectionsUrl(venue)" target="_blank" class="venue-detail-directions">
-                    <i class="pi pi-directions mr-2"></i> Get Directions
-                  </a>
                 </div>
-              </p-accordion-content>
-            </p-accordion-panel>
-          </p-accordion>
+                <div *ngIf="venue.phoneNumber" class="venue-detail-row">
+                  <i class="pi pi-phone venue-detail-icon"></i>
+                  <div>
+                    <h4 class="venue-detail-label">Phone</h4>
+                    <a [href]="'tel:' + venue.phoneNumber" class="venue-detail-link">{{ venue.phoneNumber }}</a>
+                  </div>
+                </div>
+                <div *ngIf="venue.websiteUrl" class="venue-detail-row">
+                  <i class="pi pi-globe venue-detail-icon"></i>
+                  <div>
+                    <h4 class="venue-detail-label">Website</h4>
+                    <a [href]="venue.websiteUrl" target="_blank" class="venue-detail-link">{{ venue.websiteUrl }}</a>
+                  </div>
+                </div>
+                <div *ngIf="getActiveSchedules(venue).length > 0" class="venue-detail-row venue-detail-row--schedules">
+                  <i class="pi pi-calendar venue-detail-icon"></i>
+                  <div class="flex-1">
+                    <h4 class="venue-detail-label">Quiz Nights</h4>
+                    <div *ngFor="let schedule of getActiveSchedules(venue)" class="venue-detail-schedule">
+                      <p class="venue-detail-value">{{ formatSchedule(schedule) }}</p>
+                      <p *ngIf="schedule.notes" class="venue-detail-note">{{ schedule.notes }}</p>
+                    </div>
+                  </div>
+                </div>
+                <a [href]="getDirectionsUrl(venue)" target="_blank" class="venue-detail-directions">
+                  <i class="pi pi-directions mr-2"></i> Get Directions
+                </a>
+              </div>
+            </p-panel>
+          </div>
         </p-drawer>
 
         <!-- Loading State -->
@@ -362,6 +368,8 @@ import { PublicTopbarComponent } from './components/public-topbar';
     /* Map container */
     .map-container {
       position: relative;
+      display: flex;
+      flex-direction: row;
       height: calc(100vh - 160px);
     }
 
@@ -373,11 +381,9 @@ import { PublicTopbarComponent } from './components/public-topbar';
 
     /* Sidebar */
     .venue-sidebar {
-      position: absolute;
-      top: 0;
-      right: 0;
-      height: 100%;
       width: 24rem;
+      flex-shrink: 0;
+      height: 100%;
       background: var(--fifty-green);
       box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
       overflow: hidden;
@@ -390,30 +396,20 @@ import { PublicTopbarComponent } from './components/public-topbar';
       color: var(--fifty-pink);
     }
 
-    /* Venue list items */
-    .venue-list-item {
-      padding: 1rem;
-      border: 1px solid rgba(76, 251, 171, 0.3);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: rgba(0, 0, 0, 0.15);
+    /* Venue panels container */
+    .venue-panels {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
     }
 
-    .venue-list-item:hover {
-      background: rgba(76, 251, 171, 0.1);
-      border-color: #4cfbab;
-    }
-
-    .venue-list-item--active {
-      background: rgba(76, 251, 171, 0.15);
-      border-color: #4cfbab;
-    }
-
-    .venue-list-content {
+    /* Panel header content */
+    .venue-panel-header-content {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      flex: 1;
+      min-width: 0;
     }
 
     .venue-list-info {
@@ -438,7 +434,8 @@ import { PublicTopbarComponent } from './components/public-topbar';
     }
 
     .venue-list-location {
-      font-size: 0.875rem;
+      font-size: 1rem;
+      font-weight: 600;
       color: rgba(251, 226, 223, 0.7);
       margin-bottom: 0.5rem;
     }
@@ -453,7 +450,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
     }
 
     .venue-list-next-quiz {
-      font-size: 0.85rem;
+      font-size: 1rem;
       color: #fbe2dfcc;
       font-weight: 600;
       margin-bottom: 0.2rem;
@@ -467,49 +464,76 @@ import { PublicTopbarComponent } from './components/public-topbar';
       color: #4cfbab;
     }
 
-    /* Venue accordion theming */
-    :host ::ng-deep .venue-accordion .p-accordionpanel {
-      margin-bottom: 0.75rem;
+    :host ::ng-deep .p-panel {
+      display: block;
+      border-radius: var(--p-panel-border-radius);
+      color: var(--p-panel-color);
     }
 
-    :host ::ng-deep .venue-accordion .p-accordionheader {
+    .p-button-text.p-button-secondary {
+      background: transparent;
+      border-color: transparent;
+      color: var(--p-panel-color);
+    }
+
+    /* Venue panel theming */
+    :host ::ng-deep .venue-panel {
+      margin: 0;
+    }
+
+    :host ::ng-deep .venue-panel .p-panel-header,
+    :host ::ng-deep .venue-panel button.p-panel-header,
+    :host ::ng-deep .venue-panel .p-panel-header:hover,
+    :host ::ng-deep .venue-panel button.p-panel-header:hover,
+    :host ::ng-deep .venue-panel .p-panel-header:focus,
+    :host ::ng-deep .venue-panel button.p-panel-header:focus,
+    :host ::ng-deep .venue-panel .p-panel-header:active,
+    :host ::ng-deep .venue-panel button.p-panel-header:active {
       background: var(--fifty-green) !important;
-      border: 1px solid #4cfbab;
-      border-radius: 8px;
+      border: 1px solid #4cfbab !important;
+      border-radius: 8px !important;
       color: var(--fifty-pink) !important;
       padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
     }
 
-    :host ::ng-deep .venue-accordion .p-accordionheader:hover,
-    :host ::ng-deep .venue-accordion .p-accordionheader:focus,
-    :host ::ng-deep .venue-accordion .p-accordionheader:active {
+    :host ::ng-deep .venue-panel .p-panel-header:hover,
+    :host ::ng-deep .venue-panel button.p-panel-header:hover {
       background: rgba(76, 251, 171, 0.08) !important;
-      color: var(--fifty-pink) !important;
     }
 
-    :host ::ng-deep .venue-accordion .p-accordionpanel-active .p-accordionheader,
-    :host ::ng-deep .venue-accordion .p-accordionpanel-active .p-accordionheader:hover {
-      background: rgba(76, 251, 171, 0.1) !important;
-      border-color: #4cfbab;
-      color: var(--fifty-pink) !important;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
+    :host ::ng-deep .venue-panel.p-panel-expanded .p-panel-header,
+    :host ::ng-deep .venue-panel.p-panel-expanded button.p-panel-header,
+    :host ::ng-deep .venue-panel.p-panel-expanded .p-panel-header:hover,
+    :host ::ng-deep .venue-panel.p-panel-expanded button.p-panel-header:hover,
+    :host ::ng-deep .venue-panel.p-panel-expanded .p-panel-header:focus,
+    :host ::ng-deep .venue-panel.p-panel-expanded button.p-panel-header:focus {
+      border-bottom-left-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
     }
 
-    :host ::ng-deep .venue-accordion .p-accordioncontent-content {
-      background: var(--fifty-green);
-      border: 1px solid #4cfbab;
-      border-top: none;
-      border-bottom-left-radius: 8px;
-      border-bottom-right-radius: 8px;
+    :host ::ng-deep .venue-panel .p-panel-content {
+      background: var(--fifty-green) !important;
+      border: 1px solid #4cfbab !important;
+      border-top: none !important;
+      border-bottom-left-radius: 8px !important;
+      border-bottom-right-radius: 8px !important;
       padding: 0.75rem;
     }
 
-    :host ::ng-deep .venue-accordion .p-accordionheader-toggle-icon {
-      color: #4cfbab;
+    :host ::ng-deep .venue-panel .p-panel-header-icon,
+    :host ::ng-deep .venue-panel .p-panel-header-icon:hover,
+    :host ::ng-deep .venue-panel .p-panel-header-icon:focus {
+      color: #4cfbab !important;
+      background: transparent !important;
     }
 
-    /* Venue detail rows inside accordion */
+    :host ::ng-deep .venue-panel .p-panel-header-icon:hover {
+      background: rgba(76, 251, 171, 0.15) !important;
+    }
+
+    /* Venue detail rows inside panel */
     .venue-detail {
       display: flex;
       flex-direction: column;
@@ -666,6 +690,8 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
   selectedState: string | null = null;
   stateOptions: { label: string; value: string }[] = [];
 
+  venueCollapsed: Record<string, boolean> = {};
+
   dayOptions = [
     { label: 'Sunday', value: 0 },
     { label: 'Monday', value: 1 },
@@ -794,13 +820,8 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
   }
 
   selectVenue(venue: Venue): void {
-    // Toggle: clicking the same venue closes it
-    if (this.selectedVenue?.id === venue.id) {
-      this.selectedVenue = null;
-      return;
-    }
-
     this.selectedVenue = venue;
+    this.venueCollapsed[venue.id!] = false;
 
     // On mobile, show the sidebar
     if (window.innerWidth < 768) {
@@ -808,11 +829,10 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
     }
   }
 
-  onAccordionChange(value: string | number | string[] | number[]): void {
-    const id = Array.isArray(value) ? String(value[0]) : String(value);
-    const venue = this.filteredVenues.find(v => v.id === id) || null;
-    this.selectedVenue = venue;
-    if (venue) {
+  onPanelToggle(venue: Venue, collapsed: boolean): void {
+    this.venueCollapsed[venue.id!] = collapsed;
+    if (!collapsed) {
+      this.selectedVenue = venue;
       this.panToMarker(venue);
     }
   }

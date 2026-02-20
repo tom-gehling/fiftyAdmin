@@ -14,6 +14,7 @@ import { SubmissionFormService } from '@/shared/services/submission-form.service
 import { QuizSubmissionService } from '@/shared/services/quiz-submission.service';
 import { SubmissionForm, SubmissionFormField } from '@/shared/models/submissionForm.model';
 import { TaggedUser } from '@/shared/models/quizSubmission.model';
+import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 import { UserTagSelectorComponent } from '../userTagSelector/userTagSelector.component';
 import { ActivatedRoute } from '@angular/router';
 import { DynamicDialogConfig } from 'primeng/dynamicdialog';
@@ -45,8 +46,8 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
           *ngIf="!locked"
           icon="pi pi-download"
           label="Download"
-          [outlined]="true"
-          severity="secondary"
+          [outlined]="false"
+          severity="primary"
           (onClick)="downloadPdf()"
           class="downloadButton">
         </p-button>
@@ -81,21 +82,26 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             <p [innerHTML]="q.answer"></p>
 
             <ng-container *ngIf="!locked">
-              <div class="flex gap-2 w-full justify-center">
-                <button
-                  class="genericButton"
-                  [ngClass]="{ correct: answers[i]?.correct === true }"
-                  (click)="markAnswer(i, true)"
-                >
-                  Correct
-                </button>
-                <button
-                  class="genericButton"
-                  [ngClass]="{ incorrect: answers[i]?.correct === false }"
-                  (click)="markAnswer(i, false)"
-                >
-                  Incorrect
-                </button>
+              <div class="flex flex-col items-center gap-1">
+                <div class="flex gap-2">
+                  <button
+                    class="genericButton"
+                    [ngClass]="{ correct: answers[i]?.correct === true }"
+                    (click)="markAnswer(i, true)"
+                  >
+                    Correct
+                  </button>
+                  <button
+                    class="genericButton"
+                    [ngClass]="{ incorrect: answers[i]?.correct === false }"
+                    (click)="markAnswer(i, false)"
+                  >
+                    Incorrect
+                  </button>
+                </div>
+                <span *ngIf="answers[i]?.percentCorrect !== undefined" class="questionStat">
+                  ({{ answers[i]?.percentCorrect }}% got this right)
+                </span>
               </div>
             </ng-container>
           </div>
@@ -296,6 +302,14 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       color: var(--primary);
     }
 
+    .questionStat {
+      font-size: 14px;
+      color: var(--primary);
+      opacity: 0.7;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+
     .genericButton:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -445,7 +459,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   score = 0;
   totalQuestions = 0;
 
-  answers: { correct: boolean | null }[] = [];
+  answers: { correct: boolean | null; percentCorrect?: number }[] = [];
   questionClicked: boolean[] = [];
   answerRevealed: boolean[] = [];
 
@@ -463,6 +477,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   constructor(
     private quizService: QuizzesService,
     private quizResultsService: QuizResultsService,
+    private quizStatsService: QuizStatsService,
     private authService: AuthService,
     private quizPdfService: QuizPdfService,
     private submissionFormService: SubmissionFormService,
@@ -794,9 +809,31 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     if (this.isQuizCompleted && this.resultId) {
       try {
         await this.quizResultsService.completeResult(this.resultId);
+        this.applyStatsToAnswers();
       } catch (err) {
         console.error('Failed to complete result', err);
       }
+    }
+  }
+
+  // ---------------------------------------------
+  // QUIZ STATS
+  // ---------------------------------------------
+  private async applyStatsToAnswers() {
+    if (!this.quiz) return;
+    try {
+      const aggregate = await this.quizStatsService.getQuizAggregatesFirestore(this.quiz.quizId.toString());
+      if (!aggregate || (aggregate.completedCount ?? 0) < 50) return;
+      const questionAccuracy: { questionId: string | number; correctRate: number }[] = aggregate.questionAccuracy ?? [];
+      this.answers = this.answers.map((answer, i) => {
+        const q = this.quiz!.questions[i];
+        if (!q) return answer;
+        const stat = questionAccuracy.find(qa => Number(qa.questionId) === q.questionId);
+        if (!stat) return answer;
+        return { ...answer, percentCorrect: Math.round(stat.correctRate * 100) };
+      });
+    } catch (err) {
+      console.error('Failed to load quiz stats', err);
     }
   }
 
