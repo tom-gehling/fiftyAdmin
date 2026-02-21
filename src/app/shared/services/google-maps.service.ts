@@ -263,9 +263,10 @@ export class GoogleMapsService {
       case 'biweekly':
         return `Every other ${days[schedule.dayOfWeek!]}${time}`;
 
-      case 'monthly':
+      case 'monthly': {
         const weeks: Record<number, string> = { 1: 'First', 2: 'Second', 3: 'Third', 4: 'Fourth', [-1]: 'Last' };
-        return `${weeks[schedule.weekOfMonth!]} ${days[schedule.dayOfWeek!]}${time}`;
+        return `${weeks[schedule.weekOfMonth!]} ${days[schedule.dayOfWeek!]} of the month${time}`;
+      }
 
       case 'custom':
         return 'Custom schedule - see specific dates';

@@ -748,6 +748,11 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
     if (this.userLocation) {
       this.addUserLocationMarker();
     }
+
+    // Venues may have loaded before the map was ready — add markers now
+    if (this.filteredVenues.length > 0) {
+      this.addMarkers();
+    }
   }
 
   private addUserLocationMarker(): void {
