@@ -491,6 +491,8 @@ import { PublicTopbarComponent } from './components/public-topbar';
     :host ::ng-deep .venue-panel button.p-panel-header:hover,
     :host ::ng-deep .venue-panel .p-panel-header:focus,
     :host ::ng-deep .venue-panel button.p-panel-header:focus,
+    :host ::ng-deep .venue-panel .p-panel-header:focus-visible,
+    :host ::ng-deep .venue-panel button.p-panel-header:focus-visible,
     :host ::ng-deep .venue-panel .p-panel-header:active,
     :host ::ng-deep .venue-panel button.p-panel-header:active {
       background: var(--fifty-green) !important;
@@ -512,7 +514,9 @@ import { PublicTopbarComponent } from './components/public-topbar';
     :host ::ng-deep .venue-panel.p-panel-expanded .p-panel-header:hover,
     :host ::ng-deep .venue-panel.p-panel-expanded button.p-panel-header:hover,
     :host ::ng-deep .venue-panel.p-panel-expanded .p-panel-header:focus,
-    :host ::ng-deep .venue-panel.p-panel-expanded button.p-panel-header:focus {
+    :host ::ng-deep .venue-panel.p-panel-expanded button.p-panel-header:focus,
+    :host ::ng-deep .venue-panel.p-panel-expanded .p-panel-header:focus-visible,
+    :host ::ng-deep .venue-panel.p-panel-expanded button.p-panel-header:focus-visible {
       border-bottom-left-radius: 0 !important;
       border-bottom-right-radius: 0 !important;
     }
@@ -528,7 +532,9 @@ import { PublicTopbarComponent } from './components/public-topbar';
 
     :host ::ng-deep .venue-panel .p-panel-header-icon,
     :host ::ng-deep .venue-panel .p-panel-header-icon:hover,
-    :host ::ng-deep .venue-panel .p-panel-header-icon:focus {
+    :host ::ng-deep .venue-panel .p-panel-header-icon:focus,
+    :host ::ng-deep .venue-panel .p-panel-header-icon:focus-visible,
+    :host ::ng-deep .venue-panel .p-panel-header-icon:active {
       color: #4cfbab !important;
       background: transparent !important;
     }
