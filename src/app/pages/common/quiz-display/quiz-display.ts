@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Quiz } from '@/shared/models/quiz.model';
+import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { AuthService } from '@/shared/services/auth.service';
@@ -41,7 +42,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
       <!-- Title and Download -->
       <div class="quizHeader">
-        <div class="quizTitle">{{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}</div>
+        <div class="quizTitle">{{ getQuizTitle() }}</div>
         <div *ngIf="!locked" class="downloadRow">
           <p-button
             icon="pi pi-download"
@@ -746,6 +747,23 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   // ---------------------------------------------
   // UI HELPERS
   // ---------------------------------------------
+  getQuizTitle(): string {
+    if (!this.quiz) return '';
+    if (this.quiz.quizType === QuizTypeEnum.Weekly && this.quiz.deploymentDate) {
+      const date = this.quiz.deploymentDate instanceof Date
+        ? this.quiz.deploymentDate
+        : this.quiz.deploymentDate.toDate();
+      const formatted = new Intl.DateTimeFormat('en-AU', {
+        timeZone: 'Australia/Adelaide',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit'
+      }).format(date);
+      return `Quiz ${this.quiz.quizId} - ${formatted}`;
+    }
+    return this.quiz.quizTitle || `Quiz ${this.quiz.quizId}`;
+  }
+
   toggleQuestion(i: number) {
     this.questionClicked[i] = !this.questionClicked[i];
   }
