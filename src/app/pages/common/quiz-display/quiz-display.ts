@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Quiz } from '@/shared/models/quiz.model';
@@ -23,7 +24,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 @Component({
   selector: 'app-quiz-display',
   standalone: true,
-  imports: [CommonModule, ProgressSpinnerModule, ButtonModule, ReactiveFormsModule, UserTagSelectorComponent],
+  imports: [CommonModule, ProgressSpinnerModule, ButtonModule, DialogModule, ReactiveFormsModule, UserTagSelectorComponent],
   template: `
     <!-- Loading Spinner -->
     <div *ngIf="loading" class="flex items-center justify-center h-96">
@@ -47,7 +48,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
           <p-button
             icon="pi pi-download"
             label="Download"
-            [outlined]="false"
+            [outlined]="true"
             (onClick)="downloadPdf()"
             class="downloadButton">
           </p-button>
@@ -131,7 +132,6 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       <!-- Submission Form -->
       <ng-container *ngIf="submissionForm && !submitted">
         <div class="submissionFormSection">
-          <div class="formTitle">{{ submissionForm.name }}</div>
           <p *ngIf="submissionForm.description" class="formDescription">{{ submissionForm.description }}</p>
 
           <form [formGroup]="submissionFormGroup!" (ngSubmit)="submitForm()">
@@ -179,12 +179,19 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
             <p *ngIf="!userId" class="loginNotice">Please log in to submit.</p>
 
-            <button type="submit" class="genericButton submitButton"
-              [disabled]="submitting || !userId">
-              {{ submitting ? 'Submitting...' : 'Submit' }}
-            </button>
+            <div class="formButtonRow">
+              <button type="submit" class="genericButton"
+                [disabled]="submitting || !userId">
+                {{ submitting ? 'Submitting...' : 'Submit' }}
+              </button>
+              <button type="button" class="genericButton"
+                [disabled]="generatingPreview" (click)="toggleSharePanel()">
+                {{ generatingPreview ? 'Loading...' : 'Share' }}
+              </button>
+            </div>
 
           </form>
+
         </div>
       </ng-container>
 
@@ -194,6 +201,44 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       </div>
 
     </div>
+
+    <!-- Share Modal -->
+    <p-dialog
+      [(visible)]="showSharePanel"
+      (onHide)="sharePreviewDataUrl = undefined"
+      [modal]="true"
+      [closable]="true"
+      [resizable]="false"
+      [draggable]="false"
+      header="Share Your Result"
+      [style]="{ width: '90vw', maxWidth: '500px' }">
+
+      <div class="shareDialogContent">
+
+        <!-- Generating preview spinner -->
+        <div *ngIf="generatingPreview" class="shareLoading">
+          <p-progressSpinner strokeWidth="2" animationDuration=".5s"></p-progressSpinner>
+        </div>
+
+        <!-- Image preview (team photo was selected) -->
+        <ng-container *ngIf="!generatingPreview && sharePreviewDataUrl">
+          <img [src]="sharePreviewDataUrl" class="sharePreviewImg" alt="Your quiz result" />
+          <button class="genericButton shareFullBtn" (click)="downloadShareImage()">
+            Download Image
+          </button>
+        </ng-container>
+
+        <!-- Text template (no photo — Wordle-style) -->
+        <ng-container *ngIf="!generatingPreview && !sharePreviewDataUrl">
+          <pre class="shareTextPreview">{{ getShareText() }}</pre>
+          <button class="genericButton shareFullBtn" (click)="copyShareText()">
+            {{ copySuccess ? 'Copied!' : 'Copy' }}
+          </button>
+        </ng-container>
+
+      </div>
+
+    </p-dialog>
   `,
   styles: `
     :host {
@@ -211,7 +256,8 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     .quizContainer {
       width: 100%;
-      padding: 20px;
+      padding-top: "20px";
+      // padding: 20px;
       border-radius: 15px;
       font-family: var(--font);
       background-color: var(--secondary);
@@ -247,9 +293,9 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     :host ::ng-deep .downloadButton .p-button {
-      background-color: var(--tertiary);
+      background-color: transparent;
       border-color: var(--tertiary);
-      color: var(--secondary);
+      color: var(--tertiary);
     }
 
     :host ::ng-deep .downloadButton .p-button:hover {
@@ -257,7 +303,8 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     .notes {
-      font-size: var(--smaller);
+      font-size: var(--header);
+      font-weight: 800;
       line-height: 150%;
       padding: 15px 0;
       color: var(--primary);
@@ -359,7 +406,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     .submissionFormSection {
       margin-top: 30px;
       border-top: 2px solid var(--primary);
-      padding-top: 20px;
+      padding: 20px;
     }
 
     .formTitle {
@@ -437,10 +484,57 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       margin-bottom: 10px;
     }
 
-    .submitButton {
-      display: block;
-      width: 100%;
+    .formButtonRow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
       margin-top: 10px;
+    }
+
+    .formButtonRow button {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .shareDialogContent {
+      text-align: center;
+      padding: 4px 0 8px;
+    }
+
+    .shareLoading {
+      display: flex;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .sharePreviewImg {
+      width: 100%;
+      max-width: 380px;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto 16px;
+    }
+
+    .shareTextPreview {
+      background-color: #1e1e1e;
+      color: var(--primary);
+      padding: 18px 22px;
+      border-radius: 12px;
+      font-family: var(--font);
+      font-size: 15px;
+      white-space: pre;
+      text-align: left;
+      line-height: 1.7;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+
+    .shareFullBtn {
+      width: 50%;
+      max-width: 380px;
+      border: none;
+      background-color: var(--tertiary);
+      color: var(--primary);
     }
 
     .submissionSuccess {
@@ -451,6 +545,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       color: var(--tertiary);
       padding: 20px 0;
     }
+
   `
 })
 export class QuizDisplayComponent implements OnInit, OnChanges {
@@ -480,6 +575,16 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   fileByField: { [fieldId: string]: File } = {};
   submitting = false;
   submitted = false;
+
+  // Share state
+  shareTeamName = '';
+  shareLocation = '';
+  sharePictureUrl?: string;
+  sharePercentile?: number;
+  copySuccess = false;
+  showSharePanel = false;
+  sharePreviewDataUrl?: string;
+  generatingPreview = false;
 
   constructor(
     private quizService: QuizzesService,
@@ -736,6 +841,9 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
         customFields,
       });
 
+      this.shareTeamName = values['teamName'] || '';
+      this.shareLocation = values['location'] || '';
+      this.sharePictureUrl = pictureUrl;
       this.submitted = true;
     } catch (err) {
       console.error('Failed to submit form', err);
@@ -856,6 +964,16 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
         if (!stat) return answer;
         return { ...answer, percentCorrect: Math.round(stat.correctRate * 100) };
       });
+
+      // Calculate percentile if score distribution is available in the aggregate
+      if (aggregate.scoreDistribution) {
+        const dist: number[] = aggregate.scoreDistribution;
+        const total = dist.reduce((s: number, c: number) => s + c, 0);
+        if (total > 0) {
+          const below = dist.slice(0, this.score).reduce((s: number, c: number) => s + c, 0);
+          this.sharePercentile = Math.round((below / total) * 100);
+        }
+      }
     } catch (err) {
       console.error('Failed to load quiz stats', err);
     }
@@ -867,5 +985,251 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   async downloadPdf() {
     if (!this.quiz) return;
     await this.quizPdfService.downloadQuizPdf(this.quiz);
+  }
+
+  // ---------------------------------------------
+  // SHARE
+  // ---------------------------------------------
+
+  /** Wordle-style text template (shown when no photo is uploaded) */
+  getShareText(): string {
+    if (!this.quiz) return '';
+    const teamName = this.submissionFormGroup?.value['teamName'] || this.shareTeamName || '';
+    const location = this.submissionFormGroup?.value['location'] || this.shareLocation || '';
+    const lines: string[] = [];
+
+    lines.push(`Fifty Quiz ${this.quiz.quizId}`);
+    if (teamName) lines.push(teamName);
+    lines.push(`Score: ${this.score}/${this.totalQuestions}`);
+    if (this.sharePercentile !== undefined) {
+      lines.push(`Better than ${this.sharePercentile}% of players!`);
+    }
+    lines.push('');
+
+    // Wordle-style answer grid — 🟩 correct, 🟥 incorrect, ⬜ unanswered
+    const emojis = this.answers.map(a =>
+      a.correct === true ? '🟩' : a.correct === false ? '🟥' : '⬜'
+    );
+    for (let i = 0; i < emojis.length; i += 10) {
+      lines.push(emojis.slice(i, i + 10).join(''));
+    }
+
+    lines.push('');
+    if (location) lines.push(`📍 ${location}`);
+    lines.push('#FiftyQuiz');
+
+    return lines.join('\n');
+  }
+
+  async copyShareText() {
+    const text = this.getShareText();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    this.copySuccess = true;
+    setTimeout(() => this.copySuccess = false, 2000);
+  }
+
+  /** Open the share modal; generates the image preview if a photo is available */
+  async toggleSharePanel() {
+    this.showSharePanel = true;
+
+    const hasPhoto = Object.values(this.fileByField).length > 0 || !!this.sharePictureUrl;
+    if (!hasPhoto) return; // text template will be shown instead
+
+    this.generatingPreview = true;
+    try {
+      this.sharePreviewDataUrl = await this.buildShareImage();
+    } catch (err) {
+      console.error('Failed to generate share preview', err);
+    } finally {
+      this.generatingPreview = false;
+    }
+  }
+
+  downloadShareImage() {
+    if (!this.sharePreviewDataUrl || !this.quiz) return;
+    const a = document.createElement('a');
+    a.href = this.sharePreviewDataUrl;
+    a.download = `quiz-${this.quiz.quizId}-result.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  private async buildShareImage(): Promise<string> {
+    const teamName = this.submissionFormGroup?.value['teamName'] || this.shareTeamName || '';
+    const location = this.submissionFormGroup?.value['location'] || this.shareLocation || '';
+
+    const photoFile = Object.values(this.fileByField)[0];
+    const photoBlobUrl = photoFile ? URL.createObjectURL(photoFile) : undefined;
+    const photoSrc = photoBlobUrl ?? this.sharePictureUrl;
+
+    const size = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+
+    // Background (fifty-green)
+    ctx.fillStyle = '#677c73';
+    ctx.fillRect(0, 0, size, size);
+
+    // Team photo as full-bleed cover
+    if (photoSrc) await this.drawImageCover(ctx, photoSrc, size);
+
+    // // Top gradient — darkens upper third for text legibility
+    // const topGrad = ctx.createLinearGradient(0, 0, 0, size * 0.52);
+    // topGrad.addColorStop(0, 'rgba(0,0,0,0.80)');
+    // topGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    // // ctx.fillStyle = topGrad;
+    // ctx.fillRect(0, 0, size, size * 0.52);
+
+    // // Bottom gradient — darkens lower fifth for location pill
+    // const bottomGrad = ctx.createLinearGradient(0, size * 0.72, 0, size);
+    // bottomGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    // bottomGrad.addColorStop(1, 'rgba(0,0,0,0.65)');
+    // ctx.fillStyle = bottomGrad;
+    // ctx.fillRect(0, size * 0.72, size, size * 0.28);
+
+    const pink = '#fbe2df';
+
+    // Team name — top center, large pink
+    let scoreLabelY = 80;
+    if (teamName) {
+      ctx.fillStyle = pink;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      let fontSize = 102;
+      ctx.font = `bold ${fontSize}px Helvetica, Arial, sans-serif`;
+      while (ctx.measureText(teamName).width > size - 80 && fontSize > 40) {
+        fontSize -= 4;
+        ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+      }
+      ctx.fillText(teamName, size / 2, 80);
+      scoreLabelY = 80 + fontSize + 14;
+    }
+
+    // Score — just below team name, smaller
+    ctx.fillStyle = pink;
+    ctx.font = `bold 48px Helvetica, Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`Score: ${this.score}`, size / 2, scoreLabelY);
+
+    // Location — fifty-green pill at the bottom
+    if (location) {
+      const pillFont = 'bold 40px Helvetica, Arial, sans-serif';
+      ctx.font = pillFont;
+      const textW = ctx.measureText(location).width;
+      const pinH = 36;
+      const pinGap = 14;
+      const totalContentW = pinH + pinGap + textW;
+      const padX = 50;
+      const pillH = 76;
+      const pillW = Math.min(totalContentW + padX * 2, size - 80);
+      const pillX = (size - pillW) / 2;
+      const pillY = size - 130;
+
+      ctx.fillStyle = '#677c73';
+      this.canvasRoundRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
+      ctx.fill();
+
+      const textCenterY = pillY + pillH / 2;
+      const contentStartX = size / 2 - totalContentW / 2;
+
+      this.drawMapPin(ctx, contentStartX + pinH / 2, textCenterY, pinH, pink);
+
+      ctx.fillStyle = pink;
+      ctx.font = pillFont;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(location, contentStartX + pinH + pinGap, textCenterY, pillW - padX - pinH - pinGap);
+    }
+
+    // Logo — bottom-left
+    await this.drawImageBottomLeft(ctx, 'assets/logos/logo.png', size, 100);
+
+    if (photoBlobUrl) URL.revokeObjectURL(photoBlobUrl);
+    return canvas.toDataURL('image/png');
+  }
+
+  private canvasRoundRect(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number, r: number
+  ) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
+  private drawMapPin(ctx: CanvasRenderingContext2D, cx: number, cy: number, totalH: number, color: string) {
+    const r = totalH * 0.32;
+    const headCy = cy - totalH * 0.18;
+    const tipY = cy + totalH * 0.5;
+    ctx.fillStyle = color;
+    // Circle head
+    ctx.beginPath();
+    ctx.arc(cx, headCy, r, 0, Math.PI * 2);
+    ctx.fill();
+    // Triangle tail
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.65, headCy + r * 0.5);
+    ctx.lineTo(cx + r * 0.65, headCy + r * 0.5);
+    ctx.lineTo(cx, tipY);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  private drawImageBottomLeft(ctx: CanvasRenderingContext2D, url: string, size: number, logoH: number): Promise<void> {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const logoW = (img.width / img.height) * logoH;
+        ctx.drawImage(img, 40, size - logoH - 40, logoW, logoH);
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = url;
+    });
+  }
+
+  private drawImageCover(ctx: CanvasRenderingContext2D, url: string, size: number): Promise<void> {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const imgRatio = img.width / img.height;
+        let srcX = 0, srcY = 0, srcW = img.width, srcH = img.height;
+        if (imgRatio > 1) {
+          srcW = img.height;
+          srcX = (img.width - srcW) / 2;
+        } else {
+          srcH = img.width;
+          srcY = (img.height - srcH) / 2;
+        }
+        ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, size, size);
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = url;
+    });
   }
 }
