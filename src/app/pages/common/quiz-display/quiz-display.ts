@@ -256,7 +256,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     .quizContainer {
       width: 100%;
-      padding-top: "20px";
+      padding-top: 20px;
       // padding: 20px;
       border-radius: 15px;
       font-family: var(--font);
@@ -277,7 +277,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     .quizTitle {
       text-align: center;
-      padding: 10px;
+      padding: 20px;
       font-size: 30px;
       font-weight: 600;
       color: var(--primary);

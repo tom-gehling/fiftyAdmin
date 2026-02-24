@@ -11,7 +11,8 @@ export class QuizPdfService {
   private readonly PAGE_HEIGHT = 297; // A4 height in mm
   private readonly MARGIN = 20;
   private readonly CONTENT_WIDTH = 170; // PAGE_WIDTH - 2 * MARGIN
-  private fontLoaded = false;
+  private regularFontBase64: string | null = null;
+  private boldFontBase64: string | null = null;
 
   /**
    * Generate and download a PDF for a quiz
@@ -373,34 +374,28 @@ export class QuizPdfService {
    * Uses Roboto from Google Fonts which supports Cyrillic, Polish, and other extended characters
    */
   private async loadUnicodeFont(doc: jsPDF): Promise<void> {
-    if (this.fontLoaded) return;
-
     try {
-      // Load Roboto Regular font
-      const regularUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf';
-      const regularResponse = await fetch(regularUrl);
-      const regularBlob = await regularResponse.blob();
-      const regularBase64 = await this.blobToBase64(regularBlob);
+      // Fetch fonts from network only once; cache the base64 data at service level
+      if (!this.regularFontBase64 || !this.boldFontBase64) {
+        const regularUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf';
+        const regularBlob = await fetch(regularUrl).then(r => r.blob());
+        this.regularFontBase64 = (await this.blobToBase64(regularBlob)).split(',')[1];
 
-      // Load Roboto Bold font
-      const boldUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAx05IsDqlA.ttf';
-      const boldResponse = await fetch(boldUrl);
-      const boldBlob = await boldResponse.blob();
-      const boldBase64 = await this.blobToBase64(boldBlob);
+        const boldUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvAx05IsDqlA.ttf';
+        const boldBlob = await fetch(boldUrl).then(r => r.blob());
+        this.boldFontBase64 = (await this.blobToBase64(boldBlob)).split(',')[1];
+      }
 
-      // Add the fonts to jsPDF
-      doc.addFileToVFS('Roboto-Regular.ttf', regularBase64.split(',')[1]);
+      // Always register fonts into the current doc instance
+      doc.addFileToVFS('Roboto-Regular.ttf', this.regularFontBase64!);
       doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
 
-      doc.addFileToVFS('Roboto-Bold.ttf', boldBase64.split(',')[1]);
+      doc.addFileToVFS('Roboto-Bold.ttf', this.boldFontBase64!);
       doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
 
       doc.setFont('Roboto', 'normal');
-
-      this.fontLoaded = true;
     } catch (error) {
       console.warn('Failed to load Unicode font, falling back to default:', error);
-      // Fall back to default font if loading fails
     }
   }
 
