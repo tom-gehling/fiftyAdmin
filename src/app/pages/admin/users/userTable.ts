@@ -62,10 +62,10 @@ type SortKey = 'displayName' | 'membershipType' | 'lastLoginAt' | 'completedQuiz
               <th class="text-left p-3 cursor-pointer select-none" style="width: 35%;" (click)="sortBy('displayName')">
                 User <i class="pi" [ngClass]="getSortIcon('displayName')"></i>
               </th>
-              <th class="text-center p-3 cursor-pointer select-none" style="width: 20%;" (click)="sortBy('membershipType')">
+              <th class="hidden sm:table-cell text-center p-3 cursor-pointer select-none" style="width: 20%;" (click)="sortBy('membershipType')">
                 Membership Type <i class="pi" [ngClass]="getSortIcon('membershipType')"></i>
               </th>
-              <th class="text-center p-3 cursor-pointer select-none" style="width: 20%;" (click)="sortBy('lastLoginAt')">
+              <th class="hidden sm:table-cell text-center p-3 cursor-pointer select-none" style="width: 20%;" (click)="sortBy('lastLoginAt')">
                 Last Login <i class="pi" [ngClass]="getSortIcon('lastLoginAt')"></i>
               </th>
 
@@ -101,8 +101,8 @@ type SortKey = 'displayName' | 'membershipType' | 'lastLoginAt' | 'completedQuiz
                   <span class="text-sm text-gray-500 truncate">{{ user.email || '' }}</span>
                 </div>
               </td>
-              <td class="p-3 text-center font-medium">{{ user.membershipType }}</td>
-              <td class="p-3 text-center font-medium">{{ formatDate(user.lastLoginAt) }}</td>
+              <td class="hidden sm:table-cell p-3 text-center font-medium">{{ user.membershipType }}</td>
+              <td class="hidden sm:table-cell p-3 text-center font-medium">{{ formatDate(user.lastLoginAt) }}</td>
 
               <td class="p-3 text-right">
                 <button

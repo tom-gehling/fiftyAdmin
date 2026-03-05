@@ -24,9 +24,10 @@ interface TagWithQuizzes {
   imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <div class="card w-full flex flex-col gap-10 p-6 bg-surface-0 dark:bg-surface-900 mb-8 fiftyBorder" *ngIf="tagsWithQuizzes.length">
+    <div class="card w-full flex flex-col gap-10 p-6 bg-surface-0 dark:bg-surface-900 mb-8 fiftyBorder" *ngIf="tagsWithQuizzes.length" style="padding-left:0px !important; padding-right:0px !important;">
       <ng-container *ngFor="let tagGroup of tagsWithQuizzes">
-        <div class="text-2xl font-semibold text-surface-900 dark:text-surface-0 ">
+        <div class="flex flex-col gap-2">
+        <div class="text-2xl font-semibold text-surface-900 dark:text-surface-0 pl-6 pr-3">
           {{ tagGroup.tag.name }}
         </div>
 
@@ -38,19 +39,19 @@ interface TagWithQuizzes {
   space-between="12"
   class="w-full !overflow-visible"
   [breakpoints]="{
-    '0': { slidesPerView: 2 },
+    '0': { slidesPerView: 3 },
     '640': { slidesPerView: 3 },
     '1024': { slidesPerView: 3 },
-    '1280': { slidesPerView: 'auto' }
+    '1280': { slidesPerView: '4' }
   }"
 >
   <swiper-slide
     *ngFor="let quiz of tagGroup.quizzes"
     (click)="openQuiz(quiz)"
-    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-120 m-4"
+    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-120 m-4 p-10"
   >
     <div
-      class="w-[140px] h-[140px] rounded-2xl overflow-hidden shadow-lg"
+      class="w-full sm:w-[140px] aspect-square sm:h-[140px] rounded-2xl overflow-hidden shadow-lg"
       [ngStyle]="getCardStyle(quiz)"
     >
       <img
@@ -67,7 +68,7 @@ interface TagWithQuizzes {
     </span>
   </swiper-slide>
 </swiper-container>
-
+        </div>
       </ng-container>
     </div>
     <p *ngIf="!tagsWithQuizzes.length" class="text-gray-500 text-center mt-10">No quizzes found.</p>
