@@ -48,11 +48,11 @@ interface TagWithQuizzes {
   <swiper-slide
     *ngFor="let quiz of tagGroup.quizzes"
     (click)="openQuiz(quiz)"
-    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-120 m-4 p-10"
+    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-120 m-4 p-2"
   >
     <div
       class="w-full sm:w-[140px] aspect-square sm:h-[140px] rounded-2xl overflow-hidden shadow-lg"
-      [ngStyle]="getCardStyle(quiz)"
+      style="border: 3px solid #4cfbab; background-color: #000000"
     >
       <img
         [src]=" quiz.imageUrl ? ('/assets/logos/'+quiz.imageUrl) : '/assets/logos/aussie.png'"
@@ -62,7 +62,6 @@ interface TagWithQuizzes {
     </div>
     <span
       class="text-sm text-center mt-2 font-medium line-clamp-2"
-      [ngStyle]="getTitleStyle(quiz)"
     >
       {{ quiz.quizTitle || ('Quiz ' + quiz.quizId) }}
     </span>
@@ -113,22 +112,4 @@ export class FiftyQuizzesDashboardComponent implements OnInit {
     this.router.navigate([`${baseRoute}/${quiz.quizId}`]);
   }
 
-  getCardStyle(quiz: Quiz): Record<string, string> {
-    if (!quiz.theme) {
-      return {};
-    }
-    return {
-      'border': `3px solid ${quiz.theme.tertiaryColor || '#4cfbab'}`,
-      'background-color': quiz.theme.backgroundColor || 'transparent'
-    };
-  }
-
-  getTitleStyle(quiz: Quiz): Record<string, string> {
-    if (!quiz.theme) {
-      return {};
-    }
-    return {
-      'color': quiz.theme.fontColor || 'inherit'
-    };
-  }
 }
