@@ -14,11 +14,12 @@ import { UserQuizHistoryWidget } from "./components/userquizhistory";
 import { UserSummaryWidget } from "./components/usersummary";
 import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
 import { RecentQuizzesWidget } from "./components/userrecentquizzes";
+import { VenueCalendarComponent } from "./components/venuecalendar";
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget],
+    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget, VenueCalendarComponent],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <!-- [x]: fiftyBorder to all widgets -->
@@ -34,12 +35,15 @@ import { RecentQuizzesWidget } from "./components/userrecentquizzes";
             </div>
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
-                
-                
+                <app-venue-calendar class="contents" />
+
+
                 <app-submissions-wall-widget />
                 <!-- <app-membership-report-widget *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" /> -->
                 <!-- <app-notifications-widget /> -->
             </div>
+
+            
         </div>
     `
 })

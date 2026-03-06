@@ -50,7 +50,7 @@ import { UserService } from '@/shared/services/user.service';
             </div>
           </div>
           <div class="mt-4 text-muted-color text-sm" *ngIf="nextDeployment">
-            Due to Deploy: {{ nextDeployment | date:'mediumDate' }}
+            Due to Deploy: {{ nextDeployment | date:'h:mm a - MMM d' }}
           </div>
         </ng-container>
       </div>
@@ -69,19 +69,8 @@ import { UserService } from '@/shared/services/user.service';
                 {{ totalSessions }}
               </div>
             </div>
-            <button
-              class="flex items-center justify-center hover:opacity-80 transition-opacity self-start"
-              (click)="refreshStats()"
-              [disabled]="refreshing"
-              title="Refresh Stats"
-              style="color: var(--fifty-neon-green)"
-            >
-              <i
-                class="pi text-xl"
-                style="font-size: 1.5rem;"
-                [ngClass]="refreshing ? 'pi-spin pi-spinner' : 'pi-refresh'"
-              ></i>
-            </button>
+            
+             
 
           </div>
           <div class="mt-4 text-muted-color text-sm">
@@ -110,7 +99,7 @@ import { UserService } from '@/shared/services/user.service';
             </div>
           </div>
           <div class="mt-4 text-muted-color text-sm">
-            Joined in last week: {{ newMembersLast7Days }}
+            {{ newMembersLast7Days >= 0 ? '+' : '' }}{{ newMembersLast7Days }} in last 7 days
           </div>
         </ng-container>
       </div>
