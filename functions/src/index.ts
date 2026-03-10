@@ -873,6 +873,155 @@ app.post('/api/updateUserEmail', async (req: Request, res: Response) => {
 
 
 // ===============================
+// /api/getVenues
+// ===============================
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEK_ORDINALS = ['', 'First', 'Second', 'Third', 'Fourth'];
+
+function formatTime12h(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return m > 0 ? `${hour}:${m.toString().padStart(2, '0')} ${period}` : `${hour}:00 ${period}`;
+}
+
+function formatScheduleLabel(s: any): string {
+  const time = s.startTime ? ` at ${formatTime12h(s.startTime)}` : '';
+  switch (s.type) {
+    case 'weekly':    return `Every ${DAYS[s.dayOfWeek]}${time}`;
+    case 'biweekly':  return `Every other ${DAYS[s.dayOfWeek]}${time}`;
+    case 'monthly':   return `${WEEK_ORDINALS[s.weekOfMonth] || ''} ${DAYS[s.dayOfWeek]} of the month${time}`;
+    case 'custom':    return `Selected dates${time}`;
+    default:          return '';
+  }
+}
+
+function nextWeekdayOccurrence(from: Date, dayOfWeek: number, hours: number, minutes: number): Date {
+  const d = new Date(from);
+  let daysUntil = (dayOfWeek - d.getDay() + 7) % 7;
+  if (daysUntil === 0) {
+    d.setHours(hours, minutes, 0, 0);
+    daysUntil = d <= from ? 7 : 0;
+  }
+  if (daysUntil > 0) {
+    d.setDate(d.getDate() + daysUntil);
+    d.setHours(hours, minutes, 0, 0);
+  }
+  return d;
+}
+
+function nextNthWeekdayOfMonth(from: Date, weekOfMonth: number, dayOfWeek: number, hours: number, minutes: number): Date | null {
+  for (let offset = 0; offset <= 2; offset++) {
+    const cur = new Date(from.getFullYear(), from.getMonth() + offset, 1);
+    const targetMonth = cur.getMonth();
+    let count = 0;
+    while (cur.getMonth() === targetMonth) {
+      if (cur.getDay() === dayOfWeek) {
+        count++;
+        if (count === weekOfMonth) {
+          cur.setHours(hours, minutes, 0, 0);
+          if (cur > from) return cur;
+          break;
+        }
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+  }
+  return null;
+}
+
+function isExcludedDate(date: Date, exclusionDates?: any[]): boolean {
+  if (!exclusionDates?.length) return false;
+  const ds = date.toDateString();
+  return exclusionDates.some((d: any) => {
+    const excl = d?.seconds ? new Date(d.seconds * 1000) : new Date(d);
+    return excl.toDateString() === ds;
+  });
+}
+
+function getNextQuizOccurrence(schedules: any[]): Date | null {
+  const now = new Date();
+  const candidates: Date[] = [];
+
+  for (const s of schedules) {
+    if (!s.isActive) continue;
+    const [hours, minutes] = (s.startTime || '19:00').split(':').map(Number);
+
+    if ((s.type === 'weekly' || s.type === 'biweekly') && s.dayOfWeek !== undefined) {
+      const next = nextWeekdayOccurrence(now, s.dayOfWeek, hours, minutes);
+      if (!isExcludedDate(next, s.exclusionDates)) candidates.push(next);
+    } else if (s.type === 'monthly' && s.weekOfMonth && s.dayOfWeek !== undefined) {
+      const next = nextNthWeekdayOfMonth(now, s.weekOfMonth, s.dayOfWeek, hours, minutes);
+      if (next && !isExcludedDate(next, s.exclusionDates)) candidates.push(next);
+    } else if (s.type === 'custom' && Array.isArray(s.customDates)) {
+      const future = (s.customDates as any[])
+        .map((d: any) => d?.seconds ? new Date(d.seconds * 1000) : new Date(d))
+        .filter((d: Date) => d > now)
+        .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+      if (future.length > 0) candidates.push(future[0]);
+    }
+  }
+
+  return candidates.length > 0
+    ? candidates.sort((a, b) => a.getTime() - b.getTime())[0]
+    : null;
+}
+
+function buildVenueDescription(schedules: any[], nextQuiz: Date | null): string {
+  const activeSchedules = (schedules || []).filter((s: any) => s.isActive);
+  const scheduleLines = activeSchedules.map(formatScheduleLabel).filter(Boolean).join('<br>');
+  const scheduleSection = scheduleLines || 'See venue for details';
+
+  let nextQuizText: string;
+  if (!nextQuiz) {
+    nextQuizText = 'No upcoming quiz scheduled';
+  } else {
+    const dateStr = nextQuiz.toLocaleDateString('en-AU', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    const timeStr = nextQuiz.getHours()
+      ? ` at ${formatTime12h(`${nextQuiz.getHours()}:${nextQuiz.getMinutes().toString().padStart(2, '0')}`)}`
+      : '';
+    nextQuizText = dateStr + timeStr;
+  }
+
+  return `${scheduleSection}<br><br><strong>Next Quiz</strong><br>${nextQuizText}`;
+}
+
+app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const snapshot = await db.collection('venues').where('isActive', '==', true).get();
+
+    const venues = snapshot.docs
+      .map(doc => ({ id: doc.id, ...(doc.data() as any) }))
+      .filter(v => !v.deletedAt);
+
+    const result = venues.map(venue => {
+      const loc = venue.location || {};
+      const address = [loc.address, loc.city, loc.state, loc.country].filter(Boolean).join(', ');
+      const nextQuiz = getNextQuizOccurrence(venue.quizSchedules || []);
+
+      return {
+        id: venue.id,
+        title: venue.venueName || '',
+        address,
+        lat: String(loc.latitude ?? 0),
+        lng: String(loc.longitude ?? 0),
+        description: buildVenueDescription(venue.quizSchedules || [], nextQuiz),
+        link: venue.websiteUrl || '',
+        pic: venue.imageUrl || '',
+      };
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching venues:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ===============================
 // Export Firebase Function
 // ===============================
 export const api = onRequest(
