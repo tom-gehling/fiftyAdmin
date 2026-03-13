@@ -217,8 +217,18 @@
                     <!-- Notes Section -->
                     <div class="mb-6 flex flex-col gap-3">
                         <h3 class="font-semibold mb-2">Notes</h3>
-                        <textarea rows="5" pTextarea formControlName="notesAbove" placeholder="Text Above Quiz" [autoResize]="true" class="w-full"></textarea>
-                        <textarea rows="5" pTextarea formControlName="notesBelow" placeholder="Text Below Quiz" [autoResize]="true"></textarea>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm text-gray-500">Text Above Quiz</label>
+                            <div class="notes-quill border border-gray-300 dark:border-gray-600 rounded-md p-1">
+                                <quill-editor formControlName="notesAbove" [modules]="quillModules" (onEditorCreated)="onNotesEditorCreated($event)" style="width: 100%" theme="bubble"></quill-editor>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm text-gray-500">Text Below Quiz</label>
+                            <div class="notes-quill border border-gray-300 dark:border-gray-600 rounded-md p-1">
+                                <quill-editor formControlName="notesBelow" [modules]="quillModules" (onEditorCreated)="onNotesEditorCreated($event)" style="width: 100%" theme="bubble"></quill-editor>
+                            </div>
+                        </div>
                     </div>
                 </p-tabpanel>
             </p-tabpanels>

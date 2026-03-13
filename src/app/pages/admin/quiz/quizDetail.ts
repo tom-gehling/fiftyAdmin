@@ -38,7 +38,6 @@ import { SubmissionFormService } from '@/shared/services/submission-form.service
 import { SubmissionForm } from '@/shared/models/submissionForm.model';
 import { firstValueFrom } from 'rxjs';
 import { MenuItem } from 'primeng/api';
-import { TextareaModule } from 'primeng/textarea';
 import { MenuModule } from 'primeng/menu';
 import { OverlayModule } from 'primeng/overlay';
 import { QuizDisplayComponent } from '@/pages/common/quiz-display/quiz-display';
@@ -68,7 +67,6 @@ import { StorageService } from '@/shared/services/storage.service';
     FloatLabelModule,
     FormsModule,
     SpeedDialModule,
-    TextareaModule,
     MenuModule
   ],
   templateUrl: './quizDetail.html'
@@ -102,6 +100,7 @@ export class QuizDetailComponent implements OnInit {
     toolbar: [
       ['bold', 'italic', 'underline'],
       [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ align: [] }],
     ],
   };
 
@@ -343,6 +342,8 @@ async uploadNewImage(event: any) {
         q.question = this.normalizeHtml(q.question);
         q.answer = this.normalizeHtml(q.answer);
       });
+      formValue.notesAbove = this.normalizeHtml(formValue.notesAbove);
+      formValue.notesBelow = this.normalizeHtml(formValue.notesBelow);
 
       let imageUrl = this.form.value.imageUrl;
 
@@ -503,6 +504,12 @@ exportJson(simple: boolean = false): void {
 }
 
 
+
+  onNotesEditorCreated(editor: any): void {
+    if (!editor.getText().trim()) {
+      editor.format('align', 'center');
+    }
+  }
 
   showLogoDialog(): void { this.logoDialogVisible = true; }
   selectLogoFromDialog(logo: string): void { this.form.get('imageUrl')?.setValue(logo); this.logoDialogVisible = false; }
