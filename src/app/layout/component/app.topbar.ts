@@ -13,6 +13,7 @@ import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 import { AuthService } from '@/shared/services/auth.service';
 import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
+import { LoginPanelComponent } from '@/shared/components/login-panel/login-panel.component';
 
 @Component({
   selector: 'app-topbar',
@@ -25,7 +26,8 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
     ButtonModule,
     SelectButtonModule,
     AppConfigurator,
-    FormsModule
+    FormsModule,
+    LoginPanelComponent,
   ],
   template: `
     <div class="layout-topbar flex items-center p-2 fiftyBorderBottom relative" >
@@ -48,17 +50,26 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
 
   <!-- Right: Actions -->
   <div class="ml-auto flex items-center gap-2">
-    <!-- Dark Mode Toggle -->
 
-    <!-- Profile Menu -->
-    <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>
-    <button type="button" class="layout-topbar-action flex items-center gap-2" (click)="profileMenu.toggle($event)">
-      <i class="pi pi-user"></i>
-      <span>Profile</span>
-    </button>
+    @if (authService.user$ | async) {
+      <!-- Profile Menu (logged in) -->
+      <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>
+      <button type="button" class="layout-topbar-action flex items-center gap-2" (click)="profileMenu.toggle($event)">
+        <i class="pi pi-user"></i>
+        <span>Profile</span>
+      </button>
+    } @else {
+      <button type="button" class="layout-topbar-action flex items-center gap-2" (click)="loginPanel.open()">
+        <i class="pi pi-sign-in"></i>
+        <span>Sign In</span>
+      </button>
+    }
+
   </div>
 
 </div>
+
+<app-login-panel #loginPanel></app-login-panel>
 
   `
 })
@@ -70,7 +81,7 @@ export class AppTopbar implements OnInit {
 
   constructor(
     public layoutService: LayoutService,
-    private authService: AuthService,
+    public authService: AuthService,
     private router: Router,
     private membershipService: MembershipService
   ) {

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { BreadcrumbModule } from 'primeng/breadcrumb';
@@ -8,6 +8,7 @@ import { MenuItem } from 'primeng/api';
 import { Subscription, filter } from 'rxjs';
 
 import { AuthService, AppUser } from '@/shared/services/auth.service';
+import { LoginPanelComponent } from '@/shared/components/login-panel/login-panel.component';
 
 const ROUTE_LABELS: Record<string, string> = {
   'find-a-venue': 'Find a Venue',
@@ -25,6 +26,7 @@ const ROUTE_LABELS: Record<string, string> = {
     BreadcrumbModule,
     MenuModule,
     ButtonModule,
+    LoginPanelComponent,
   ],
   template: `
     <nav class="public-topbar">
@@ -36,7 +38,11 @@ const ROUTE_LABELS: Record<string, string> = {
         <!-- Desktop nav links -->
         <div class="nav-links">
           <a routerLink="/weekly-quiz" routerLinkActive="active-link" class="nav-link">This Week's Quiz</a>
-          <a routerLink="/login" class="nav-link">Fifty+</a>
+          @if (user) {
+            <a routerLink="/fiftyPlus" class="nav-link">Fifty+</a>
+          } @else {
+            <a class="nav-link" style="cursor:pointer" (click)="loginPanel.open()">Fifty+</a>
+          }
           <a routerLink="/find-a-venue" routerLinkActive="active-link" class="nav-link">Find a Venue</a>
           <a href="https://theweeklyfifty.com.au/pshop/" target="_blank" class="nav-link">Fifty Shop</a>
         </div>
@@ -62,12 +68,14 @@ const ROUTE_LABELS: Record<string, string> = {
       <a routerLink="/find-a-venue" class="mobile-link">Find a Venue</a>
       <a href="https://theweeklyfifty.com.au/pshop/" target="_blank" class="mobile-link">Fifty Shop</a>
       <div class="mobile-divider"></div>
-      <a *ngIf="!user" routerLink="/login" class="mobile-link">Login / Sign Up</a>
+      <a *ngIf="!user" class="mobile-link" style="cursor:pointer" (click)="loginPanel.open(); mobileMenuOpen = false">Login / Sign Up</a>
       <ng-container *ngIf="user">
         <a [routerLink]="['/profile', user.uid]" class="mobile-link">Profile</a>
         <a (click)="logout()" class="mobile-link" style="cursor:pointer">Logout</a>
       </ng-container>
     </div>
+
+    <app-login-panel #loginPanel></app-login-panel>
   `,
   styles: [`
     :host {
@@ -248,6 +256,8 @@ const ROUTE_LABELS: Record<string, string> = {
   `]
 })
 export class PublicTopbarComponent implements OnInit, OnDestroy {
+  @ViewChild('loginPanel') loginPanel!: LoginPanelComponent;
+
   breadcrumbHome: MenuItem = { icon: 'pi pi-home', routerLink: '/home' };
   breadcrumbItems: MenuItem[] = [];
   profileItems: MenuItem[] = [];
@@ -303,7 +313,7 @@ export class PublicTopbarComponent implements OnInit, OnDestroy {
       ];
     } else {
       this.profileItems = [
-        { label: 'Login / Sign Up', icon: 'pi pi-sign-in', command: () => this.router.navigate(['/login']) },
+        { label: 'Login / Sign Up', icon: 'pi pi-sign-in', command: () => this.loginPanel.open() },
       ];
     }
   }
