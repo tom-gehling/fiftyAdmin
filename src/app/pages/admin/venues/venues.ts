@@ -692,6 +692,8 @@ export class VenuesComponent implements OnInit, AfterViewInit {
         imageUrl = '';
       }
 
+      const activeToggled = this.isEditing && this.selectedVenue?.isActive !== formValue.isActive;
+
       const venueData: Partial<Venue> = {
         venueName: formValue.venueName,
         location: {
@@ -707,6 +709,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
         description: formValue.description,
         imageUrl,
         isActive: formValue.isActive,
+        ...(activeToggled ? { activeToggledAt: new Date() } : {}),
         quizSchedules: formValue.quizSchedules.map((s: any) => ({
           ...s,
           startTime: this.dateToTimeString(s.startTime),

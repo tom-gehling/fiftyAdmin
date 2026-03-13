@@ -39,6 +39,7 @@ export interface Venue {
   updatedAt?: Date;
   deletedBy?: string; // Soft delete
   deletedAt?: Date;
+  activeToggledAt?: Date; // Last time isActive was toggled
 
   // Optional fields
   description?: string;
