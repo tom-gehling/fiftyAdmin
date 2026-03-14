@@ -172,6 +172,7 @@ export class GoogleMapsService {
       case 'monthly':
         return this.getNextMonthlyDate(now, schedule.dayOfWeek!, schedule.weekOfMonth!);
 
+      case 'one-off':
       case 'custom':
         if (schedule.customDates && schedule.customDates.length > 0) {
           const futureDates = schedule.customDates
@@ -268,8 +269,14 @@ export class GoogleMapsService {
         return `${weeks[schedule.weekOfMonth!]} ${days[schedule.dayOfWeek!]} of the month${time}`;
       }
 
-      case 'custom':
-        return 'Custom schedule - see specific dates';
+      case 'one-off':
+      case 'custom': {
+        const dates = (schedule.customDates || []).map(d => {
+          const date = new Date(d);
+          return date.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        });
+        return dates.length > 0 ? dates.join(', ') + time : 'No date set';
+      }
 
       default:
         return 'No schedule set';

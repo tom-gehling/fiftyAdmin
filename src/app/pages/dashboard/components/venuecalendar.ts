@@ -548,6 +548,7 @@ export class VenueCalendarComponent implements OnInit {
         if (day !== null) result.push(day);
         break;
       }
+      case 'one-off':
       case 'custom': {
         (schedule.customDates || []).forEach(cd => {
           const d = cd instanceof Date ? cd : new Date(cd as any);
@@ -589,7 +590,14 @@ export class VenueCalendarComponent implements OnInit {
         const weeks: Record<number, string> = { 1: 'First', 2: 'Second', 3: 'Third', 4: 'Fourth', [-1]: 'Last' };
         return `${weeks[schedule.weekOfMonth!]} ${days[schedule.dayOfWeek!]} of the month`;
       }
-      case 'custom': return 'Custom schedule';
+      case 'one-off':
+      case 'custom': {
+        const dates = (schedule.customDates || []).map(cd => {
+          const d = cd instanceof Date ? cd : new Date(cd as any);
+          return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+        });
+        return dates.length > 0 ? dates.join(', ') : '';
+      }
       default: return '';
     }
   }

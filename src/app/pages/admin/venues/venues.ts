@@ -237,7 +237,7 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
                 </p-floatlabel>
 
                 <!-- Day of Week -->
-                <p-floatlabel variant="on" *ngIf="schedule.get('type')?.value !== 'custom'">
+                <p-floatlabel variant="on" *ngIf="schedule.get('type')?.value !== 'custom' && schedule.get('type')?.value !== 'one-off'">
                   <p-select
                     id="dayOfWeek{{ i }}"
                     formControlName="dayOfWeek"
@@ -260,6 +260,17 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
                     class="w-full"
                   ></p-select>
                   <label for="weekOfMonth{{ i }}">Week of Month *</label>
+                </p-floatlabel>
+
+                <!-- Event Date (for one-off) -->
+                <p-floatlabel variant="on" *ngIf="schedule.get('type')?.value === 'one-off'" class="md:col-span-2">
+                  <p-datepicker
+                    id="eventDate{{ i }}"
+                    formControlName="eventDate"
+                    dateFormat="dd/mm/yy"
+                    class="w-full"
+                  ></p-datepicker>
+                  <label for="eventDate{{ i }}">Date *</label>
                 </p-floatlabel>
 
                 <!-- Start & End Time -->
@@ -299,7 +310,7 @@ import { Venue, VenueSchedule } from '@/shared/models/venue.model';
               </p-floatlabel>
 
               <!-- Exclusion Dates -->
-              <div class="mt-3">
+              <div class="mt-3" *ngIf="schedule.get('type')?.value !== 'one-off'">
                 <div class="flex justify-between items-center mb-2">
                   <label class="font-semibold text-sm">Excluded Dates</label>
                   <button pButton type="button" label="Add Excluded Date" icon="pi pi-calendar-times" class="p-button-sm p-button-outlined" (click)="addExclusionDate(i)"></button>
@@ -366,7 +377,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
     { label: 'Weekly', value: 'weekly' },
     { label: 'Fortnightly', value: 'biweekly' },
     { label: 'Monthly', value: 'monthly' },
-    { label: 'Custom Dates', value: 'custom' }
+    { label: 'One-Off', value: 'one-off' }
   ];
 
   daysOfWeek = [
@@ -433,11 +444,15 @@ export class VenuesComponent implements OnInit, AfterViewInit {
         return this.fb.control(date);
       })
     );
+    const firstCustomDate = schedule?.type === 'one-off' && schedule?.customDates?.length
+      ? (schedule.customDates[0] instanceof Date ? schedule.customDates[0] : new Date(schedule.customDates[0] as any))
+      : null;
     return this.fb.group({
       type: [schedule?.type || 'weekly', Validators.required],
       dayOfWeek: [schedule?.dayOfWeek ?? null],
       weekOfMonth: [schedule?.weekOfMonth ?? null],
       customDates: [schedule?.customDates || []],
+      eventDate: [firstCustomDate],
       startTime: [this.timeStringToDate(schedule?.startTime || '19:00')],
       endTime: [this.timeStringToDate(schedule?.endTime || '21:00')],
       isActive: [schedule?.isActive ?? true],
@@ -490,9 +505,10 @@ export class VenuesComponent implements OnInit, AfterViewInit {
     const type = schedule.get('type')?.value;
 
     // Reset conditional fields based on type
-    if (type === 'custom') {
+    if (type === 'one-off' || type === 'custom') {
       schedule.get('dayOfWeek')?.setValue(null);
       schedule.get('weekOfMonth')?.setValue(null);
+      schedule.get('eventDate')?.setValue(null);
     } else if (type === 'monthly') {
       if (schedule.get('weekOfMonth')?.value === null) {
         schedule.get('weekOfMonth')?.setValue(1);
@@ -710,12 +726,19 @@ export class VenuesComponent implements OnInit, AfterViewInit {
         imageUrl,
         isActive: formValue.isActive,
         ...(activeToggled ? { activeToggledAt: new Date() } : {}),
-        quizSchedules: formValue.quizSchedules.map((s: any) => ({
-          ...s,
-          startTime: this.dateToTimeString(s.startTime),
-          endTime: this.dateToTimeString(s.endTime),
-          exclusionDates: (s.exclusionDates || []).filter((d: any) => d != null)
-        }))
+        quizSchedules: formValue.quizSchedules.map((s: any) => {
+          const { eventDate, ...rest } = s;
+          const schedule: any = {
+            ...rest,
+            startTime: this.dateToTimeString(s.startTime),
+            endTime: this.dateToTimeString(s.endTime),
+            exclusionDates: (s.exclusionDates || []).filter((d: any) => d != null)
+          };
+          if (s.type === 'one-off') {
+            schedule.customDates = eventDate ? [eventDate] : [];
+          }
+          return schedule;
+        })
       };
 
       if (this.isEditing && this.selectedVenue?.id) {

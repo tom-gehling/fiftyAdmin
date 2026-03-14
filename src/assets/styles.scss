@@ -52,3 +52,13 @@ html{
 .pac-container {
   z-index: 100000 !important;
 }
+
+/* Question tooltip — wide enough to show full question text */
+.question-tooltip {
+  max-width: 90vw;
+
+  .p-tooltip-text {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
