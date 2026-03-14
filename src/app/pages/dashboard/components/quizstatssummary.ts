@@ -14,13 +14,14 @@ import { QuizResultsService } from '@/shared/services/quiz-result.service';
 
 import type { TooltipItem } from 'chart.js';
 import { DatePickerModule } from 'primeng/datepicker';
+import { TooltipModule } from 'primeng/tooltip';
 
 declare const google: any;
 
 @Component({
   standalone: true,
   selector: 'app-quiz-stats-summary',
-  imports: [CommonModule, FormsModule, ChartModule, SelectModule, ProgressBarModule, DatePickerModule],
+  imports: [CommonModule, FormsModule, ChartModule, SelectModule, ProgressBarModule, DatePickerModule, TooltipModule],
   template: `
   <div class="mb-2 flex items-center">
   <!-- Left spacer -->
@@ -205,7 +206,7 @@ declare const google: any;
       <div class="font-semibold text-green-400 mb-3">Easiest Questions</div>
       <ul class="list-none p-0 m-0">
         <li *ngFor="let q of easiestQuestions" class="flex flex-row md:items-center justify-between mb-4">
-          <div class="text-sm w-49/100 truncate" [innerHTML]="getQuestionHtml(q)"></div>
+          <div class="text-sm w-49/100 truncate cursor-pointer" [innerHTML]="getQuestionHtml(q)" [pTooltip]="getQuestionText(q)" tooltipPosition="top" tooltipEvent="focus" tooltipStyleClass="question-tooltip" tabindex="0"></div>
           <div class="mt-2 mt-0 flex items-center w-49/100">
             <p-progressBar [value]="q.correctRate * 100" styleClass="flex-1 p-progressbar-danger" [showValue]="false" [style]="{ height: '8px' }"></p-progressBar>
             <span class="text-green-400 ml-3 font-medium">{{ (q.correctRate * 100) | number:'1.0-0' }}%</span>
@@ -222,7 +223,7 @@ declare const google: any;
       <div class="font-semibold text-red-400 mb-3">Hardest Questions</div>
       <ul class="list-none p-0 m-0">
         <li *ngFor="let q of hardestQuestions" class="flex flex-row md:items-center justify-between mb-4">
-          <div class="text-sm w-49/100 truncate" [innerHTML]="getQuestionHtml(q)"></div>
+          <div class="text-sm w-49/100 truncate cursor-pointer" [innerHTML]="getQuestionHtml(q)" [pTooltip]="getQuestionText(q)" tooltipPosition="top" tooltipEvent="focus" tooltipStyleClass="question-tooltip" tabindex="0"></div>
           <div class="mt-2 mt-0 flex items-center w-49/100">
             <p-progressBar [value]="q.correctRate * 100" styleClass="flex-1 p-progressbar-danger" [showValue]="false" [style]="{ height: '8px' }"></p-progressBar>
             <span class="text-red-400 ml-3 font-medium">{{ (q.correctRate * 100) | number:'1.0-0' }}%</span>
@@ -654,6 +655,11 @@ this.thinkingTimeChartOptions = {
     const secs = Math.floor(seconds % 60);
     const pad = (n:number)=>n.toString().padStart(2,'0');
     return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  }
+
+  getQuestionText(q: any): string {
+    const stripped = q.question.replace(/<[^>]+>/g, '');
+    return `${q.number}. ${stripped}`;
   }
 
   getQuestionHtml(q: any): SafeHtml {

@@ -5,6 +5,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
+import { TooltipModule } from 'primeng/tooltip';
 import { firstValueFrom } from 'rxjs';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { QuizStatsService, QuizStatsResponse } from '@/shared/services/quiz-stats.service';
@@ -21,7 +22,8 @@ import { FormsModule } from '@angular/forms';
     ProgressBarModule,
     ProgressSpinnerModule,
     ButtonModule,
-    MenuModule
+    MenuModule,
+    TooltipModule
   ],
   template: `
 <div class="card p-5">
@@ -73,7 +75,7 @@ import { FormsModule } from '@angular/forms';
       <div class="font-semibold text-green-500 mb-3">Easiest Questions</div>
       <ul class="list-none p-0 m-0">
         <li *ngFor="let q of easiestQuestions" class="flex flex-row items-center justify-between mb-4">
-          <div class="text-sm w-49/100 truncate" title="{{ q.question }}">
+          <div class="text-sm w-49/100 truncate cursor-pointer" [pTooltip]="q.question" tooltipPosition="top" tooltipEvent="focus" tooltipStyleClass="question-tooltip" tabindex="0">
             {{q.number}}. {{ q.question }}
           </div>
           <div class="mt-2 mt-0 flex items-center w-49/100">
@@ -89,7 +91,7 @@ import { FormsModule } from '@angular/forms';
       <div class="font-semibold text-red-400 mb-3">Hardest Questions</div>
       <ul class="list-none p-0 m-0">
         <li *ngFor="let q of hardestQuestions" class="flex flex-row md:items-center justify-between mb-4">
-          <div class="text-sm w-49/100 truncate" title="{{ q.question }}">
+          <div class="text-sm w-49/100 truncate cursor-pointer" [pTooltip]="q.question" tooltipPosition="top" tooltipEvent="focus" tooltipStyleClass="question-tooltip" tabindex="0">
            {{q.number}}. {{ q.question }}
           </div>
           <div class="mt-2 mt-0 flex items-center w-49/100">
