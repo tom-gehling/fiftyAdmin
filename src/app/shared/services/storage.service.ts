@@ -6,7 +6,7 @@ export class StorageService {
   constructor(private storage: Storage) {}
 
   async uploadQuizImage(file: File, quizId: string): Promise<string> {
-    const filePath = `quiz-images/${quizId}/${Date.now()}_${file.name}`;
+    const filePath = `quizLogos/${quizId}/${Date.now()}_${file.name}`;
     const storageRef = ref(this.storage, filePath);
 
     await uploadBytes(storageRef, file);
@@ -22,7 +22,7 @@ export class StorageService {
   }
 
   async getExistingImages(): Promise<string[]> {
-    const baseRef = ref(this.storage, 'quiz-images');
+    const baseRef = ref(this.storage, 'quizLogos');
 
     const result = await listAll(baseRef);
 

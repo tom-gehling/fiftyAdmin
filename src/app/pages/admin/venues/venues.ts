@@ -423,8 +423,8 @@ export class VenuesComponent implements OnInit, AfterViewInit {
       city: [''],
       state: [''],
       country: [''],
-      latitude: [null, Validators.required],
-      longitude: [null, Validators.required],
+      latitude: [null],
+      longitude: [null],
       websiteUrl: [''],
       phoneNumber: [''],
       description: [''],
@@ -609,7 +609,6 @@ export class VenuesComponent implements OnInit, AfterViewInit {
     this.quizSchedules.clear();
     this.imagePreview = null;
     this.selectedImageFile = undefined;
-    if (this.imageInput) this.imageInput.nativeElement.value = '';
     this.venueDialog = true;
 
     // Initialize autocomplete after dialog opens
@@ -636,7 +635,6 @@ export class VenuesComponent implements OnInit, AfterViewInit {
 
     this.imagePreview = venue.imageUrl || null;
     this.selectedImageFile = undefined;
-    if (this.imageInput) this.imageInput.nativeElement.value = '';
 
     // Populate schedules
     this.quizSchedules.clear();
@@ -677,12 +675,12 @@ export class VenuesComponent implements OnInit, AfterViewInit {
       const location = this.googleMapsService.parsePlace(place);
 
       this.venueForm.patchValue({
-        address: location.address,
-        city: location.city,
-        state: location.state,
-        country: location.country,
-        latitude: location.latitude,
-        longitude: location.longitude
+        address: location.address ?? '',
+        city: location.city ?? '',
+        state: location.state ?? '',
+        country: location.country ?? '',
+        latitude: location.latitude ?? null,
+        longitude: location.longitude ?? null
       });
 
       this.notify.success('Address geocoded successfully');
@@ -716,11 +714,11 @@ export class VenuesComponent implements OnInit, AfterViewInit {
         venueName: formValue.venueName,
         location: {
           address: formValue.address,
-          city: formValue.city,
-          state: formValue.state,
-          country: formValue.country,
-          latitude: formValue.latitude,
-          longitude: formValue.longitude
+          city: formValue.city ?? '',
+          state: formValue.state ?? '',
+          country: formValue.country ?? '',
+          latitude: formValue.latitude ?? null,
+          longitude: formValue.longitude ?? null
         },
         websiteUrl: formValue.websiteUrl,
         phoneNumber: formValue.phoneNumber,

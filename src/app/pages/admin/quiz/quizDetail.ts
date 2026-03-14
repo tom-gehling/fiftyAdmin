@@ -20,6 +20,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { SpeedDialModule } from 'primeng/speeddial';
+import { DividerModule } from 'primeng/divider';
 
 // Angular CDK Drag & Drop
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -67,7 +68,8 @@ import { StorageService } from '@/shared/services/storage.service';
     FloatLabelModule,
     FormsModule,
     SpeedDialModule,
-    MenuModule
+    MenuModule,
+    DividerModule
   ],
   templateUrl: './quizDetail.html'
 })
@@ -116,6 +118,9 @@ export class QuizDetailComponent implements OnInit {
 
   private removedQuestionsBackup: any[] = [];
   logoDialogVisible: boolean = false;
+  pendingImageUrl: string = '';
+  uploadPreview: string | null = null;
+  pendingUploadFile: File | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -173,20 +178,16 @@ export class QuizDetailComponent implements OnInit {
   this.loadingImages = false;
 }
 
-async uploadNewImage(event: any) {
+uploadNewImage(event: any) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  const url = await this.storageService.uploadQuizImage(
-    file,
-    this.form.value.quizId
-  );
+  this.pendingUploadFile = file;
+  this.pendingImageUrl = '';
 
-  this.form.get('imageUrl')?.setValue(url);
-  this.logoDialogVisible = false;
-
-  // Refresh the selection list
-  await this.loadExistingImages();
+  const reader = new FileReader();
+  reader.onload = () => this.uploadPreview = reader.result as string;
+  reader.readAsDataURL(file);
 }
 
   private async initializeEmptyQuiz(): Promise<void> {
@@ -511,6 +512,31 @@ exportJson(simple: boolean = false): void {
     }
   }
 
-  showLogoDialog(): void { this.logoDialogVisible = true; }
-  selectLogoFromDialog(logo: string): void { this.form.get('imageUrl')?.setValue(logo); this.logoDialogVisible = false; }
+  showLogoDialog(): void {
+    this.pendingImageUrl = this.form.get('imageUrl')?.value || '';
+    this.uploadPreview = null;
+    this.pendingUploadFile = null;
+    this.logoDialogVisible = true;
+  }
+
+  selectLogoFromDialog(img: string): void {
+    this.pendingImageUrl = img;
+    this.uploadPreview = null;
+    this.pendingUploadFile = null;
+  }
+
+  async saveLogoDialog(): Promise<void> {
+    if (this.pendingUploadFile) {
+      const url = await this.storageService.uploadQuizImage(this.pendingUploadFile, this.form.value.quizId);
+      this.form.get('imageUrl')?.setValue(url);
+      await this.loadExistingImages();
+    } else {
+      this.form.get('imageUrl')?.setValue(this.pendingImageUrl);
+    }
+    this.logoDialogVisible = false;
+  }
+
+  cancelLogoDialog(): void {
+    this.logoDialogVisible = false;
+  }
 }
