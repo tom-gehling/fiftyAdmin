@@ -107,6 +107,12 @@ import { PublicTopbarComponent } from './components/public-topbar';
                   styleClass="venue-panel">
                   <ng-template #header>
                     <div class="venue-panel-header-content">
+                      <img
+                        *ngIf="venue.imageUrl"
+                        [src]="venue.imageUrl"
+                        [alt]="venue.venueName"
+                        class="venue-list-img"
+                      />
                       <div class="venue-list-info">
                         <h3 class="venue-list-name">{{ venue.venueName }}</h3>
                         <p class="venue-list-location">
@@ -118,12 +124,6 @@ import { PublicTopbarComponent } from './components/public-topbar';
                           Next Quiz: {{ nextDate | date:'EEE, MMM d' }}
                         </div>
                       </div>
-                      <img
-                        *ngIf="venue.imageUrl"
-                        [src]="venue.imageUrl"
-                        [alt]="venue.venueName"
-                        class="venue-list-img"
-                      />
                     </div>
                   </ng-template>
                   <div class="venue-detail">
@@ -202,6 +202,12 @@ import { PublicTopbarComponent } from './components/public-topbar';
             styleClass="venue-panel">
             <ng-template #header>
               <div class="venue-panel-header-content">
+                <img
+                  *ngIf="venue.imageUrl"
+                  [src]="venue.imageUrl"
+                  [alt]="venue.venueName"
+                  class="venue-list-img"
+                />
                 <div class="venue-list-info">
                   <h3 class="venue-list-name">{{ venue.venueName }}</h3>
                   <p class="venue-list-location">
@@ -213,12 +219,6 @@ import { PublicTopbarComponent } from './components/public-topbar';
                     Next Quiz: {{ nextDate | date:'EEE, MMM d' }}
                   </div>
                 </div>
-                <img
-                  *ngIf="venue.imageUrl"
-                  [src]="venue.imageUrl"
-                  [alt]="venue.venueName"
-                  class="venue-list-img"
-                />
               </div>
             </ng-template>
             <div class="venue-detail">
@@ -427,7 +427,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
       border-radius: 6px;
       object-fit: cover;
       flex-shrink: 0;
-      border: 1px solid rgba(76, 251, 171, 0.3);
+      // border: 1px solid rgba(76, 251, 171, 0.3);
     }
 
     .venue-list-name {
@@ -506,7 +506,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
 
     :host ::ng-deep .venue-panel .p-panel-header:hover,
     :host ::ng-deep .venue-panel button.p-panel-header:hover {
-      background: rgba(76, 251, 171, 0.08) !important;
+      background: #5a6e65 !important;
     }
 
     :host ::ng-deep .venue-panel.p-panel-expanded .p-panel-header,
@@ -827,16 +827,29 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
 
       marker.addListener('click', () => {
         const nextQuiz = this.formatFirstSchedule(venue);
-        this.infoWindow.setContent(`
-          <div style="font-family: sans-serif; padding: 4px; min-width: 160px;">
-            <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${venue.venueName}</div>
-            <div style="font-size: 12px; color: #555;">${venue.location.city}${venue.location.state ? ', ' + venue.location.state : ''}</div>
-            <div style="font-size: 12px; color: #333; margin-top: 4px;">
-              <strong>Next Quiz:</strong> ${nextQuiz}
-            </div>
-          </div>
-        `);
+        this.infoWindow.setContent('<div></div>');
         this.infoWindow.open(this.map, marker);
+        google.maps.event.addListenerOnce(this.infoWindow, 'domready', () => {
+          setTimeout(() => {
+            const chr = document.querySelector('.gm-style-iw-chr');
+            if (chr) {
+              const placeholder = chr.querySelector('div:first-child') as HTMLElement | null;
+              if (placeholder) {
+                placeholder.style.flex = '1';
+                placeholder.innerHTML = `
+                  <div style="font-family: sans-serif; padding: 20px 5px; display: flex; align-items: center; gap: 10px;">
+                    ${venue.imageUrl ? `<img src="${venue.imageUrl}" alt="${venue.venueName}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; flex-shrink: 0;" />` : ''}
+                    <div style="display:flex; flex-direction: column; gap:10px;" >
+                      <div style="font-weight: 800; font-size: 14px;">${venue.venueName}</div>
+                      <div style="font-size: 12px; font-weight: 600; color: #444;">${venue.location.city}${venue.location.state ? ', ' + venue.location.state : ''}</div>
+                      <div style="font-size: 12px; color: #333;"><strong>Next Quiz:</strong> ${nextQuiz}</div>
+                    </div>
+                  </div>
+                `;
+              }
+            }
+          }, 0);
+        });
         this.selectVenue(venue);
         this.panToMarker(venue);
       });

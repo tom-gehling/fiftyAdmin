@@ -53,6 +53,15 @@ html{
   z-index: 100000 !important;
 }
 
+/* Google Maps InfoWindow — remove default padding so content sits inline with the X button */
+.gm-style-iw-ch,
+.gm-style-iw-chr {
+  padding: 0 !important;
+}
+.gm-style-iw-d {
+  overflow: hidden !important;
+}
+
 /* Question tooltip — wide enough to show full question text */
 .question-tooltip {
   max-width: 90vw;

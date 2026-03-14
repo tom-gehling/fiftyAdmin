@@ -609,6 +609,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
     this.quizSchedules.clear();
     this.imagePreview = null;
     this.selectedImageFile = undefined;
+    if (this.imageInput) this.imageInput.nativeElement.value = '';
     this.venueDialog = true;
 
     // Initialize autocomplete after dialog opens
@@ -635,6 +636,7 @@ export class VenuesComponent implements OnInit, AfterViewInit {
 
     this.imagePreview = venue.imageUrl || null;
     this.selectedImageFile = undefined;
+    if (this.imageInput) this.imageInput.nativeElement.value = '';
 
     // Populate schedules
     this.quizSchedules.clear();
