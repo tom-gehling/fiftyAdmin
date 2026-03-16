@@ -891,7 +891,10 @@ function formatScheduleLabel(s: any): string {
   switch (s.type) {
     case 'weekly':    return `Every ${DAYS[s.dayOfWeek]}${time}`;
     case 'biweekly':  return `Every other ${DAYS[s.dayOfWeek]}${time}`;
-    case 'monthly':   return `${WEEK_ORDINALS[s.weekOfMonth] || ''} ${DAYS[s.dayOfWeek]} of the month${time}`;
+    case 'monthly': {
+      const ordinal = s.weekOfMonth === -1 ? 'Last' : (WEEK_ORDINALS[s.weekOfMonth] || '');
+      return `${ordinal} ${DAYS[s.dayOfWeek]} of the month${time}`;
+    }
     case 'custom':    return `Selected dates${time}`;
     default:          return '';
   }
@@ -909,6 +912,19 @@ function nextWeekdayOccurrence(from: Date, dayOfWeek: number, hours: number, min
     d.setHours(hours, minutes, 0, 0);
   }
   return d;
+}
+
+function nextLastWeekdayOfMonth(from: Date, dayOfWeek: number, hours: number, minutes: number): Date | null {
+  for (let offset = 0; offset <= 2; offset++) {
+    const month = from.getMonth() + offset;
+    const year = from.getFullYear() + Math.floor(month / 12);
+    const actualMonth = month % 12;
+    const lastDay = new Date(year, actualMonth + 1, 0);
+    const diff = (lastDay.getDay() - dayOfWeek + 7) % 7;
+    const candidate = new Date(year, actualMonth, lastDay.getDate() - diff, hours, minutes, 0, 0);
+    if (candidate > from) return candidate;
+  }
+  return null;
 }
 
 function nextNthWeekdayOfMonth(from: Date, weekOfMonth: number, dayOfWeek: number, hours: number, minutes: number): Date | null {
@@ -951,8 +967,10 @@ function getNextQuizOccurrence(schedules: any[]): Date | null {
     if ((s.type === 'weekly' || s.type === 'biweekly') && s.dayOfWeek !== undefined) {
       const next = nextWeekdayOccurrence(now, s.dayOfWeek, hours, minutes);
       if (!isExcludedDate(next, s.exclusionDates)) candidates.push(next);
-    } else if (s.type === 'monthly' && s.weekOfMonth && s.dayOfWeek !== undefined) {
-      const next = nextNthWeekdayOfMonth(now, s.weekOfMonth, s.dayOfWeek, hours, minutes);
+    } else if (s.type === 'monthly' && s.weekOfMonth !== undefined && s.dayOfWeek !== undefined) {
+      const next = s.weekOfMonth === -1
+        ? nextLastWeekdayOfMonth(now, s.dayOfWeek, hours, minutes)
+        : nextNthWeekdayOfMonth(now, s.weekOfMonth, s.dayOfWeek, hours, minutes);
       if (next && !isExcludedDate(next, s.exclusionDates)) candidates.push(next);
     } else if (s.type === 'custom' && Array.isArray(s.customDates)) {
       const future = (s.customDates as any[])
@@ -968,7 +986,7 @@ function getNextQuizOccurrence(schedules: any[]): Date | null {
     : null;
 }
 
-function buildVenueDescription(schedules: any[], nextQuiz: Date | null): string {
+function buildVenueDescription(schedules: any[], nextQuiz: Date | null, address: string): string {
   const activeSchedules = (schedules || []).filter((s: any) => s.isActive);
   const scheduleLines = activeSchedules.map(formatScheduleLabel).filter(Boolean).join('<br>');
   const scheduleSection = scheduleLines || 'See venue for details';
@@ -986,7 +1004,8 @@ function buildVenueDescription(schedules: any[], nextQuiz: Date | null): string 
     nextQuizText = dateStr + timeStr;
   }
 
-  return `${scheduleSection}<br><br><strong>Next Quiz</strong><br>${nextQuizText}`;
+  const addressSection = address ? `${address}<br><br>` : '';
+  return `${addressSection}${scheduleSection}<br><br><strong>Next Quiz</strong><br>${nextQuizText}`;
 }
 
 app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => {
@@ -999,7 +1018,7 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
 
     const result = venues.map(venue => {
       const loc = venue.location || {};
-      const address = [loc.address, loc.city, loc.state, loc.country].filter(Boolean).join(', ');
+      const address = loc.address;
       const nextQuiz = getNextQuizOccurrence(venue.quizSchedules || []);
 
       return {
@@ -1008,7 +1027,7 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
         address,
         lat: String(loc.latitude ?? 0),
         lng: String(loc.longitude ?? 0),
-        description: buildVenueDescription(venue.quizSchedules || [], nextQuiz),
+        description: buildVenueDescription(venue.quizSchedules || [], nextQuiz, address),
         link: venue.websiteUrl || '',
         pic: venue.imageUrl || '',
       };
