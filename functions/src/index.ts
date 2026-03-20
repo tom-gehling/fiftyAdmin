@@ -1023,6 +1023,10 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
       const address = loc.address;
       const nextQuiz = getNextQuizOccurrence(venue.quizSchedules || []);
 
+      const primarySchedule = (venue.quizSchedules || []).find(
+        (s: any) => s.isActive && s.dayOfWeek != null
+      );
+
       return {
         id: venue.id,
         title: venue.venueName || '',
@@ -1032,6 +1036,7 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
         description: buildVenueDescription(venue.quizSchedules || [], nextQuiz, address),
         link: venue.websiteUrl || '',
         pic: venue.imageUrl || '',
+        dayOfWeek: primarySchedule?.dayOfWeek ?? null,
       };
     });
 

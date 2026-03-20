@@ -129,13 +129,15 @@ async function main() {
 
     // Load all existing venues from Firestore
     const existingSnap = await db.collection('venues').get();
-    const existing = existingSnap.docs.map((d) => {
-        const data = d.data();
-        return {
-            lat: data.location?.latitude ?? 0,
-            lng: data.location?.longitude ?? 0
-        };
-    });
+    const existing = existingSnap.docs
+        .filter((d) => !d.data().deletedAt)
+        .map((d) => {
+            const data = d.data();
+            return {
+                lat: data.location?.latitude ?? 0,
+                lng: data.location?.longitude ?? 0
+            };
+        });
 
     console.log(`Found ${existing.length} existing venues in Firestore.`);
 
@@ -205,7 +207,7 @@ async function main() {
         // Track for dedup within this run
         existing.push({ lat, lng });
 
-        // console.log(`\n  WOULD IMPORT: ${marker.title}`);
+        console.log(`\n  WOULD IMPORT: ${marker.title}`);
         // console.log(JSON.stringify(venue, null, 2));
         imported++;
     }

@@ -158,6 +158,7 @@ export class QuizTableComponent implements OnInit {
   searchText: string = '';
   loading = false;
   selectedQuiz: Quiz | null = null;
+  readonly QuizTypeEnum = QuizTypeEnum;
 
   quizType = [
     { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
@@ -227,5 +228,10 @@ export class QuizTableComponent implements OnInit {
   deleteQuiz(quiz: Quiz) {
     // if (quiz.id) this.quizzesService.deleteQuiz(quiz.id);
     this.notify.warn('Steady on Big Fella!');
+  }
+
+  async applyFiftyPlusTheme() {
+    const count = await this.quizzesService.bulkSetFiftyPlusTheme();
+    this.notify.success(`Theme applied to ${count} Fifty+ quizzes`);
   }
 }

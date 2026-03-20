@@ -333,6 +333,15 @@
         font-weight: 800 !important;
       }
 
+      .quizNotes {
+        font-family: var(--font) !important;
+        font-size: var(--smaller) !important;
+        color: var(--primary) !important;
+        text-align: center !important;
+        padding: 15px 10px !important;
+        line-height: 160% !important;
+      }
+
       .panel.answer ul {
         padding: 0;
         margin: 0;
@@ -884,14 +893,36 @@
       //   }
       // }
 
+      function createNotesAbove() {
+        var notes = quizzes[0].notesAbove;
+        if (!notes) return;
+        var quizElement = document.getElementById("load");
+        var notesDiv = document.createElement("div");
+        notesDiv.className = "quizNotes";
+        notesDiv.innerHTML = notes;
+        quizElement.appendChild(notesDiv);
+      }
+
+      function createNotesBelow() {
+        var notes = quizzes[0].notesBelow;
+        if (!notes) return;
+        var quizElement = document.getElementById("load");
+        var notesDiv = document.createElement("div");
+        notesDiv.className = "quizNotes";
+        notesDiv.innerHTML = notes;
+        quizElement.appendChild(notesDiv);
+      }
+
       function initPage() {
         correctClicked = Array(quizzes.length * 50).fill(false);
         incorrectClicked = Array(quizzes.length * 50).fill(false);
         dotStatus = Array(quizzes.length * 50).fill("block");
         createTopContainer();
         createTitle();
+        createNotesAbove();
         createQuizContainers();
         createScore();
+        createNotesBelow();
         for (var i = 0; i < quizzes.length; i++) {
           for (var j = 0; j < quizzes[i].questions.length; j++) {
             var buttonPair = {
@@ -906,6 +937,15 @@
             buttons.push(buttonPair);
           }
         }
+      }
+
+      function applyTheme() {
+        const theme = quizzes[0]?.theme;
+        if (!theme) return;
+        const root = document.documentElement;
+        if (theme.fontColor) root.style.setProperty('--primary', theme.fontColor);
+        if (theme.backgroundColor) root.style.setProperty('--secondary', theme.backgroundColor);
+        if (theme.tertiaryColor) root.style.setProperty('--tertiary', theme.tertiaryColor);
       }
 
       async function fetchLatestQuiz() {
@@ -928,6 +968,7 @@
           scoreCount = Array(quizzes.length).fill(0);
           totalCount = Array(quizzes.length).fill(0);
 
+          applyTheme();
           initPage(); // Initialize quiz after data is loaded
         } catch (error) {
           console.error("Error fetching latest quiz:", error);

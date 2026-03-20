@@ -21,6 +21,12 @@ export class StorageService {
     return getDownloadURL(storageRef);
   }
 
+  async getVenueLogoImages(): Promise<string[]> {
+    const folderRef = ref(this.storage, 'venue-logos');
+    const result = await listAll(folderRef);
+    return Promise.all(result.items.map(item => getDownloadURL(item)));
+  }
+
   async getExistingImages(): Promise<string[]> {
     const baseRef = ref(this.storage, 'quizLogos');
 

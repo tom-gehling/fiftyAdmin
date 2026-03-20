@@ -166,7 +166,6 @@
                         </div>
                         <div *ngIf="form.get('imageUrl')?.value" class="flex items-center gap-3 mt-1">
                             <img [src]="form.get('imageUrl')?.value" alt="Selected logo" class="h-20 object-contain rounded-md border border-surface-200 dark:border-surface-600 p-1 bg-surface-0 dark:bg-surface-800" />
-                            <span class="text-sm text-gray-400 break-all">{{ form.get('imageUrl')?.value }}</span>
                         </div>
                     </div>
 
@@ -192,10 +191,12 @@
                                 <p *ngIf="loadingImages" class="text-sm text-gray-400">Loading…</p>
                                 <p *ngIf="!loadingImages && existingImages.length === 0" class="text-sm text-gray-400">No logos uploaded yet.</p>
                                 <div class="grid grid-cols-4 gap-3" *ngIf="!loadingImages && existingImages.length > 0">
-                                    <div *ngFor="let img of existingImages"
+                                    <div
+                                        *ngFor="let img of existingImages"
                                         class="relative cursor-pointer rounded-md overflow-hidden transition-all hover:opacity-80"
                                         [style.border]="pendingImageUrl === img ? '3px solid #39ff14' : '2px solid transparent'"
-                                        (click)="selectLogoFromDialog(img)">
+                                        (click)="selectLogoFromDialog(img)"
+                                    >
                                         <img [src]="img" class="h-20 w-full object-contain bg-surface-100 dark:bg-surface-700 p-1" />
                                     </div>
                                 </div>
@@ -226,9 +227,7 @@
                                 <label for="submissionFormId">Submission Form</label>
                             </p-floatlabel>
                         </div>
-                        <p class="text-sm text-gray-500">
-                            Attach a submission form to this quiz. Users can submit their team results after completing the quiz.
-                        </p>
+                        <p class="text-sm text-gray-500">Attach a submission form to this quiz. Users can submit their team results after completing the quiz.</p>
                     </div>
 
                     <!-- Notes Section -->

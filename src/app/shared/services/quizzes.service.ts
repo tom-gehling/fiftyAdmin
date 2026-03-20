@@ -12,7 +12,8 @@ import {
     CollectionReference,
     query,
     where,
-    getDocs
+    getDocs,
+    writeBatch
 } from '@angular/fire/firestore';
 import { combineLatest, defer, from, map, Observable } from 'rxjs';
 import { Quiz } from '../models/quiz.model';
@@ -222,6 +223,18 @@ getQuestionQuizzes(getHeader: boolean = false): Observable<any[]> {
     async deleteQuiz(id: string): Promise<void> {
         const quizDoc = doc(this.firestore, this.collectionName, id);
         await deleteDoc(quizDoc);
+    }
+
+    async bulkSetFiftyPlusTheme(): Promise<number> {
+        const quizCollection = collection(this.firestore, this.collectionName);
+        const q = query(quizCollection, where('quizType', '==', QuizTypeEnum.FiftyPlus));
+        const snapshot = await getDocs(q);
+
+        const theme = { fontColor: 'fbe2df', backgroundColor: '282828', tertiaryColor: '4cfbab' };
+        const batch = writeBatch(this.firestore);
+        snapshot.docs.forEach(d => batch.update(d.ref, { theme }));
+        await batch.commit();
+        return snapshot.size;
     }
 
 async getNextQuizId(quizType: QuizTypeEnum): Promise<number> {

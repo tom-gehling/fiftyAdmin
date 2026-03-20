@@ -13,6 +13,9 @@ define('FIFTY_VENUES_MAPPING',  'fifty_venues_marker_mapping');
 define('FIFTY_VENUES_LAST',     'fifty_venues_last_sync');
 define('FIFTY_VENUES_CRON',     'fifty_venues_sync_event');
 
+// Maps day-of-week (0=Sun … 6=Sat) to WP Go Maps category IDs
+define('FIFTY_DAY_CATEGORY_MAP', [1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6, 7 => 7]);
+
 // ---------------------------------------------------------------------------
 // Activation / Deactivation
 // ---------------------------------------------------------------------------
@@ -58,6 +61,10 @@ function fifty_venues_sync(): void {
         if (!$fid) continue;
         $seen[] = $fid;
 
+        $day_map  = FIFTY_DAY_CATEGORY_MAP;
+        $day      = isset($venue['dayOfWeek']) && $venue['dayOfWeek'] !== null ? intval($venue['dayOfWeek']) : null;
+        $category = ($day !== null && isset($day_map[$day])) ? $day_map[$day] : '';
+
         $row = [
             'map_id'      => FIFTY_VENUES_MAP_ID,
             'title'       => sanitize_text_field($venue['title']       ?? ''),
@@ -70,6 +77,7 @@ function fifty_venues_sync(): void {
             'approved'    => 1,
             'anim'        => 0,
             'infoopen'    => 0,
+            'category'    => $category,
         ];
 
         if (isset($mapping[$fid])) {
