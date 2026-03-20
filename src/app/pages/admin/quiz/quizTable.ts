@@ -92,7 +92,7 @@ import { NotifyService } from '@/shared/services/notify.service';
           <div class="flex flex-1 items-center gap-4 p-3">
             <img
               *ngIf="quiz?.imageUrl"
-              [src]="'/assets/logos/' + quiz.imageUrl"
+              [src]="quiz.imageUrl"
               [alt]="quiz.quizTitle"
               class="w-20 h-20 rounded object-cover border border-surface-200"
             />

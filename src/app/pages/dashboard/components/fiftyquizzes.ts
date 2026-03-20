@@ -55,9 +55,9 @@ interface TagWithQuizzes {
       style="border: 3px solid #4cfbab; background-color: #000000"
     >
       <img
-        [src]=" quiz.imageUrl ? ('/assets/logos/'+quiz.imageUrl) : '/assets/logos/aussie.png'"
+        [src]="quiz.imageUrl || '/assets/logos/fiftyplus.png'"
         [alt]="quiz.quizTitle || ('Quiz ' + quiz.quizId)"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-contain"
       />
     </div>
     <span
