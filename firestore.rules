@@ -40,6 +40,12 @@ service cloud.firestore {
                    && request.auth.token.firebase.sign_in_provider != "anonymous";
     }
 
+    // Collaborators — public read, admin write
+    match /collaborators/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Quiz tags
     match /quizTags/{id} {
       allow read: if true;

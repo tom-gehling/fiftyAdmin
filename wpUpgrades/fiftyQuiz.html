@@ -276,6 +276,7 @@
     </head>
     <body>
         <div id="load"></div>
+        <div id="loggedInEmail" data-email="[current_user_email]" style="display: none"></div>
 
         <script>
             let quizzes = [];
@@ -287,6 +288,22 @@
             let totalCount = [];
             var quizSubmitted = [];
             var answerTimestamps = {};
+
+            function createLogo() {
+                if (!quizzes[0].logoUrl) return;
+                var quizElement = document.getElementById('load');
+                var logoDiv = document.createElement('div');
+                logoDiv.className = 'logo';
+                var link = document.createElement('a');
+                link.href = 'https://theweeklyfifty.com.au/members';
+                var img = document.createElement('img');
+                img.style.cssText = 'width: 100%; max-width: 400px; display: block; margin: 0 auto 20px;';
+                img.src = quizzes[0].logoUrl;
+                img.alt = 'Fifty Plus';
+                link.appendChild(img);
+                logoDiv.appendChild(link);
+                quizElement.appendChild(logoDiv);
+            }
 
             function createImage() {
                 var imageUrl = quizzes[0].imageUrl;
@@ -435,7 +452,17 @@
             }
 
             function toggleAccordion() {
-                this.classList.toggle('active');
+                const isActive = this.classList.toggle('active');
+                const rootStyle = getComputedStyle(document.documentElement);
+                const black = rootStyle.getPropertyValue('--black').trim() || '#282828';
+                const pink = rootStyle.getPropertyValue('--pink').trim() || '#fbe2df';
+                if (isActive) {
+                    this.style.setProperty('color', black, 'important');
+                    this.style.setProperty('background-color', pink, 'important');
+                } else {
+                    this.style.setProperty('color', pink, 'important');
+                    this.style.setProperty('background-color', black, 'important');
+                }
                 var panel = this.nextElementSibling;
                 panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
             }
@@ -537,19 +564,10 @@
 
             const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-            function isMembersQuiz() {
-                return window.location.pathname.includes('/members/');
-            }
-
-            async function getWordPressUserEmail() {
-                try {
-                    const response = await fetch('/wp-json/wp/v2/users/me', { credentials: 'include' });
-                    if (!response.ok) return null;
-                    const data = await response.json();
-                    return data.email || null;
-                } catch {
-                    return null;
-                }
+            function getWordPressUserEmail() {
+                const email = document.getElementById('loggedInEmail')?.dataset.email;
+                if (!email || email === '[current_user_email]') return null;
+                return email;
             }
 
             async function startQuizSession(quizId) {
@@ -557,20 +575,11 @@
                 if (localStorage.getItem(sessionKey)) return localStorage.getItem(sessionKey);
 
                 try {
-                    let endpoint, body;
-                    if (isMembersQuiz()) {
-                        const emailAddress = await getWordPressUserEmail();
-                        endpoint = 'https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart';
-                        body = JSON.stringify({ quizId, emailAddress });
-                    } else {
-                        endpoint = 'https://weeklyfifty-7617b.web.app/api/logQuizStart';
-                        body = JSON.stringify({ quizId });
-                    }
-
-                    const response = await fetch(endpoint, {
+                    const emailAddress = getWordPressUserEmail();
+                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body
+                        body: JSON.stringify({ quizId, emailAddress })
                     });
                     if (!response.ok) throw new Error('Failed to start quiz session');
                     const data = await response.json();
@@ -600,9 +609,7 @@
                 });
 
                 try {
-                    const endpoint = isMembersQuiz() ? 'https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizFinish' : 'https://weeklyfifty-7617b.web.app/api/logQuizFinish';
-
-                    const response = await fetch(endpoint, {
+                    const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizFinish', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ sessionId, score, total: totalQuestions, answers })
@@ -636,12 +643,12 @@
                     for (let j = 0; j < totalQuestions; j++) {
                         disableButton(0, quizIndex, j);
                     }
-                    C;
                     await finishQuizSession(quizIndex);
                 }
             }
 
             function initPage() {
+                createLogo();
                 createImage();
                 createTitle();
                 createNotesAbove();
@@ -690,7 +697,7 @@
                     incorrectClicked = Array(quizzes.length * 50).fill(false);
                     dotStatus = Array(quizzes.length * 50).fill('block');
 
-                    applyTheme();
+                    // applyTheme();
                     initPage();
                 } catch (error) {
                     console.error('Error fetching quiz:', error);

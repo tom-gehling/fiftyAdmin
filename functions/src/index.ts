@@ -753,8 +753,6 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
         .limit(1)
         .get();
 
-        console.log('exists: ',existingSnap)
-
       if (!existingSnap.empty) {
         // User exists → increment login count
         const userDoc = existingSnap.docs[0];
@@ -766,7 +764,9 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
         });
       } else {
         // User doesn't exist → create new user
-        const newUserRef = await usersCol.add({
+        const newUserRef = usersCol.doc();
+        await newUserRef.set({
+          uid: newUserRef.id,
           createdAt: new Date(),
           isAnon: false,
           isMember: true,
@@ -780,9 +780,6 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
           lastLoginAt: new Date(),
           updatedAt: new Date(),
         });
-
-        // Set uid field to doc ID
-        await newUserRef.update({ uid: newUserRef.id });
         dbUserId = newUserRef.id;
       }
     }
