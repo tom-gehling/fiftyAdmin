@@ -15,10 +15,26 @@ try {
 
 const db = admin.firestore();
 
-// Static array of quizIds
-const quizIds = ['195', '196'];
+// Set to true to delete all quizAggregates docs with quizId >= 10000 before building
+const CLEANUP_FIFTY_PLUS = false;
+
+// Range of quizIds to process (numeric comparison, quizIds are strings)
+const QUIZ_ID_MIN = 9999; // exclusive
+const QUIZ_ID_MAX = 50000; // exclusive
 
 async function buildQuizAggregates() {
+    const quizzesSnapshot = await db.collection('quizzes').get();
+    const quizIds = quizzesSnapshot.docs
+        .map((doc) => doc.data().quizId)
+        .filter((id) => {
+            const numId = parseInt(id, 10);
+            return !isNaN(numId) && numId > QUIZ_ID_MIN && numId < QUIZ_ID_MAX;
+        })
+        .map((id) => String(id))
+        .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+
+    console.log(`Found ${quizIds.length} quizzes in range (${QUIZ_ID_MIN}, ${QUIZ_ID_MAX}): ${quizIds.join(', ')}`);
+
     for (const quizId of quizIds) {
         console.log(`\n=== Processing quizId ${quizId} ===`);
         let snapshot;
@@ -31,6 +47,7 @@ async function buildQuizAggregates() {
         }
 
         const aggregates = {};
+        const retroAggregates = {};
 
         for (const doc of snapshot.docs) {
             try {
@@ -38,8 +55,13 @@ async function buildQuizAggregates() {
                 const qId = data['quizId'];
                 if (qId !== quizId) continue;
 
-                if (!aggregates[qId]) {
-                    aggregates[qId] = {
+                const isRetro = data['retro'] === true;
+
+                const aggMap = isRetro ? retroAggregates : aggregates;
+                const aggKey = isRetro ? `${qId}_retro` : qId;
+
+                if (!aggMap[aggKey]) {
+                    aggMap[aggKey] = {
                         completedCount: 0,
                         inProgressCount: 0,
                         abandonedCount: 0,
@@ -55,7 +77,7 @@ async function buildQuizAggregates() {
                     };
                 }
 
-                const agg = aggregates[qId];
+                const agg = aggMap[aggKey];
 
                 // Parse timestamps
                 let startedAt, completedAt;
@@ -129,8 +151,8 @@ async function buildQuizAggregates() {
             }
         }
 
-        // Compute derived aggregates
-        for (const agg of Object.values(aggregates)) {
+        // Compute derived aggregates for both normal and retro
+        for (const agg of [...Object.values(aggregates), ...Object.values(retroAggregates)]) {
             agg.avgTimeBetweenQuestions = agg.sequentialQuestionTimes.length > 0 ? agg.sequentialQuestionTimes.reduce((a, b) => a + b.diffSec, 0) / agg.sequentialQuestionTimes.length : 0;
 
             const perQuestion = {};
@@ -149,64 +171,89 @@ async function buildQuizAggregates() {
             if (agg.minScore === Number.POSITIVE_INFINITY) agg.minScore = 0;
         }
 
+        function buildAggDocPayload(docId, agg) {
+            const averageScore = agg.validStatsCount > 0 ? agg.totalScore / agg.validStatsCount : 0;
+            const averageTime = agg.validStatsCount > 0 ? agg.totalTime / agg.validStatsCount : 0;
+            const questionAccuracy = Object.entries(agg.questionStats).map(([qid, stat]) => ({
+                questionId: qid,
+                totalAttempts: stat.total,
+                correctCount: stat.correct,
+                correctRate: stat.total > 0 ? stat.correct / stat.total : 0
+            }));
+            return {
+                quizId: docId,
+                completedCount: agg.completedCount,
+                inProgressCount: agg.inProgressCount,
+                abandonedCount: agg.abandonedCount,
+                totalScore: agg.totalScore,
+                totalTime: agg.totalTime,
+                averageScore,
+                averageTime,
+                hourlyCounts: agg.hourlyCounts,
+                locationCounts: agg.locationCounts,
+                questionStats: agg.questionStats,
+                questionAccuracy,
+                hardestQuestions: [...questionAccuracy].sort((a, b) => a.correctRate - b.correctRate).slice(0, 5),
+                easiestQuestions: [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5),
+                avgTimeBetweenQuestions: agg.avgTimeBetweenQuestions,
+                avgTimeBetweenByQuestion: agg.avgTimeBetweenByQuestion,
+                maxScore: agg.maxScore,
+                minScore: agg.minScore,
+                validStatsCount: agg.validStatsCount,
+                updatedAt: new Date()
+            };
+        }
+
         // Write to Firestore
         try {
             const batch = db.batch();
 
-            for (const [qId, agg] of Object.entries(aggregates)) {
-                const averageScore = agg.validStatsCount > 0 ? agg.totalScore / agg.validStatsCount : 0;
-                const averageTime = agg.validStatsCount > 0 ? agg.totalTime / agg.validStatsCount : 0;
+            for (const [docId, agg] of Object.entries(aggregates)) {
+                const docRef = db.collection('quizAggregates').doc(String(docId));
+                batch.set(docRef, buildAggDocPayload(docId, agg));
+            }
 
-                const questionAccuracy = Object.entries(agg.questionStats).map(([qid, stat]) => ({
-                    questionId: qid,
-                    totalAttempts: stat.total,
-                    correctCount: stat.correct,
-                    correctRate: stat.total > 0 ? stat.correct / stat.total : 0
-                }));
-
-                const hardestQuestions = [...questionAccuracy].sort((a, b) => a.correctRate - b.correctRate).slice(0, 5);
-                const easiestQuestions = [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
-                // console.log(averageScore);
-                // console.log(easiestQuestions);
-                // console.log(hardestQuestions);
-                const docRef = db.collection('quizAggregates').doc(String(qId));
-                batch.set(docRef, {
-                    quizId: qId,
-                    completedCount: agg.completedCount,
-                    inProgressCount: agg.inProgressCount,
-                    abandonedCount: agg.abandonedCount,
-                    totalScore: agg.totalScore,
-                    totalTime: agg.totalTime,
-                    averageScore,
-                    averageTime,
-                    hourlyCounts: agg.hourlyCounts,
-                    locationCounts: agg.locationCounts,
-                    questionStats: agg.questionStats,
-                    questionAccuracy,
-                    hardestQuestions,
-                    easiestQuestions,
-                    avgTimeBetweenQuestions: agg.avgTimeBetweenQuestions,
-                    avgTimeBetweenByQuestion: agg.avgTimeBetweenByQuestion,
-                    maxScore: agg.maxScore,
-                    minScore: agg.minScore,
-                    validStatsCount: agg.validStatsCount,
-                    updatedAt: new Date()
-                });
-
-                // console.log(averageScore);
-                // console.log(hardestQuestions);
-                // console.log(easiestQuestions);
+            for (const [docId, agg] of Object.entries(retroAggregates)) {
+                const docRef = db.collection('quizAggregates').doc(String(docId));
+                batch.set(docRef, { ...buildAggDocPayload(docId, agg), retro: true });
             }
 
             await batch.commit();
-            console.log(`✅ Wrote ${Object.keys(aggregates).length} quiz aggregates for quizId ${quizId}.`);
+            console.log(`✅ Wrote ${Object.keys(aggregates).length} normal + ${Object.keys(retroAggregates).length} retro aggregates for quizId ${quizId}.`);
         } catch (err) {
             console.error(`❌ Failed to write aggregates to Firestore for quizId ${quizId}:`, err);
         }
     }
 }
 
-buildQuizAggregates()
+async function cleanupFiftyPlusAggregates() {
+    console.log('\n=== Cleaning up quizAggregates for quizId >= 10000 (including retro) ===');
+    const snapshot = await db.collection('quizAggregates').get();
+    const toDelete = snapshot.docs.filter((doc) => {
+        // parseInt handles both "10001" and "10001_retro" (stops at underscore)
+        const numId = parseInt(doc.id, 10);
+        return !isNaN(numId) && numId >= 10000;
+    });
+
+    if (toDelete.length === 0) {
+        console.log('No documents found to delete.');
+        return;
+    }
+
+    const batch = db.batch();
+    toDelete.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    console.log(`✅ Deleted ${toDelete.length} quizAggregates documents.`);
+}
+
+async function main() {
+    if (CLEANUP_FIFTY_PLUS) {
+        await cleanupFiftyPlusAggregates();
+    }
+    await buildQuizAggregates();
+}
+
+main()
     .then(() => {
         console.log('All done!');
         process.exit(0);

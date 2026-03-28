@@ -277,6 +277,7 @@
     <body>
         <div id="load"></div>
         <div id="loggedInEmail" data-email="[current_user_email]" style="display: none"></div>
+        <div id="loggedInEmail" data-email="[current_user_email]" style="display: none"></div>
 
         <script>
             let quizzes = [];
@@ -463,6 +464,17 @@
                     this.style.setProperty('color', pink, 'important');
                     this.style.setProperty('background-color', black, 'important');
                 }
+                const isActive = this.classList.toggle('active');
+                const rootStyle = getComputedStyle(document.documentElement);
+                const black = rootStyle.getPropertyValue('--black').trim() || '#282828';
+                const pink = rootStyle.getPropertyValue('--pink').trim() || '#fbe2df';
+                if (isActive) {
+                    this.style.setProperty('color', black, 'important');
+                    this.style.setProperty('background-color', pink, 'important');
+                } else {
+                    this.style.setProperty('color', pink, 'important');
+                    this.style.setProperty('background-color', black, 'important');
+                }
                 var panel = this.nextElementSibling;
                 panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
             }
@@ -566,7 +578,7 @@
 
             function getWordPressUserEmail() {
                 const email = document.getElementById('loggedInEmail')?.dataset.email;
-                console.log(email)
+                console.log(email);
                 if (!email || email === '[current_user_email]') return null;
                 return email;
             }
@@ -577,7 +589,7 @@
 
                 try {
                     const emailAddress = getWordPressUserEmail();
-                    console.log('email: ', emailAddress)
+                    console.log('email: ', emailAddress);
                     const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -699,6 +711,7 @@
                     incorrectClicked = Array(quizzes.length * 50).fill(false);
                     dotStatus = Array(quizzes.length * 50).fill('block');
 
+                    // applyTheme();
                     // applyTheme();
                     initPage();
                 } catch (error) {

@@ -735,7 +735,8 @@ export const quizFinished = onDocumentUpdated(
 
 app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { quizId, emailAddress } = req.body;
+    const { quizId: rawQuizId, emailAddress, retro } = req.body;
+    const quizId = retro ? `${rawQuizId}_retro` : rawQuizId;
 
     if (!quizId) {
       res.status(400).json({ message: 'quizId is required' });

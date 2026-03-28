@@ -129,6 +129,23 @@ export class QuizStatsService {
     }
   }
 
+  /** Get all document IDs from quizAggregates where quizId >= 10000 */
+  async getAllFiftyPlusQuizAggregateIds(): Promise<string[]> {
+    try {
+      const colRef = collection(this.firestore, 'quizAggregates');
+      const snapshot = await getDocs(colRef);
+      return snapshot.docs
+        .map(doc => doc.id)
+        .filter(id => {
+          const numId = parseInt(id, 10);
+          return !isNaN(numId) && numId >= 10000;
+        });
+    } catch (error) {
+      console.error('Error fetching fiftyPlus quizAggregate IDs:', error);
+      return [];
+    }
+  }
+
   /** Fetch location statistics for a specific quiz */
   async getQuizLocationStats(quizId: string): Promise<QuizLocationStats | null> {
     try {

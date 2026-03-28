@@ -270,6 +270,31 @@ async getNextQuizId(quizType: QuizTypeEnum): Promise<number> {
   return quizIds.length === 0 ? startNumber : Math.max(...quizIds) + 1;
 }
 
+/** Fetch only quizId + quizTitle for a set of numeric quizIds */
+getQuizTitlesByIds(quizIds: number[]): Promise<{ quizId: number; quizTitle: string }[]> {
+    const filteredIds = quizIds.filter(id => id != null);
+    if (!filteredIds.length) return Promise.resolve([]);
+
+    const chunkSize = 10;
+    const chunks: number[][] = [];
+    for (let i = 0; i < filteredIds.length; i += chunkSize) {
+        chunks.push(filteredIds.slice(i, i + chunkSize));
+    }
+
+    return Promise.all(
+        chunks.map(chunk => {
+            const quizzesRef = collection(this.firestore, this.collectionName);
+            const q = query(quizzesRef, where('quizId', 'in', chunk));
+            return getDocs(q).then(snapshot =>
+                snapshot.docs.map(doc => {
+                    const data = doc.data() as Quiz;
+                    return { quizId: Number(data.quizId), quizTitle: data.quizTitle || `Quiz ${data.quizId}` };
+                })
+            );
+        })
+    ).then(results => results.flat());
+}
+
 getQuizzesByQuizIds(quizIds: number[]): Observable<Quiz[]> {
   const filteredIds = quizIds.filter(id => id != null);
   if (!filteredIds.length) return defer(() => Promise.resolve([]));

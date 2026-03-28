@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { QuizStatsService } from '@/shared/services/quiz-stats.service';
@@ -281,6 +281,8 @@ declare const google: any;
 `
 })
 export class QuizStatsSummaryComponent implements OnInit {
+  @Input() mode: 'weekly' | 'fiftyplus' = 'weekly';
+
   currentQuiz?: Quiz;
   selectedQuizId?: string;
   stats: any;
@@ -339,16 +341,36 @@ export class QuizStatsSummaryComponent implements OnInit {
   this.bgSurface = this.documentStyle.getPropertyValue('--p-surface-800');
   this.fiftyNeonGreen = this.documentStyle.getPropertyValue('--fifty-neon-green');
 
-  // 1. Get active quiz
-  this.currentQuiz = await firstValueFrom(this.quizzesService.getActiveQuiz());
-  const activeQuizId = this.currentQuiz?.quizId.toString();
+  if (this.mode === 'fiftyplus') {
+    // 1. Get aggregate IDs >= 10000
+    const docIds = await this.quizStatsService.getAllFiftyPlusQuizAggregateIds();
 
-  // 2. Get all quiz IDs from quizAggregates
-  const docIds = await this.quizStatsService.getAllQuizAggregateIds();
-  this.quizIds = docIds.map(id => ({ label: 'Quiz ' + id, value: id }));
+    // 2. Fetch quiz titles by numeric quizId
+    const numericIds = docIds.map(id => Number(id)).filter(id => !isNaN(id));
+    const quizTitles = await this.quizzesService.getQuizTitlesByIds(numericIds);
+    const quizTitleMap = new Map(quizTitles.map(q => [String(q.quizId), q.quizTitle]));
 
-  // 3. Default selected quiz
-  this.selectedQuizId = activeQuizId || this.quizIds[0]?.value;
+    this.quizIds = docIds
+      .sort((a, b) => Number(a) - Number(b))
+      .map(id => ({ label: quizTitleMap.get(id) || `Quiz ${id}`, value: id }));
+
+    this.selectedQuizId = this.quizIds[0]?.value;
+
+    if (this.selectedQuizId) {
+      this.currentQuiz = await firstValueFrom(this.quizzesService.getQuizByQuizId(this.selectedQuizId));
+    }
+  } else {
+    // 1. Get active quiz
+    this.currentQuiz = await firstValueFrom(this.quizzesService.getActiveQuiz());
+    const activeQuizId = this.currentQuiz?.quizId.toString();
+
+    // 2. Get all quiz IDs from quizAggregates
+    const docIds = await this.quizStatsService.getAllQuizAggregateIds();
+    this.quizIds = docIds.map(id => ({ label: 'Quiz ' + id, value: id }));
+
+    // 3. Default selected quiz
+    this.selectedQuizId = activeQuizId || this.quizIds[0]?.value;
+  }
 
   await Promise.all([
     this.loadStats(this.selectedQuizId),
@@ -678,7 +700,16 @@ this.thinkingTimeChartOptions = {
     if (!this.selectedQuizId) return;
     this.refreshing = true;
 
-    this.loadStats(this.selectedQuizId).finally(() => {
+    const promises: Promise<any>[] = [this.loadStats(this.selectedQuizId)];
+
+    if (this.mode === 'fiftyplus') {
+      promises.push(
+        firstValueFrom(this.quizzesService.getQuizByQuizId(this.selectedQuizId))
+          .then(q => { this.currentQuiz = q; })
+      );
+    }
+
+    Promise.all(promises).finally(() => {
       this.refreshing = false;
     });
   }
