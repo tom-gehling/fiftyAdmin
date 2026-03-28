@@ -566,6 +566,7 @@
 
             function getWordPressUserEmail() {
                 const email = document.getElementById('loggedInEmail')?.dataset.email;
+                console.log(email)
                 if (!email || email === '[current_user_email]') return null;
                 return email;
             }
@@ -576,6 +577,7 @@
 
                 try {
                     const emailAddress = getWordPressUserEmail();
+                    console.log('email: ', emailAddress)
                     const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
