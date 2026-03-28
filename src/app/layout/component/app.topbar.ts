@@ -94,7 +94,7 @@ export class AppTopbar implements OnInit {
 
     this.profileItems = [
       { label: 'Update Profile', icon: 'pi pi-user-edit', command: () => this.router.navigate(['/fiftyPlus/profile']) },
-      { label: 'Logout', icon: 'pi pi-sign-out', command: () => { this.authService.logout(); this.router.navigate(['/login']); } }
+      { label: 'Logout', icon: 'pi pi-sign-out', command: () => { this.authService.logout(); } }
     ];
   }
 

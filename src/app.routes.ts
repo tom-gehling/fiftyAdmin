@@ -74,10 +74,9 @@ export const appRoutes: Routes = [
   {
     path: '',
     component: AppLayout,
-    canActivate: [AuthGuard],
     children: [
       { path: 'fiftyPlus', component: Dashboard },
-      { path: 'fiftyPlus/profile', component: ProfilePage },
+      { path: 'fiftyPlus/profile', component: ProfilePage, canActivate: [AuthGuard] },
 
       { path: 'fiftyPlus/archives', component: FiftyPageComponent, data: { type: 1, title: 'Archives' } },
       { path: 'fiftyPlus/archives/:quizid', component: FiftyPageComponent, data: { type: 1 } },

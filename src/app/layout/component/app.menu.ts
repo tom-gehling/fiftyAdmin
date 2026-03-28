@@ -81,6 +81,6 @@ export class AppMenu implements OnInit {
         this.model = [homeMenu];
 
         if (isAdmin) this.model.push(adminMenu);
-        if (isMember || isAdmin) this.model.push(fiftyPlusMenu);
+        this.model.push(fiftyPlusMenu);
     }
 }

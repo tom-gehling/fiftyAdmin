@@ -15,11 +15,12 @@ import { UserSummaryWidget } from "./components/usersummary";
 import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
 import { RecentQuizzesWidget } from "./components/userrecentquizzes";
 import { VenueCalendarComponent } from "./components/venuecalendar";
+import { LockedWidgetComponent } from '@/shared/components/locked-widget/locked-widget.component';
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget, VenueCalendarComponent],
+    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget, VenueCalendarComponent, LockedWidgetComponent],
     template: `
         <div class="grid grid-cols-12 gap-8">
             <!-- [x]: fiftyBorder to all widgets -->
@@ -27,10 +28,14 @@ import { VenueCalendarComponent } from "./components/venuecalendar";
             <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" />
             <!-- [x]: widget with dataview for all quiz score history-->
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
-                <app-user-summary-widget />
+                <app-locked-widget>
+                    <app-user-summary-widget />
+                </app-locked-widget>
                 <app-fifty-quizzes-dashboard />
                 <!-- <app-quiz-stats-widget *ngIf="membershipTier != MembershipTier.Fifty" /> -->
-                <app-user-quiz-history-widget *ngIf="membershipTier != MembershipTier.Fifty" />
+                <app-locked-widget *ngIf="membershipTier != MembershipTier.Fifty">
+                    <app-user-quiz-history-widget />
+                </app-locked-widget>
                 <!-- <app-best-selling-widget /> -->
             </div>
 
