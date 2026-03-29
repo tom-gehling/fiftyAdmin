@@ -742,8 +742,6 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
       return;
     }
 
-    // console.log('email:' ,emailAddress)
-
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
     let dbUserId: string | null = null;
 

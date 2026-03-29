@@ -142,6 +142,8 @@
                 padding: 25px !important;
                 margin-bottom: 20px !important;
                 line-height: 130% !important;
+                list-style-type: '';
+
             }
 
             .accordionButton.active {
@@ -211,6 +213,23 @@
             .panel.answer {
                 font-size: var(--header) !important;
                 font-weight: 800 !important;
+            }
+
+            .panel.answer ul {
+                padding: 0;
+                margin: 0;
+                line-height: 1;
+            }
+
+            .panel.answer li {
+                margin-top: 10px;
+                margin-bottom: 30px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                list-style-type: '-';
+                width: 100%;
+                word-wrap: break-word;
             }
 
             .score {
@@ -566,7 +585,7 @@
 
             function getWordPressUserEmail() {
                 const email = document.getElementById('loggedInEmail')?.dataset.email;
-                console.log(email)
+                console.log('grabbed email: ', email)
                 if (!email || email === '[current_user_email]') return null;
                 return email;
             }
@@ -576,8 +595,9 @@
                 if (localStorage.getItem(sessionKey)) return localStorage.getItem(sessionKey);
 
                 try {
-                    const emailAddress = getWordPressUserEmail();
+                    const emailAddress = document.getElementById('loggedInEmail')?.dataset.email;
                     console.log('email: ', emailAddress)
+                    debugger;
                     const response = await fetch('https://weeklyfifty-7617b.web.app/api/logFiftyPlusQuizStart', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

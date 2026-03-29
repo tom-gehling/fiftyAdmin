@@ -108,7 +108,7 @@ export class UserSummaryWidget implements OnInit {
       // Correct rate as percentage (score out of totalQuestions)
       if (completed.length) {
         const totalCorrect = completed.reduce((sum, r) => sum + (r.score ?? 0), 0);
-        const totalQuestions = completed.reduce((sum, r) => sum + (r.totalQuestions ?? 0), 0);
+        const totalQuestions = completed.reduce((sum, r) => sum + (r.total ?? 0), 0);
         this.correctRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
       }
 

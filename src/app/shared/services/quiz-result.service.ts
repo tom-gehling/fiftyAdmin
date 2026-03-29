@@ -26,7 +26,7 @@ export class QuizResultsService {
       userId,
       status: 'in_progress',
       startedAt: new Date(),
-      totalQuestions,
+      total: totalQuestions,
       answers: [],
     };
 
@@ -109,7 +109,7 @@ export class QuizResultsService {
       status: 'completed',
       startedAt: new Date(),
       completedAt: new Date(),
-      totalQuestions,
+      total: totalQuestions,
       score,
       answers: [],
       retro: true,
