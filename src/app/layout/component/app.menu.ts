@@ -55,7 +55,8 @@ export class AppMenu implements OnInit {
                     items: [
                         // { label: 'Total Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/stats/total'] },
                         { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/weekly'] },
-                        { label: 'Location Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/total'] }
+                        { label: 'Location Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/total'] },
+                        { label: 'Fifty+ Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/stats/fiftyplus'] }
                     ]
                 },
                 { label: 'Quizzes', icon: 'pi pi-fw pi-pencil', routerLink: ['/fiftyPlus/admin/quizzes'] },

@@ -23,6 +23,7 @@ import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
 // Admin pages
 import { TotalStats } from '@/pages/dashboard/totalStats';
 import { WeeklyStats } from '@/pages/dashboard/weeklyStats';
+import { FiftyPlusStats } from '@/pages/dashboard/fiftyPlusStats';
 import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
@@ -103,6 +104,7 @@ export const appRoutes: Routes = [
             children: [
               { path: 'total', component: TotalStats },
               { path: 'weekly', component: WeeklyStats },
+              { path: 'fiftyplus', component: FiftyPlusStats },
               { path: '', redirectTo: 'total', pathMatch: 'full' }
             ]
           },
