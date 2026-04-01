@@ -333,6 +333,15 @@
         font-weight: 800 !important;
       }
 
+      .quizNotes {
+        font-family: var(--font) !important;
+        font-size: 28px !important;
+        color: var(--primary) !important;
+        text-align: center !important;
+        padding: 15px 10px !important;
+        line-height: 130% !important;
+      }
+
       .panel.answer ul {
         padding: 0;
         margin: 0;
@@ -457,6 +466,26 @@
           year: 'numeric',
           timeZone: 'Australia/Adelaide'
         }).format(new Date(dateString));
+      }
+
+      function createNotesAbove() {
+        var notes = quizzes[0].notesAbove;
+        if (!notes) return;
+        var quizElement = document.getElementById("load");
+        var notesDiv = document.createElement("div");
+        notesDiv.className = "quizNotes";
+        notesDiv.innerHTML = notes;
+        quizElement.appendChild(notesDiv);
+      }
+
+      function createNotesBelow() {
+        var notes = quizzes[0].notesBelow;
+        if (!notes) return;
+        var quizElement = document.getElementById("load");
+        var notesDiv = document.createElement("div");
+        notesDiv.className = "quizNotes";
+        notesDiv.innerHTML = notes;
+        quizElement.appendChild(notesDiv);
       }
 
       function createTitle(id, questions) {
@@ -890,8 +919,10 @@
         dotStatus = Array(quizzes.length * 50).fill("block");
         createTopContainer();
         createTitle();
+        createNotesAbove();
         createQuizContainers();
         createScore();
+        createNotesBelow();
         for (var i = 0; i < quizzes.length; i++) {
           for (var j = 0; j < quizzes[i].questions.length; j++) {
             var buttonPair = {

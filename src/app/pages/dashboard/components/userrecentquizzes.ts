@@ -107,7 +107,7 @@ export class RecentQuizzesWidget implements OnInit {
           this.quizzesService.getQuizByQuizId(r.quizId.toString())
         );
 
-        const totalQuestions = r.totalQuestions || 1;
+        const totalQuestions = r.total || quiz?.questions?.length || 0;
         const score = r.score ?? 0;
         const completionPercentage = Math.min(100, Math.round((score / totalQuestions) * 100));
 

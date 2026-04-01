@@ -12,6 +12,7 @@ import {
   collectionData,
   collection,
   query,
+  where,
   getDocs
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
@@ -94,12 +95,17 @@ export class UserService {
     return { completedCount, averageScore };
   }
 
-  /** Get all users that have a displayName */
+  /** Get all users that are members or admins */
   async getAllUsers(): Promise<any[]> {
-    const snap = await getDocs(collection(this.firestore, 'users'));
-    return snap.docs
-      .map(d => ({ uid: d.id, ...d.data() } as any))
-      .filter(u => !!u.displayName);
+    const [memberSnap, adminSnap] = await Promise.all([
+      getDocs(query(collection(this.firestore, 'users'), where('isMember', '==', true))),
+      getDocs(query(collection(this.firestore, 'users'), where('isAdmin', '==', true)))
+    ]);
+    const usersMap = new Map<string, any>();
+    for (const d of [...memberSnap.docs, ...adminSnap.docs]) {
+      usersMap.set(d.id, { uid: d.id, ...d.data() });
+    }
+    return Array.from(usersMap.values()).filter(u => !!u.email);
   }
 
   /** (Optional) Fetch followers count directly from subcollection */

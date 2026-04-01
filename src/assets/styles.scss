@@ -37,7 +37,37 @@ html{
   background-color: #677c73;
 }
 
+/* Quill editor placeholder color — match PrimeNG input placeholders */
+.ql-editor.ql-blank::before {
+  color: var(--p-inputtext-placeholder-color) !important;
+  font-style: normal !important;
+}
+
+/* Notes editors default to center alignment */
+.notes-quill .ql-editor {
+  text-align: center;
+}
+
 /* Google Maps Places Autocomplete dropdown */
 .pac-container {
   z-index: 100000 !important;
+}
+
+/* Google Maps InfoWindow — remove default padding so content sits inline with the X button */
+.gm-style-iw-ch,
+.gm-style-iw-chr {
+  padding: 0 !important;
+}
+.gm-style-iw-d {
+  overflow: hidden !important;
+}
+
+/* Question tooltip — wide enough to show full question text */
+.question-tooltip {
+  max-width: 90vw;
+
+  .p-tooltip-text {
+    white-space: normal;
+    word-break: break-word;
+  }
 }

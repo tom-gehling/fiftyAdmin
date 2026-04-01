@@ -1,5 +1,5 @@
 export interface VenueSchedule {
-  type: 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  type: 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'one-off';
   dayOfWeek?: number; // 0-6 (Sun-Sat) for weekly/biweekly
   weekOfMonth?: number; // 1-4 for monthly (e.g., "first Tuesday")
   customDates?: Date[]; // For irregular schedules
@@ -39,6 +39,7 @@ export interface Venue {
   updatedAt?: Date;
   deletedBy?: string; // Soft delete
   deletedAt?: Date;
+  activeToggledAt?: Date; // Last time isActive was toggled
 
   // Optional fields
   description?: string;

@@ -46,7 +46,8 @@ export interface Quiz {
     notesBelow?: string;
     imageUrl?: string;
 
-    collab?: string;
+    collab?: string;        // legacy free-text collaborator name
+    collabId?: string;     // reference to Collaborator.id
 
     /** Reference to SubmissionForm.id for quiz submission form */
     submissionFormId?: string;

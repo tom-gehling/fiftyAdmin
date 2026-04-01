@@ -20,6 +20,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { SpeedDialModule } from 'primeng/speeddial';
+import { DividerModule } from 'primeng/divider';
 
 // Angular CDK Drag & Drop
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -38,11 +39,13 @@ import { SubmissionFormService } from '@/shared/services/submission-form.service
 import { SubmissionForm } from '@/shared/models/submissionForm.model';
 import { firstValueFrom } from 'rxjs';
 import { MenuItem } from 'primeng/api';
-import { TextareaModule } from 'primeng/textarea';
 import { MenuModule } from 'primeng/menu';
 import { OverlayModule } from 'primeng/overlay';
 import { QuizDisplayComponent } from '@/pages/common/quiz-display/quiz-display';
 import { StorageService } from '@/shared/services/storage.service';
+import { CollaboratorsService } from '@/shared/services/collaborators.service';
+import { Collaborator } from '@/shared/models/collaborator.model';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'quiz-detail',
@@ -68,8 +71,9 @@ import { StorageService } from '@/shared/services/storage.service';
     FloatLabelModule,
     FormsModule,
     SpeedDialModule,
-    TextareaModule,
-    MenuModule
+    MenuModule,
+    DividerModule,
+    TooltipModule
   ],
   templateUrl: './quizDetail.html'
 })
@@ -87,6 +91,9 @@ export class QuizDetailComponent implements OnInit {
   selectedImageFile?: File;
   existingImages: string[] = [];
   loadingImages = false;
+  availableCollaborators: Collaborator[] = [];
+  addCollabVisible = false;
+  newCollabName = '';
 
   // NEW: Holds the SpeedDial menu for each question
   questionMenus: MenuItem[][] = [];
@@ -102,6 +109,7 @@ export class QuizDetailComponent implements OnInit {
     toolbar: [
       ['bold', 'italic', 'underline'],
       [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ align: [] }],
     ],
   };
 
@@ -117,6 +125,10 @@ export class QuizDetailComponent implements OnInit {
 
   private removedQuestionsBackup: any[] = [];
   logoDialogVisible: boolean = false;
+  pendingImageUrl: string = '';
+  uploadPreview: string | null = null;
+  pendingUploadFile: File | null = null;
+  savingLogo = false;
 
   constructor(
     private fb: FormBuilder,
@@ -129,7 +141,8 @@ export class QuizDetailComponent implements OnInit {
     private quizTagService: QuizTagsService,
     private notify: NotifyService,
     private storageService: StorageService,
-    private submissionFormService: SubmissionFormService
+    private submissionFormService: SubmissionFormService,
+    private collaboratorsService: CollaboratorsService
   ) {}
 
   ngOnInit(): void {
@@ -145,6 +158,9 @@ export class QuizDetailComponent implements OnInit {
         command: () => this.exportJson(true)
       }
     ];
+    // Load collaborators
+    this.collaboratorsService.getAll().subscribe(c => this.availableCollaborators = c);
+
     // Load tags
     this.quizTagService.getAllTags().subscribe(tags => {
       this.availableTags = tags;
@@ -174,21 +190,23 @@ export class QuizDetailComponent implements OnInit {
   this.loadingImages = false;
 }
 
-async uploadNewImage(event: any) {
+uploadNewImage(event: any) {
   const file = event.target.files?.[0];
   if (!file) return;
 
-  const url = await this.storageService.uploadQuizImage(
-    file,
-    this.form.value.quizId
-  );
+  this.pendingUploadFile = file;
+  this.pendingImageUrl = '';
 
-  this.form.get('imageUrl')?.setValue(url);
-  this.logoDialogVisible = false;
-
-  // Refresh the selection list
-  await this.loadExistingImages();
+  const reader = new FileReader();
+  reader.onload = () => this.uploadPreview = reader.result as string;
+  reader.readAsDataURL(file);
 }
+
+  private getDefaultDeploymentDate(): Date {
+    const d = new Date();
+    d.setHours(9, 0, 0, 0);
+    return d;
+  }
 
   private async initializeEmptyQuiz(): Promise<void> {
     const emptyQuestions = Array.from({ length: 50 }, (_, i) => ({
@@ -206,6 +224,7 @@ async uploadNewImage(event: any) {
       isActive: true,
       quizType: QuizTypeEnum.Weekly,
       questions: emptyQuestions,
+      deploymentDate: this.getDefaultDeploymentDate() as any,
       theme: {
         fontColor: '#fbe2df',
         backgroundColor: '#677c73',
@@ -222,6 +241,8 @@ async uploadNewImage(event: any) {
       if (ts instanceof Date) deploymentDate = ts;
       else if ('toDate' in ts && typeof ts.toDate === 'function') deploymentDate = ts.toDate();
       else deploymentDate = new Date(ts as any);
+    } else {
+      deploymentDate = this.getDefaultDeploymentDate();
     }
 
     this.form = this.fb.group({
@@ -233,7 +254,7 @@ async uploadNewImage(event: any) {
       isPremium: [quiz.isPremium || false],
       questionCount: [quiz.questions?.length || 50],
       deploymentDate: [deploymentDate],
-      collab: [quiz.collab || ''],
+      collabId: [quiz.collabId || null],
       theme: this.fb.group({
         fontColor: [quiz.theme?.fontColor || '#fbe2df'],
         backgroundColor: [quiz.theme?.backgroundColor || '#677c73'],
@@ -328,13 +349,67 @@ async uploadNewImage(event: any) {
     moveItemInArray(this.questions.controls as FormGroup[], event.previousIndex, event.currentIndex);
   }
 
+  toPickerHex(value: string): string {
+    return value ? value.replace('#', '') : '';
+  }
+
+  fromPickerHex(value: string): string {
+    if (!value) return '';
+    return value.startsWith('#') ? value : '#' + value;
+  }
+
   normalizeHtml(html: string): string {
     if (!html) return '';
     return html.replace(/&nbsp;/g, ' ').replace(/<p>\s*<\/p>/g, '').replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
   }
 
+  private stripHtml(html: string): string {
+    if (!html) return '';
+    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+  }
+
+  private validateQuiz(): string[] {
+    const errors: string[] = [];
+    const formValue = this.form.value;
+
+    if (formValue.quizType !== QuizTypeEnum.Weekly && !formValue.quizTitle?.trim()) {
+      errors.push('Quiz name is required for non-weekly quizzes.');
+    }
+
+    if (!formValue.deploymentDate) {
+      errors.push('Deployment date is required.');
+    }
+
+    const questionCount: number = formValue.questionCount || 0;
+    const questions: any[] = formValue.questions || [];
+    const emptyNums: number[] = [];
+
+    for (let i = 0; i < Math.min(questionCount, questions.length); i++) {
+      const q = questions[i];
+      if (!this.stripHtml(q.question) || !this.stripHtml(q.answer)) {
+        emptyNums.push(i + 1);
+      }
+    }
+
+    if (emptyNums.length > 0) {
+      const preview = emptyNums.slice(0, 5).join(', ');
+      const extra = emptyNums.length > 5 ? ` (+${emptyNums.length - 5} more)` : '';
+      errors.push(`Questions missing question or answer: ${preview}${extra}`);
+    }
+
+    return errors;
+  }
+
   async saveQuiz(): Promise<void> {
     if (this.form.invalid) return;
+
+    const errors = this.validateQuiz();
+    if (errors.length > 0) {
+      errors.forEach(err => this.notify.error(err));
+      if (errors.some(e => e.includes('Questions'))) this.tabSelected = '0';
+      return;
+    }
+
     this.saving = true;
 
     try {
@@ -343,6 +418,8 @@ async uploadNewImage(event: any) {
         q.question = this.normalizeHtml(q.question);
         q.answer = this.normalizeHtml(q.answer);
       });
+      formValue.notesAbove = this.normalizeHtml(formValue.notesAbove);
+      formValue.notesBelow = this.normalizeHtml(formValue.notesBelow);
 
       let imageUrl = this.form.value.imageUrl;
 
@@ -381,6 +458,18 @@ async uploadNewImage(event: any) {
     } finally {
       this.saving = false;
     }
+  }
+
+  showAddCollabDialog(): void {
+    this.newCollabName = '';
+    this.addCollabVisible = true;
+  }
+
+  async addCollaborator(): Promise<void> {
+    if (!this.newCollabName.trim()) return;
+    const collab = await this.collaboratorsService.create(this.newCollabName);
+    this.form.get('collabId')?.setValue(collab.id);
+    this.addCollabVisible = false;
   }
 
   cancel(): void {
@@ -504,6 +593,45 @@ exportJson(simple: boolean = false): void {
 
 
 
-  showLogoDialog(): void { this.logoDialogVisible = true; }
-  selectLogoFromDialog(logo: string): void { this.form.get('imageUrl')?.setValue(logo); this.logoDialogVisible = false; }
+  onNotesEditorCreated(editor: any): void {
+    if (!editor.getText().trim()) {
+      editor.format('align', 'center');
+    }
+  }
+
+  showLogoDialog(): void {
+    this.pendingImageUrl = this.form.get('imageUrl')?.value || '';
+    this.uploadPreview = null;
+    this.pendingUploadFile = null;
+    this.logoDialogVisible = true;
+  }
+
+  selectLogoFromDialog(img: string): void {
+    this.pendingImageUrl = img;
+    this.uploadPreview = null;
+    this.pendingUploadFile = null;
+  }
+
+  async saveLogoDialog(): Promise<void> {
+    if (this.savingLogo) return;
+    this.savingLogo = true;
+    try {
+      if (this.pendingUploadFile) {
+        const url = await this.storageService.uploadQuizImage(this.pendingUploadFile, this.form.value.quizId);
+        this.form.get('imageUrl')?.setValue(url);
+        this.pendingUploadFile = null;
+        this.uploadPreview = null;
+        await this.loadExistingImages();
+      } else {
+        this.form.get('imageUrl')?.setValue(this.pendingImageUrl);
+      }
+      this.logoDialogVisible = false;
+    } finally {
+      this.savingLogo = false;
+    }
+  }
+
+  cancelLogoDialog(): void {
+    this.logoDialogVisible = false;
+  }
 }

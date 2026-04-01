@@ -72,6 +72,9 @@ export class VenueService {
       deletedAt: data.deletedAt?.seconds
         ? new Date(data.deletedAt.seconds * 1000)
         : undefined,
+      activeToggledAt: data.activeToggledAt?.seconds
+        ? new Date(data.activeToggledAt.seconds * 1000)
+        : undefined,
       description: data.description,
       imageUrl: data.imageUrl,
       tags: data.tags,
@@ -178,7 +181,8 @@ export class VenueService {
       description: venueData.description?.trim(),
       imageUrl: venueData.imageUrl,
       tags: venueData.tags,
-      capacity: venueData.capacity
+      capacity: venueData.capacity,
+      activeToggledAt: venueData.activeToggledAt
     };
 
     // Remove undefined fields
