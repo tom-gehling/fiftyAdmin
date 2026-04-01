@@ -47,12 +47,21 @@
                 </p-floatlabel>
             </div>
 
-            <!-- Question Count -->
+            <!-- Collaborator -->
             <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab">
-                <p-floatlabel class="w-full" variant="in">
-                    <label for="collab" class="font-semibold">Collaborator</label>
-                    <input pInputText type="text" id="collab" formControlName="collab" class="w-full" />
-                </p-floatlabel>
+                <div class="flex gap-1 items-stretch">
+                    <p-floatlabel class="flex-1" variant="in">
+                        <p-select id="collabId" formControlName="collabId"
+                            [options]="availableCollaborators"
+                            optionLabel="name" optionValue="id"
+                            [showClear]="true"
+                            class="w-full"></p-select>
+                        <label for="collabId">Collaborator</label>
+                    </p-floatlabel>
+                    <button pButton type="button" icon="pi pi-plus" class="p-button-outlined"
+                        pTooltip="Add new collaborator" tooltipPosition="top"
+                        (click)="showAddCollabDialog()"></button>
+                </div>
             </div>
 
             <!-- Deployment Date/Time -->
@@ -122,21 +131,54 @@
 
                 <!-- Color Scheme Tab -->
                 <p-tabpanel value="1">
-                    <div class="grid grid-cols-3 md:grid-cols-3 gap-6" formGroupName="theme">
-                        <div class="flex flex-col justify-start items-center">
-                            <label for="fontColor" class="font-medium mb-2 text-center">Font Color</label>
-                            <p-colorPicker id="fontColor" formControlName="fontColor"></p-colorPicker>
-                            <span>{{ form.get("theme.fontColor")?.value }}</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
+                        <div class="flex flex-col items-center gap-3">
+                            <label class="font-medium text-center">Font Color</label>
+                            <p-colorPicker
+                                [ngModel]="toPickerHex(form.get('theme.fontColor')?.value)"
+                                (ngModelChange)="form.get('theme.fontColor')?.setValue(fromPickerHex($event))"
+                                [ngModelOptions]="{standalone: true}"
+                                [inline]="true"></p-colorPicker>
+                            <div class="flex items-center gap-2 w-full">
+                                <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
+                                     [style.background-color]="form.get('theme.fontColor')?.value"></div>
+                                <input pInputText type="text" class="flex-1 font-mono text-sm"
+                                    [value]="form.get('theme.fontColor')?.value || ''"
+                                    (input)="form.get('theme.fontColor')?.setValue(fromPickerHex($any($event.target).value))"
+                                    placeholder="#fbe2df" />
+                            </div>
                         </div>
-                        <div class="flex flex-col items-center">
-                            <label for="backgroundColor" class="font-medium mb-2 text-center">Background Color</label>
-                            <p-colorPicker id="backgroundColor" formControlName="backgroundColor"></p-colorPicker>
-                            <span>{{ form.get("theme.backgroundColor")?.value }}</span>
+                        <div class="flex flex-col items-center gap-3">
+                            <label class="font-medium text-center">Background Color</label>
+                            <p-colorPicker
+                                [ngModel]="toPickerHex(form.get('theme.backgroundColor')?.value)"
+                                (ngModelChange)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($event))"
+                                [ngModelOptions]="{standalone: true}"
+                                [inline]="true"></p-colorPicker>
+                            <div class="flex items-center gap-2 w-full">
+                                <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
+                                     [style.background-color]="form.get('theme.backgroundColor')?.value"></div>
+                                <input pInputText type="text" class="flex-1 font-mono text-sm"
+                                    [value]="form.get('theme.backgroundColor')?.value || ''"
+                                    (input)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($any($event.target).value))"
+                                    placeholder="#677c73" />
+                            </div>
                         </div>
-                        <div class="flex flex-col items-center">
-                            <label for="tertiaryColor" class="font-medium mb-2 text-center">Tertiary Color</label>
-                            <p-colorPicker id="tertiaryColor" formControlName="tertiaryColor"></p-colorPicker>
-                            <span>{{ form.get("theme.tertiaryColor")?.value }}</span>
+                        <div class="flex flex-col items-center gap-3">
+                            <label class="font-medium text-center">Tertiary Color</label>
+                            <p-colorPicker
+                                [ngModel]="toPickerHex(form.get('theme.tertiaryColor')?.value)"
+                                (ngModelChange)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($event))"
+                                [ngModelOptions]="{standalone: true}"
+                                [inline]="true"></p-colorPicker>
+                            <div class="flex items-center gap-2 w-full">
+                                <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
+                                     [style.background-color]="form.get('theme.tertiaryColor')?.value"></div>
+                                <input pInputText type="text" class="flex-1 font-mono text-sm"
+                                    [value]="form.get('theme.tertiaryColor')?.value || ''"
+                                    (input)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($any($event.target).value))"
+                                    placeholder="#4cfbab" />
+                            </div>
                         </div>
                     </div>
                 </p-tabpanel>
@@ -158,38 +200,56 @@
                         </div>
                     </div>
                     <!-- Image Section -->
-                    <!--                      
-                    <div class="mb-6" *ngIf="form.get('quizType')?.value != QuizTypeEnum.Weekly">
-                        <h3 class="font-semibold mb-2">Image (Not Supported On Site Currently)</h3>
-                        <div class="mb-6 flex items-center gap-4 h-20">
-                            <button pButton type="button" label="Select Logo" (click)="showLogoDialog()"></button>
-
-                            <div *ngIf="form.get('imageUrl')?.value" class="flex-shrink-0 h-full flex items-center">
-                                <img [src]="form.get('imageUrl')?.value" alt="Logo" class="h-20 w-20 object-cover rounded-md" />
-                            </div>
-
-                            <button pButton type="button" label="Select Logo" (click)="showLogoDialog()"></button>
-
-                            <div *ngIf="form.get('imageUrl')?.value" class="flex-shrink-0 h-full flex items-center">
-                                <img [src]="'assets/logos/' + form.get('imageUrl')?.value" alt="Logo" class="max-h-full object-contain" />
-                            </div>
-                        </div> -->
+                    <div class="mb-6 flex flex-col gap-3">
+                        <h3 class="font-semibold mb-2">Logo</h3>
+                        <div class="flex items-center gap-4">
+                            <button pButton type="button" label="Select Logo" icon="pi pi-image" class="p-button-outlined" (click)="showLogoDialog()"></button>
+                            <button pButton type="button" icon="pi pi-times" class="p-button-outlined p-button-danger p-button-sm" *ngIf="form.get('imageUrl')?.value" (click)="form.get('imageUrl')?.setValue('')"></button>
+                        </div>
+                        <div *ngIf="form.get('imageUrl')?.value" class="flex items-center gap-3 mt-1">
+                            <img [src]="form.get('imageUrl')?.value" alt="Selected logo" class="h-20 object-contain rounded-md border border-surface-200 dark:border-surface-600 p-1 bg-surface-0 dark:bg-surface-800" />
+                        </div>
+                    </div>
 
                     <!-- Logo Selection Dialog -->
-                    <!-- <p-dialog [(visible)]="logoDialogVisible" header="Select Logo" [modal]="true" [style]="{ width: '600px' }">
-                            <div class="flex flex-col gap-3"> -->
-                    <!-- Upload new -->
-                    <!-- <input type="file" (change)="uploadNewImage($event)" accept="image/*" />
-
-                                <p *ngIf="loadingImages">Loading…</p> -->
-
-                    <!-- Existing images -->
-                    <!-- <div class="grid grid-cols-4 gap-2" *ngIf="!loadingImages">
-                                    <img *ngFor="let img of existingImages" [src]="img" class="h-20 w-20 object-cover rounded cursor-pointer hover:opacity-80" (click)="selectLogoFromDialog(img)" />
+                    <p-dialog [(visible)]="logoDialogVisible" header="Select Logo" [modal]="true" [style]="{ width: '700px' }" [draggable]="false">
+                        <div class="flex flex-col gap-4">
+                            <!-- Upload new image -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-medium">Upload New Image</label>
+                                <input #logoFileInput type="file" (change)="uploadNewImage($event)" accept="image/*" class="hidden" />
+                                <button pButton type="button" label="Upload Image" icon="pi pi-upload" class="p-button-outlined" (click)="logoFileInput.click()"></button>
+                                <div *ngIf="uploadPreview" class="relative w-32 h-24 mt-1">
+                                    <img [src]="uploadPreview" alt="Upload preview" class="w-32 h-24 object-contain rounded-md border border-surface-200 dark:border-surface-600 p-1 bg-surface-0 dark:bg-surface-800" />
+                                    <button pButton type="button" icon="pi pi-times" class="p-button-rounded p-button-danger p-button-sm absolute -top-2 -right-2" (click)="uploadPreview = null; pendingUploadFile = null"></button>
                                 </div>
                             </div>
-                        </p-dialog>
-                    </div> -->
+
+                            <p-divider></p-divider>
+
+                            <!-- Existing images from Firebase -->
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">Saved Logos</label>
+                                <p *ngIf="loadingImages" class="text-sm text-gray-400">Loading…</p>
+                                <p *ngIf="!loadingImages && existingImages.length === 0" class="text-sm text-gray-400">No logos uploaded yet.</p>
+                                <div class="grid grid-cols-4 gap-3" *ngIf="!loadingImages && existingImages.length > 0">
+                                    <div
+                                        *ngFor="let img of existingImages"
+                                        class="relative cursor-pointer rounded-md overflow-hidden transition-all hover:opacity-80"
+                                        [style.border]="pendingImageUrl === img ? '3px solid #39ff14' : '2px solid transparent'"
+                                        (click)="selectLogoFromDialog(img)"
+                                    >
+                                        <img [src]="img" class="h-20 w-full object-contain bg-surface-100 dark:bg-surface-700 p-1" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <ng-template pTemplate="footer">
+                            <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancelLogoDialog()"></button>
+                            <button pButton type="button" label="Save" class="p-button-outlined" [loading]="savingLogo" [disabled]="savingLogo" (click)="saveLogoDialog()"></button>
+                        </ng-template>
+                    </p-dialog>
 
                     <!-- Submission Form Section -->
                     <div class="mb-6 flex flex-col gap-3">
@@ -202,26 +262,43 @@
                                     [options]="availableSubmissionForms"
                                     optionLabel="label"
                                     optionValue="value"
-                                    placeholder="Select submission form"
                                     [showClear]="true"
                                     class="w-full"
                                 ></p-select>
                                 <label for="submissionFormId">Submission Form</label>
                             </p-floatlabel>
                         </div>
-                        <p class="text-sm text-gray-500">
-                            Attach a submission form to this quiz. Users can submit their team results after completing the quiz.
-                        </p>
+                        <p class="text-sm text-gray-500">Attach a submission form to this quiz. Users can submit their team results after completing the quiz.</p>
                     </div>
 
                     <!-- Notes Section -->
                     <div class="mb-6 flex flex-col gap-3">
                         <h3 class="font-semibold mb-2">Notes</h3>
-                        <textarea rows="5" pTextarea formControlName="notesAbove" placeholder="Text Above Quiz" [autoResize]="true" class="w-full"></textarea>
-                        <textarea rows="5" pTextarea formControlName="notesBelow" placeholder="Text Below Quiz" [autoResize]="true"></textarea>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm text-gray-500">Text Above Quiz</label>
+                            <div class="notes-quill border border-gray-300 dark:border-gray-600 rounded-md p-1">
+                                <quill-editor formControlName="notesAbove" [modules]="quillModules" (onEditorCreated)="onNotesEditorCreated($event)" style="width: 100%" theme="bubble"></quill-editor>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-sm text-gray-500">Text Below Quiz</label>
+                            <div class="notes-quill border border-gray-300 dark:border-gray-600 rounded-md p-1">
+                                <quill-editor formControlName="notesBelow" [modules]="quillModules" (onEditorCreated)="onNotesEditorCreated($event)" style="width: 100%" theme="bubble"></quill-editor>
+                            </div>
+                        </div>
                     </div>
                 </p-tabpanel>
             </p-tabpanels>
         </p-tabs>
     </form>
+<!-- Add Collaborator Dialog -->
+<p-dialog [(visible)]="addCollabVisible" header="New Collaborator" [modal]="true" [style]="{width: '320px'}" [draggable]="false">
+    <div class="flex flex-col gap-3 pt-2">
+        <input pInputText placeholder="Collaborator name" [(ngModel)]="newCollabName" (keyup.enter)="addCollaborator()" />
+    </div>
+    <ng-template pTemplate="footer">
+        <button pButton label="Cancel" class="p-button-outlined" (click)="addCollabVisible = false"></button>
+        <button pButton label="Add" (click)="addCollaborator()" [disabled]="!newCollabName.trim()"></button>
+    </ng-template>
+</p-dialog>
 </p-card>

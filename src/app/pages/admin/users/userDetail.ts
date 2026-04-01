@@ -146,7 +146,7 @@ export class UserDetailComponent implements OnChanges {
     this.totalCompleted = completed.length;
 
     const totalScore = completed.reduce((sum, r) => sum + (r.score ?? 0), 0);
-    const totalQuestions = completed.reduce((sum, r) => sum + (r.totalQuestions || 0), 0);
+    const totalQuestions = completed.reduce((sum, r) => sum + (r.total || 0), 0);
     this.correctRate = totalQuestions > 0
       ? ((totalScore / totalQuestions) * 100).toFixed(1)
       : '0';
@@ -170,9 +170,9 @@ export class UserDetailComponent implements OnChanges {
       );
       quizzes.push({
         quizTitle: quiz?.quizTitle ?? 'Untitled Quiz',
-        typeName: this.getTypeName(quiz?.quizType),
+        typeName: this.getTypeName(quiz, r),
         score: r.score ?? 0,
-        totalQuestions: r.totalQuestions || 1
+        totalQuestions: r.total || quiz?.questions?.length || 0
       });
     }
 
@@ -186,13 +186,25 @@ export class UserDetailComponent implements OnChanges {
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
   }
 
-  private getTypeName(type?: number): string {
+  private getTypeName(quiz: Quiz | undefined, result: QuizResult): string {
+    const type = quiz?.quizType;
+    if (type === 1 && quiz?.deploymentDate) {
+      const deployed = this.toDate(quiz.deploymentDate);
+      const completed = this.toDate(result.startedAt);
+      const windowEnd = new Date(deployed.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return completed <= windowEnd ? 'Weekly' : 'Weekly (Archives)';
+    }
     switch (type) {
-      case 1: return 'Weekly';
       case 2: return 'Fifty+';
       case 3: return 'Collaboration';
       case 4: return 'Question Type';
       default: return 'Unknown';
     }
+  }
+
+  private toDate(d: any): Date {
+    if (d?.toDate) return d.toDate();
+    if (d?.seconds) return new Date(d.seconds * 1000);
+    return new Date(d);
   }
 }

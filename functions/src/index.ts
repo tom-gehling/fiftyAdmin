@@ -1,4 +1,5 @@
-import { onRequest } from 'firebase-functions/v2/https';
+import { onRequest} from 'firebase-functions/v2/https';
+// import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -7,6 +8,8 @@ import cors from 'cors';
 import { FieldValue } from "firebase-admin/firestore";
 import * as maxmind from 'maxmind';
 import * as path from 'path';
+// import Stripe from 'stripe';
+// import { PRICE_TIER_MAP, STRIPE_PRICES } from './stripe-config.js';
 
 const luxon = require('luxon')
 
@@ -739,8 +742,6 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
       return;
     }
 
-    // console.log('email:' ,emailAddress)
-
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
     let dbUserId: string | null = null;
 
@@ -750,8 +751,6 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
         .where('email', '==', emailAddress)
         .limit(1)
         .get();
-
-        console.log('exists: ',existingSnap)
 
       if (!existingSnap.empty) {
         // User exists → increment login count
@@ -764,7 +763,9 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
         });
       } else {
         // User doesn't exist → create new user
-        const newUserRef = await usersCol.add({
+        const newUserRef = usersCol.doc();
+        await newUserRef.set({
+          uid: newUserRef.id,
           createdAt: new Date(),
           isAnon: false,
           isMember: true,
@@ -778,9 +779,6 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
           lastLoginAt: new Date(),
           updatedAt: new Date(),
         });
-
-        // Set uid field to doc ID
-        await newUserRef.update({ uid: newUserRef.id });
         dbUserId = newUserRef.id;
       }
     }
@@ -891,7 +889,10 @@ function formatScheduleLabel(s: any): string {
   switch (s.type) {
     case 'weekly':    return `Every ${DAYS[s.dayOfWeek]}${time}`;
     case 'biweekly':  return `Every other ${DAYS[s.dayOfWeek]}${time}`;
-    case 'monthly':   return `${WEEK_ORDINALS[s.weekOfMonth] || ''} ${DAYS[s.dayOfWeek]} of the month${time}`;
+    case 'monthly': {
+      const ordinal = s.weekOfMonth === -1 ? 'Last' : (WEEK_ORDINALS[s.weekOfMonth] || '');
+      return `${ordinal} ${DAYS[s.dayOfWeek]} of the month${time}`;
+    }
     case 'custom':    return `Selected dates${time}`;
     default:          return '';
   }
@@ -909,6 +910,19 @@ function nextWeekdayOccurrence(from: Date, dayOfWeek: number, hours: number, min
     d.setHours(hours, minutes, 0, 0);
   }
   return d;
+}
+
+function nextLastWeekdayOfMonth(from: Date, dayOfWeek: number, hours: number, minutes: number): Date | null {
+  for (let offset = 0; offset <= 2; offset++) {
+    const month = from.getMonth() + offset;
+    const year = from.getFullYear() + Math.floor(month / 12);
+    const actualMonth = month % 12;
+    const lastDay = new Date(year, actualMonth + 1, 0);
+    const diff = (lastDay.getDay() - dayOfWeek + 7) % 7;
+    const candidate = new Date(year, actualMonth, lastDay.getDate() - diff, hours, minutes, 0, 0);
+    if (candidate > from) return candidate;
+  }
+  return null;
 }
 
 function nextNthWeekdayOfMonth(from: Date, weekOfMonth: number, dayOfWeek: number, hours: number, minutes: number): Date | null {
@@ -951,8 +965,10 @@ function getNextQuizOccurrence(schedules: any[]): Date | null {
     if ((s.type === 'weekly' || s.type === 'biweekly') && s.dayOfWeek !== undefined) {
       const next = nextWeekdayOccurrence(now, s.dayOfWeek, hours, minutes);
       if (!isExcludedDate(next, s.exclusionDates)) candidates.push(next);
-    } else if (s.type === 'monthly' && s.weekOfMonth && s.dayOfWeek !== undefined) {
-      const next = nextNthWeekdayOfMonth(now, s.weekOfMonth, s.dayOfWeek, hours, minutes);
+    } else if (s.type === 'monthly' && s.weekOfMonth !== undefined && s.dayOfWeek !== undefined) {
+      const next = s.weekOfMonth === -1
+        ? nextLastWeekdayOfMonth(now, s.dayOfWeek, hours, minutes)
+        : nextNthWeekdayOfMonth(now, s.weekOfMonth, s.dayOfWeek, hours, minutes);
       if (next && !isExcludedDate(next, s.exclusionDates)) candidates.push(next);
     } else if (s.type === 'custom' && Array.isArray(s.customDates)) {
       const future = (s.customDates as any[])
@@ -968,7 +984,7 @@ function getNextQuizOccurrence(schedules: any[]): Date | null {
     : null;
 }
 
-function buildVenueDescription(schedules: any[], nextQuiz: Date | null): string {
+function buildVenueDescription(schedules: any[], nextQuiz: Date | null, address: string): string {
   const activeSchedules = (schedules || []).filter((s: any) => s.isActive);
   const scheduleLines = activeSchedules.map(formatScheduleLabel).filter(Boolean).join('<br>');
   const scheduleSection = scheduleLines || 'See venue for details';
@@ -986,7 +1002,8 @@ function buildVenueDescription(schedules: any[], nextQuiz: Date | null): string 
     nextQuizText = dateStr + timeStr;
   }
 
-  return `${scheduleSection}<br><br><strong>Next Quiz</strong><br>${nextQuizText}`;
+  const addressSection = address ? `${address}<br><br>` : '';
+  return `${addressSection}${scheduleSection}<br><br><strong>Next Quiz</strong><br>${nextQuizText}`;
 }
 
 app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => {
@@ -999,8 +1016,12 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
 
     const result = venues.map(venue => {
       const loc = venue.location || {};
-      const address = [loc.address, loc.city, loc.state, loc.country].filter(Boolean).join(', ');
+      const address = loc.address;
       const nextQuiz = getNextQuizOccurrence(venue.quizSchedules || []);
+
+      const primarySchedule = (venue.quizSchedules || []).find(
+        (s: any) => s.isActive && s.dayOfWeek != null
+      );
 
       return {
         id: venue.id,
@@ -1008,9 +1029,10 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
         address,
         lat: String(loc.latitude ?? 0),
         lng: String(loc.longitude ?? 0),
-        description: buildVenueDescription(venue.quizSchedules || [], nextQuiz),
+        description: buildVenueDescription(venue.quizSchedules || [], nextQuiz, address),
         link: venue.websiteUrl || '',
         pic: venue.imageUrl || '',
+        dayOfWeek: primarySchedule?.dayOfWeek ?? null,
       };
     });
 
@@ -1031,3 +1053,430 @@ export const api = onRequest(
   },
   app
 );
+
+// ===============================
+// Stripe initialisation
+// Secrets (encrypted, never in source):
+//   firebase functions:secrets:set STRIPE_SECRET_KEY
+//   firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
+//
+// Non-sensitive config (functions/.env, git-ignored):
+//   STRIPE_GUEST_PASS_PRICE_ID=price_1XYZ...
+// ===============================
+// const getStripe = (): Stripe => {
+//   const key = process.env['STRIPE_SECRET_KEY'];
+//   if (!key) throw new Error('STRIPE_SECRET_KEY not configured');
+//   return new Stripe(key, { apiVersion: '2025-02-24.acacia' });
+// };
+
+
+// const GUEST_PASS_PRICE_ID = process.env['STRIPE_GUEST_PASS_PRICE_ID'] ?? 'price_guest_pass';
+
+// // -----------------------------------------------
+// // Callable: createCheckoutSession
+// // Creates a Stripe Checkout session for a subscription
+// // -----------------------------------------------
+// export const createCheckoutSession = onCall(
+//   { secrets: ['STRIPE_SECRET_KEY'] },
+//   async (req) => {
+//     if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+
+//     const { priceId, successUrl, cancelUrl } = req.data as {
+//       priceId: string; successUrl: string; cancelUrl: string;
+//     };
+//     if (!priceId || !successUrl || !cancelUrl) {
+//       throw new HttpsError('invalid-argument', 'priceId, successUrl and cancelUrl are required');
+//     }
+
+//     const stripe = getStripe();
+//     const uid    = req.auth.uid;
+//     const userDoc = await db.collection('users').doc(uid).get();
+//     const userData = userDoc.data() ?? {};
+
+//     // Retrieve or create a Stripe customer
+//     let customerId: string = userData['stripeCustomerId'] ?? '';
+//     if (!customerId) {
+//       const customer = await stripe.customers.create({
+//         email: userData['email'] ?? undefined,
+//         name:  userData['displayName'] ?? undefined,
+//         metadata: { uid },
+//       });
+//       customerId = customer.id;
+//       await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
+//     }
+
+//     const session = await stripe.checkout.sessions.create({
+//       customer:             customerId,
+//       mode:                 'subscription',
+//       payment_method_types: ['card'],
+//       line_items: [{ price: priceId, quantity: 1 }],
+//       success_url:          successUrl,
+//       cancel_url:           cancelUrl,
+//       metadata:             { uid },
+//     });
+
+//     return { url: session.url };
+//   }
+// );
+
+// // -----------------------------------------------
+// // Callable: createGuestPassSession
+// // Creates a Stripe Checkout session for a one-time quiz pass (permanent access)
+// // -----------------------------------------------
+// export const createGuestPassSession = onCall(
+//   { secrets: ['STRIPE_SECRET_KEY'] },
+//   async (req) => {
+//     if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+
+//     const { quizId, successUrl, cancelUrl } = req.data as {
+//       quizId: string; successUrl: string; cancelUrl: string;
+//     };
+//     if (!quizId) throw new HttpsError('invalid-argument', 'quizId is required');
+
+//     const stripe    = getStripe();
+//     const uid       = req.auth.uid;
+//     const userDoc   = await db.collection('users').doc(uid).get();
+//     const userData  = userDoc.data() ?? {};
+
+//     let customerId: string = userData['stripeCustomerId'] ?? '';
+//     if (!customerId) {
+//       const customer = await stripe.customers.create({
+//         email: userData['email'] ?? undefined,
+//         name:  userData['displayName'] ?? undefined,
+//         metadata: { uid },
+//       });
+//       customerId = customer.id;
+//       await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
+//     }
+
+//     const session = await stripe.checkout.sessions.create({
+//       customer:             customerId,
+//       mode:                 'payment',
+//       payment_method_types: ['card'],
+//       line_items: [{ price: GUEST_PASS_PRICE_ID, quantity: 1 }],
+//       success_url:          successUrl,
+//       cancel_url:           cancelUrl,
+//       metadata:             { uid, type: 'guest_pass', quizId },
+//     });
+
+//     return { url: session.url };
+//   }
+// );
+
+// // -----------------------------------------------
+// // Callable: createPortalSession
+// // Opens the Stripe Customer Portal for self-service
+// // -----------------------------------------------
+// export const createPortalSession = onCall(
+//   { secrets: ['STRIPE_SECRET_KEY'] },
+//   async (req) => {
+//     if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+
+//     const { returnUrl } = req.data as { returnUrl: string };
+//     const stripe   = getStripe();
+//     const uid      = req.auth.uid;
+//     const userDoc  = await db.collection('users').doc(uid).get();
+//     const customerId: string = userDoc.data()?.['stripeCustomerId'] ?? '';
+
+//     if (!customerId) throw new HttpsError('not-found', 'No Stripe customer found for this user');
+
+//     const session = await stripe.billingPortal.sessions.create({
+//       customer:   customerId,
+//       return_url: returnUrl,
+//     });
+
+//     return { url: session.url };
+//   }
+// );
+
+// // -----------------------------------------------
+// // Callable: getSubscriptionPlanNames
+// // Returns Stripe product name + description for each tier
+// // -----------------------------------------------
+// export const getSubscriptionPlanNames = onCall(
+//   { secrets: ['STRIPE_SECRET_KEY'] },
+//   async (): Promise<Record<string, { name: string; description: string }>> => {
+//     const stripe = getStripe();
+//     const entries = await Promise.all(
+//       (Object.entries(STRIPE_PRICES) as [string, Record<string, { id: string }>][])
+//         .map(async ([tier, prices]) => {
+//           const price = await stripe.prices.retrieve(
+//             Object.values(prices)[0].id,
+//             { expand: ['product'] }
+//           );
+//           const product = price.product as Stripe.Product;
+//           return [tier, { name: product.name, description: product.description ?? '' }] as const;
+//         })
+//     );
+//     return Object.fromEntries(entries);
+//   }
+// );
+
+// // -----------------------------------------------
+// // HTTP: stripeWebhook
+// // Handles Stripe events and writes to Firestore
+// // -----------------------------------------------
+// export const stripeWebhook = onRequest(
+//   { secrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] },
+//   async (req, res) => {
+//     const sig    = req.headers['stripe-signature'] as string;
+//     const secret = process.env['STRIPE_WEBHOOK_SECRET'];
+//     if (!secret) { res.status(500).send('Webhook secret not configured'); return; }
+
+//     const stripe = getStripe();
+//     let event: Stripe.Event;
+
+//     try {
+//       event = stripe.webhooks.constructEvent(req.rawBody, sig, secret);
+//     } catch (err: any) {
+//       console.error('Webhook signature verification failed:', err.message);
+//       res.status(400).send(`Webhook Error: ${err.message}`);
+//       return;
+//     }
+
+//     try {
+//       switch (event.type) {
+//         case 'checkout.session.completed':
+//           await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, stripe);
+//           break;
+//         case 'customer.subscription.updated':
+//         case 'customer.subscription.deleted':
+//           await handleSubscriptionChange(event.data.object as Stripe.Subscription);
+//           break;
+//         case 'invoice.payment_succeeded':
+//           await handleInvoicePaid(event.data.object as Stripe.Invoice, stripe);
+//           break;
+//         case 'invoice.payment_failed':
+//           await handleInvoiceFailed(event.data.object as Stripe.Invoice);
+//           break;
+//         default:
+//           // Unhandled event type — ignore
+//       }
+//     } catch (err) {
+//       console.error('Error handling Stripe event:', err);
+//       res.status(500).send('Internal error handling webhook');
+//       return;
+//     }
+
+//     res.json({ received: true });
+//   }
+// );
+
+// async function findUidByCustomerId(customerId: string): Promise<string | null> {
+//   const snap = await db.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
+//   if (snap.empty) return null;
+//   return snap.docs[0].id;
+// }
+
+// async function handleCheckoutCompleted(session: Stripe.Checkout.Session, stripe: Stripe) {
+//   const uid  = session.metadata?.['uid'];
+//   if (!uid) return;
+
+//   if (session.mode === 'payment' && session.metadata?.['type'] === 'guest_pass') {
+//     const quizId = session.metadata?.['quizId'];
+//     if (!quizId) return;
+
+//     // Write permanent per-quiz access to users/{uid}/quizAccess/{quizId}
+//     await db.collection('users').doc(uid)
+//       .collection('quizAccess').doc(quizId).set({
+//         quizId,
+//         paidAt:          Timestamp.now(),
+//         paymentIntentId: session.payment_intent ?? '',
+//         amount:          session.amount_total ?? 0,
+//       });
+
+//     await db.collection('payments').add({
+//       uid,
+//       displayName: session.customer_details?.name ?? '',
+//       email:       session.customer_details?.email ?? '',
+//       amount:      session.amount_total ?? 0,
+//       currency:    session.currency ?? 'aud',
+//       status:      'succeeded',
+//       type:        'guest_pass',
+//       description: `Quiz Pass — ${quizId}`,
+//       quizId,
+//       stripePaymentIntentId: session.payment_intent ?? '',
+//       createdAt:   Timestamp.now(),
+//     });
+//   }
+//   if (session.mode === 'subscription') {
+//     // Record the initial subscription start — doc ID prevents duplicates on webhook retry
+//     const sessionId = session.id;
+//     await db.collection('userEvents').doc(`subscription_started_${sessionId}`).set({
+//       type:      'subscription_started',
+//       uid,
+//       timestamp: Timestamp.now(),
+//     });
+//   }
+// }
+
+// function stripeIntervalToBillingInterval(recurring: Stripe.Price.Recurring | null): 'quarter' | 'year' | null {
+//   if (!recurring) return null;
+//   if (recurring.interval === 'year') return 'year';
+//   if (recurring.interval === 'month' && recurring.interval_count === 3) return 'quarter';
+//   return null;
+// }
+
+// async function handleSubscriptionChange(sub: Stripe.Subscription) {
+//   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+//   const uid = await findUidByCustomerId(customerId);
+//   if (!uid) return;
+
+//   const price    = sub.items.data[0]?.price;
+//   const priceId  = price?.id ?? '';
+//   const status   = sub.status;
+//   const isActive = status === 'active' || status === 'trialing';
+
+//   const writes: Promise<unknown>[] = [
+//     db.collection('users').doc(uid).set({
+//       subscriptionId:               sub.id,
+//       subscriptionStatus:           status,
+//       subscriptionTier:             PRICE_TIER_MAP[priceId] ?? null,
+//       subscriptionCurrentPeriodEnd: Timestamp.fromMillis(sub.current_period_end * 1000),
+//       cancelAtPeriodEnd:            sub.cancel_at_period_end,
+//       stripePriceId:                priceId,
+//       billingInterval:              stripeIntervalToBillingInterval(price?.recurring ?? null),
+//       billingAmountCents:           price?.unit_amount ?? 0,
+//       isMember:                     isActive,
+//       ...(status === 'canceled' ? { canceledAt: Timestamp.now() } : {}),
+//     }, { merge: true }),
+//   ];
+
+//   if (status === 'canceled') {
+//     // Record cancellation event — doc ID prevents duplicates on webhook retry
+//     writes.push(
+//       db.collection('userEvents').doc(`subscription_cancelled_${sub.id}`).set({
+//         type:      'subscription_cancelled',
+//         uid,
+//         tier:      PRICE_TIER_MAP[priceId] ?? null,
+//         timestamp: Timestamp.now(),
+//       })
+//     );
+//   }
+
+//   await Promise.all(writes);
+// }
+
+// async function handleInvoicePaid(invoice: Stripe.Invoice, stripe: Stripe) {
+//   const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
+//   const uid = await findUidByCustomerId(customerId);
+//   if (!uid) return;
+
+//   const userSnap   = await db.collection('users').doc(uid).get();
+//   const userData   = userSnap.data() ?? {};
+//   const priceId    = invoice.lines?.data?.[0]?.price?.id ?? '';
+//   const tier       = PRICE_TIER_MAP[priceId] ?? null;
+
+//   await db.collection('payments').add({
+//     uid,
+//     displayName:           userData['displayName'] ?? '',
+//     email:                 userData['email'] ?? '',
+//     amount:                invoice.amount_paid ?? 0,
+//     currency:              invoice.currency ?? 'aud',
+//     status:                'succeeded',
+//     type:                  'subscription',
+//     tier,
+//     description:           invoice.description ?? `Subscription — ${tier ?? 'unknown'}`,
+//     stripeInvoiceId:       invoice.id,
+//     stripePaymentIntentId: typeof invoice.payment_intent === 'string' ? invoice.payment_intent : '',
+//     createdAt:             Timestamp.now(),
+//   });
+// }
+
+// async function handleInvoiceFailed(invoice: Stripe.Invoice) {
+//   const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
+//   const uid = await findUidByCustomerId(customerId);
+//   if (!uid) return;
+
+//   const userSnap = await db.collection('users').doc(uid).get();
+//   const userData = userSnap.data() ?? {};
+//   const priceId  = invoice.lines?.data?.[0]?.price?.id ?? '';
+//   const tier     = PRICE_TIER_MAP[priceId] ?? null;
+
+//   await db.collection('users').doc(uid).set({
+//     subscriptionStatus: 'past_due',
+//     isMember: false,
+//   }, { merge: true });
+
+//   await db.collection('payments').add({
+//     uid,
+//     displayName:     userData['displayName'] ?? '',
+//     email:           userData['email'] ?? '',
+//     amount:          invoice.amount_due ?? 0,
+//     currency:        invoice.currency ?? 'aud',
+//     status:          'failed',
+//     type:            'subscription',
+//     tier,
+//     description:     `Failed payment — ${tier ?? 'unknown'}`,
+//     stripeInvoiceId: invoice.id,
+//     createdAt:       Timestamp.now(),
+//   });
+// }
+
+// // -----------------------------------------------
+// // Admin Callable: adminCancelSubscription
+// // -----------------------------------------------
+// export const adminCancelSubscription = onCall(
+//   { secrets: ['STRIPE_SECRET_KEY'] },
+//   async (req) => {
+//     await assertAdmin(req.auth?.uid);
+//     const { subscriptionId } = req.data as { uid: string; subscriptionId: string };
+//     if (!subscriptionId) throw new HttpsError('invalid-argument', 'subscriptionId required');
+
+//     const stripe = getStripe();
+//     await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
+//     return { success: true };
+//   }
+// );
+
+// // -----------------------------------------------
+// // Admin Callable: adminRefundPayment
+// // -----------------------------------------------
+// export const adminRefundPayment = onCall(
+//   { secrets: ['STRIPE_SECRET_KEY'] },
+//   async (req) => {
+//     await assertAdmin(req.auth?.uid);
+//     const { paymentId, paymentIntentId } = req.data as {
+//       paymentId: string; paymentIntentId: string;
+//     };
+//     if (!paymentIntentId) throw new HttpsError('invalid-argument', 'paymentIntentId required');
+
+//     const stripe = getStripe();
+//     const refund = await stripe.refunds.create({ payment_intent: paymentIntentId });
+
+//     await db.collection('payments').doc(paymentId).set({
+//       status:       'refunded',
+//       refundedAt:   Timestamp.now(),
+//       refundAmount: refund.amount,
+//     }, { merge: true });
+
+//     return { success: true, refundId: refund.id };
+//   }
+// );
+
+// // -----------------------------------------------
+// // Admin Callable: adminGrantGuestAccess
+// // Manually grants permanent quiz access to any user
+// // -----------------------------------------------
+// export const adminGrantGuestAccess = onCall(async (req) => {
+//   await assertAdmin(req.auth?.uid);
+//   const { uid, quizId } = req.data as { uid: string; quizId: string };
+//   if (!uid)    throw new HttpsError('invalid-argument', 'uid required');
+//   if (!quizId) throw new HttpsError('invalid-argument', 'quizId required');
+
+//   await db.collection('users').doc(uid)
+//     .collection('quizAccess').doc(quizId).set({
+//       quizId,
+//       paidAt:          Timestamp.now(),
+//       paymentIntentId: 'admin_granted',
+//       amount:          0,
+//     });
+
+//   return { success: true };
+// });
+
+// async function assertAdmin(uid?: string) {
+//   if (!uid) throw new HttpsError('unauthenticated', 'Must be logged in');
+//   const userSnap = await db.collection('users').doc(uid).get();
+//   if (!userSnap.data()?.['isAdmin']) throw new HttpsError('permission-denied', 'Admin only');
+// }
