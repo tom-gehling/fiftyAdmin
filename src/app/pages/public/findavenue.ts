@@ -30,7 +30,6 @@ import { PublicTopbarComponent } from './components/public-topbar';
     PublicTopbarComponent
   ],
   template: `
-    <app-public-topbar />
     <div class="venue-finder">
       <!-- Header -->
       <div class="venue-header">

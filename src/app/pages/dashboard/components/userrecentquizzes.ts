@@ -87,7 +87,7 @@ export class RecentQuizzesWidget implements OnInit {
 
       // Filter completed and sort by completion date descending
       const sortedResults = results
-        .filter(r => r.status === 'completed')
+        .filter(r => r.status === 'completed' && !r.userHidden)
         .sort((a, b) => {
           const getTime = (d: any) => {
             if (!d) return 0;

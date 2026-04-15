@@ -78,16 +78,16 @@ service cloud.firestore {
       }
     }
 
-    // Submission forms — any auth can read, admins can write
+    // Submission forms — public read (shown on dashboard for all visitors), admins can write
     match /submissionForms/{formId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Quiz results — members can write their own, users/admins can read
+    // Quiz results — any authenticated non-anonymous user can write their own, users/admins can read
     match /quizResults/{resultId} {
       allow create, update: if isAuthenticated()
-                            && isMember(request.auth.uid)
+                            && request.auth.token.firebase.sign_in_provider != "anonymous"
                             && request.resource.data.userId == request.auth.uid;
       allow read: if isAuthenticated()
                   && (resource.data.userId == request.auth.uid || isAdmin());
@@ -101,6 +101,27 @@ service cloud.firestore {
     match /quizAggregates/{id} {
       allow read: if true;
       allow write: if false;
+    }
+
+    // Puzzle results — any authenticated non-anonymous user can write their own, users/admins can read
+    match /puzzleResults/{resultId} {
+      allow create, update: if isAuthenticated()
+                            && request.auth.token.firebase.sign_in_provider != "anonymous"
+                            && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated()
+                  && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // User game stats (streaks) — users can read/write their own doc, admins can read all
+    match /userGameStats/{userId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAdmin();
+    }
+
+    // Curated puzzles (Movie Emoji, Rush Hour) — members can read, admins can write
+    match /puzzles/{puzzleId} {
+      allow read: if isAuthenticated() && isMember(request.auth.uid);
+      allow write: if isAdmin();
     }
 
     // Payments — admin read-only; written only by Cloud Functions (admin SDK bypasses rules)

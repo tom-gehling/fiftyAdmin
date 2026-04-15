@@ -27,4 +27,5 @@ export interface QuizResult {
     geo?: GeoLocation;           // Geolocation data from IP lookup
     retro?: boolean;             // true if manually recorded (backwards compatibility)
     taggedUsers?: TaggedUser[];  // users who took the quiz together
+    userHidden?: boolean;        // true when user has opted out of stats tracking; result still stored for admin use
 }

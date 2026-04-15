@@ -1,97 +1,98 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, OnInit } from '@angular/core';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { StyleClassModule } from 'primeng/styleclass';
 import { MenuModule } from 'primeng/menu';
-import { SelectButtonModule } from 'primeng/selectbutton';
 import { MenuItem } from 'primeng/api';
-import { FormsModule } from '@angular/forms';
-import { Observable } from 'rxjs';
 
-import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 import { AuthService } from '@/shared/services/auth.service';
-import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
+import { AuthModalService } from '@/shared/services/auth-modal.service';
 
 @Component({
-  selector: 'app-topbar',
-  standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    StyleClassModule,
-    MenuModule,
-    ButtonModule,
-    SelectButtonModule,
-    AppConfigurator,
-    FormsModule
-  ],
-  template: `
-    <div class="layout-topbar flex items-center p-2 fiftyBorderBottom relative" >
+    selector: 'app-topbar',
+    standalone: true,
+    imports: [CommonModule, AsyncPipe, RouterModule, MenuModule, ButtonModule],
+    template: `<div class="layout-topbar flex items-center p-2 fiftyBorderBottom relative" [style.background-color]="bgColor || null">
+            @if (showMenuToggle) {
+                <div class="flex items-center">
+                    <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
+                        <i class="pi pi-bars"></i>
+                    </button>
+                </div>
+            
 
-  <!-- Left: Menu toggle -->
-  <div class="flex items-center space-x-2">
-    <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
-      <i class="pi pi-bars"></i>
-    </button>
-  </div>
+            <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center">
+                <a class="flex items-center" routerLink="/">
+                    <img [src]="(auth.isAdmin$ | async) ? 'assets/logos/fiftyAdminLogo.png' : 'assets/logos/fiftyplus.png'" alt="Logo" class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto object-contain" />
+                </a>
+            </div>
+            } @else {
+            <nav class="flex items-center gap-1 sm:gap-3">
+                @for (link of publicNavLinks; track link.label) {
+                    <a [routerLink]="link.route"
+                       routerLinkActive
+                       #rla="routerLinkActive"
+                       [routerLinkActiveOptions]="{ exact: true }"
+                       [class]="rla.isActive ? 'font-bold -translate-y-0.5 drop-shadow-sm px-8 gap-8 py-0.5 rounded-full bg-white/10' : 'font-medium hover:font-semibold hover:-translate-y-px'"
+                       class="text-lg transition-all duration-150 no-underline"
+                       style="color: var(--fifty-pink)">{{ link.label }}</a>
+                }
+            </nav>
+            }
 
-  <!-- Center: Logo -->
-  <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center">
-    <a class="flex items-center" routerLink="/">
-      <img [src]="(isAdmin$ | async) ? 'assets/logos/fiftyAdminLogo.png' : 'assets/logos/fiftyplus.png'" alt="Logo"
-        class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto object-contain"
-      >
-    </a>
-  </div>
-
-  <!-- Right: Actions -->
-  <div class="ml-auto flex items-center gap-2">
-    <!-- Dark Mode Toggle -->
-
-    <!-- Profile Menu -->
-    <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>
-    <button type="button" class="layout-topbar-action flex items-center gap-2" (click)="profileMenu.toggle($event)">
-      <i class="pi pi-user"></i>
-      <span>Profile</span>
-    </button>
-  </div>
-
-</div>
-
-  `
+            <div class="ml-auto flex items-center gap-3">
+                @if (auth.initialized$ | async) {
+                    @if (!(auth.user$ | async) || (auth.user$ | async)?.isAnon) {
+                        <p-button label="Sign In" [outlined]="false" size="large" (click)="authModal.open('login')"></p-button>
+                    } @else {
+                        @if (!(auth.isMember$ | async) && !(auth.isAdmin$ | async)) {
+                            <p-button label="Become a Fifty+ Member" icon="pi pi-star" size="large" [outlined]="true" [routerLink]="['/join']" [queryParams]="{ returnUrl: router.url }"></p-button>
+                        } @else if (auth.isMember$ | async) {
+                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-lg font-semibold" style="background: rgba(76,251,171,0.15); color: var(--primary-color); border: 1px solid var(--primary-color)">
+                                <i class="pi pi-check-circle text-sm"></i> FIFTY+
+                            </span>
+                        }
+                        <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>
+                        <button type="button" class="flex items-center justify-center rounded-full font-bold text-sm cursor-pointer border-0" style="width: 36px; height: 36px; background: var(--primary-color); color: #1a1a1a; flex-shrink: 0" (click)="profileMenu.toggle($event)" [title]="(auth.user$ | async)?.displayName || ''">
+                            {{ initials }}
+                        </button>
+                    }
+                }
+            </div>
+        </div>`,
 })
 export class AppTopbar implements OnInit {
-  profileItems: MenuItem[] = [];
-  isAdmin$!: Observable<boolean>;
+    @Input() showMenuToggle = true;
+    @Input() bgColor = '';
 
-  selectedMembership: MembershipTier = MembershipTier.Fifty; // default selection
+    profileItems: MenuItem[] = [];
 
-  constructor(
-    public layoutService: LayoutService,
-    private authService: AuthService,
-    private router: Router,
-    private membershipService: MembershipService
-  ) {
-    this.isAdmin$ = this.authService.isAdmin$;
-  }
-
-  ngOnInit(): void {
-    // Update selection from service
-    this.membershipService.membership$.subscribe(level => this.selectedMembership = level);
-
-    this.profileItems = [
-      { label: 'Update Profile', icon: 'pi pi-user-edit', command: () => this.router.navigate(['/fiftyPlus/profile']) },
-      { label: 'Logout', icon: 'pi pi-sign-out', command: () => { this.authService.logout(); this.router.navigate(['/login']); } }
+    readonly publicNavLinks = [
+        { label: 'Home', route: '/home' },
+        { label: 'The Fifty', route: '/weekly-quiz' },
+        { label: 'Fifty+', route: '/join' },
+        { label: 'Find a Venue', route: '/find-a-venue' },
+        { label: 'Shop', route: '/fiftyshop' },
+        { label: 'Contact Us', route: '/contact-us' },
     ];
-  }
 
-  toggleDarkMode(): void {
-    this.layoutService.layoutConfig.update(state => ({ ...state, darkTheme: !state.darkTheme }));
-  }
+    constructor(
+        public layoutService: LayoutService,
+        public auth: AuthService,
+        public authModal: AuthModalService,
+        public router: Router
+    ) {}
 
-  onMembershipChange(level: MembershipTier): void {
-    this.membershipService.setMembership(level);
-  }
+    ngOnInit(): void {
+        this.profileItems = [
+            { label: 'Update Profile', icon: 'pi pi-user-edit', command: () => this.router.navigate(['/profile']) },
+            { label: 'Logout', icon: 'pi pi-sign-out', command: () => this.auth.logout() },
+        ];
+    }
+
+    get initials(): string {
+        const u = this.auth.user$.value;
+        return (u?.displayName ?? u?.email ?? '?').slice(0, 1).toUpperCase();
+    }
 }

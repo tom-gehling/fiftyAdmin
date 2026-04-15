@@ -42,11 +42,13 @@ const ROUTE_LABELS: Record<string, string> = {
         </div>
 
         <!-- Profile icon -->
-        <p-menu #profileMenu [popup]="true" [model]="profileItems" />
-        <button type="button" class="profile-btn" (click)="profileMenu.toggle($event)">
-          <i class="pi" [ngClass]="user ? 'pi-user-check' : 'pi-user'"></i>
-          <span *ngIf="user" class="profile-name">{{ user.displayName || user.email }}</span>
-        </button>
+        <ng-container *ngIf="initialized">
+          <p-menu #profileMenu [popup]="true" [model]="profileItems" />
+          <button type="button" class="profile-btn" (click)="profileMenu.toggle($event)">
+            <i class="pi" [ngClass]="user ? 'pi-user-check' : 'pi-user'"></i>
+            <span *ngIf="user" class="profile-name">{{ user.displayName || user.email }}</span>
+          </button>
+        </ng-container>
 
         <!-- Mobile hamburger -->
         <button type="button" class="hamburger-btn" (click)="mobileMenuOpen = !mobileMenuOpen">
@@ -62,7 +64,7 @@ const ROUTE_LABELS: Record<string, string> = {
       <a routerLink="/find-a-venue" class="mobile-link">Find a Venue</a>
       <a href="https://theweeklyfifty.com.au/pshop/" target="_blank" class="mobile-link">Fifty Shop</a>
       <div class="mobile-divider"></div>
-      <a *ngIf="!user" routerLink="/login" class="mobile-link">Login / Sign Up</a>
+      <a *ngIf="initialized && !user" routerLink="/login" class="mobile-link">Login / Sign Up</a>
       <ng-container *ngIf="user">
         <a [routerLink]="['/profile', user.uid]" class="mobile-link">Profile</a>
         <a (click)="logout()" class="mobile-link" style="cursor:pointer">Logout</a>
@@ -252,6 +254,7 @@ export class PublicTopbarComponent implements OnInit, OnDestroy {
   breadcrumbItems: MenuItem[] = [];
   profileItems: MenuItem[] = [];
   user: AppUser | null = null;
+  initialized = false;
   mobileMenuOpen = false;
 
   private subs: Subscription[] = [];
@@ -271,6 +274,12 @@ export class PublicTopbarComponent implements OnInit, OnDestroy {
           this.updateBreadcrumbs(e.urlAfterRedirects);
           this.mobileMenuOpen = false;
         })
+    );
+
+    this.subs.push(
+      this.authService.initialized$.subscribe(init => {
+        this.initialized = init;
+      })
     );
 
     this.subs.push(

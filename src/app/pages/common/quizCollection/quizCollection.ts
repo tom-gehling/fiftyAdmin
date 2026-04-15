@@ -26,15 +26,6 @@ import { Collaborator } from '@/shared/models/collaborator.model';
   providers: [DialogService],
   template: `
     <p-card class="flex flex-col h-full">
-      <div class="flex items-center justify-center mb-4 relative">
-      <p-button 
-        icon="pi pi-chevron-right" 
-        (onClick)="drawerVisible = true" 
-        class="p-button-text p-button-sm absolute left-0">
-      </p-button>
-      <h2 class="text-xxl font-semibold">{{ title }}</h2>
-    </div>
-
       <p-drawer [(visible)]="drawerVisible" position="left" [style]="{width: '300px'}">
         <h3>{{ title }}</h3>
         <ng-container *ngIf="quizHeaders.length > 0; else noQuizzes">
@@ -94,7 +85,12 @@ import { Collaborator } from '@/shared/models/collaborator.model';
         </ng-template>
       </p-drawer>
 
-      <div class="mt-10">
+      <div class="relative">
+        <p-button
+          icon="pi pi-chevron-right"
+          (onClick)="drawerVisible = true"
+          class="p-button-text p-button-sm absolute top-2.5 left-2.5 z-10">
+        </p-button>
         <ng-container *ngIf="selectedQuizId; else noQuizSelected">
           <app-quiz-display [quizId]="selectedQuizId" [locked]="selectedQuizLocked"></app-quiz-display>
         </ng-container>

@@ -10,9 +10,8 @@ import { PublicTopbarComponent } from './components/public-topbar';
 @Component({
   selector: 'app-weekly-quiz',
   standalone: true,
-  imports: [CommonModule, QuizDisplayComponent, PublicTopbarComponent],
+  imports: [CommonModule, QuizDisplayComponent],
   template: `
-    <app-public-topbar />
     <div class="page-content">
       <app-quiz-display
         *ngIf="quiz"
@@ -40,6 +39,5 @@ export class WeeklyQuizPage implements OnInit {
 
   async ngOnInit() {
     this.quiz = await firstValueFrom(this.quizzesService.getActiveQuiz());
-    console.log(this.quiz )
   }
 }

@@ -1,6 +1,6 @@
-import { Component, ElementRef, Input, OnChanges, OnInit, Optional, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, filter, Subscription } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -17,6 +17,7 @@ import { QuizSubmissionService } from '@/shared/services/quiz-submission.service
 import { SubmissionForm, SubmissionFormField } from '@/shared/models/submissionForm.model';
 import { TaggedUser } from '@/shared/models/quizSubmission.model';
 import { QuizStatsService } from '@/shared/services/quiz-stats.service';
+import { UserService } from '@/shared/services/user.service';
 import { UserTagSelectorComponent } from '../userTagSelector/userTagSelector.component';
 import { ActivatedRoute } from '@angular/router';
 import { DynamicDialogConfig } from 'primeng/dynamicdialog';
@@ -41,11 +42,34 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
         </p>
       </ng-container>
 
-      <!-- Title and Download -->
+      <!-- Quiz Logo -->
+      <div *ngIf="quiz.quizType === QuizTypeEnum.Weekly || quiz.imageUrl" class="flex justify-center mb-4">
+        <img
+          [src]="quiz.quizType === QuizTypeEnum.Weekly ? 'assets/logos/logo.png' : quiz.imageUrl"
+          alt="Quiz logo"
+          [class]="logoIsSquare ? 'w-full sm:w-[50%] object-contain' : 'w-full sm:w-[70%] object-contain'"
+          (load)="onLogoLoad($event)"
+        />
+      </div>
+      <!-- Quiz session label -->
+      <div *ngIf="userId && userEmail && !disableStats" class="text-center text-md mb-4 opacity-90 loggedInName">Quiz session recording for {{ userEmail }}</div>
+
+      
+
+      <!-- Title row: info | title | download -->
       <div class="quizHeader">
-        <div class="quizTitle">{{ getQuizTitle() }}</div>
-        <div *ngIf="!locked" class="downloadRow">
+        <div class="quizHeaderLeft">
           <p-button
+            icon="pi pi-info-circle"
+            [outlined]="false"
+            (onClick)="showInfoModal = true"
+            class="infoButton">
+          </p-button>
+        </div>
+        <div class="quizTitle">{{ getQuizTitle() }}</div>
+        <div class="quizHeaderRight">
+          <p-button
+            *ngIf="!locked"
             icon="pi pi-download"
             label="Download"
             [outlined]="true"
@@ -54,6 +78,8 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
           </p-button>
         </div>
       </div>
+
+      
 
       <!-- Notes Above -->
       <div *ngIf="quiz.notesAbove" class="notes" [innerHTML]="quiz.notesAbove"></div>
@@ -202,6 +228,26 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     </div>
 
+    <!-- Info Modal -->
+    <p-dialog
+      [(visible)]="showInfoModal"
+      [modal]="true"
+      [closable]="true"
+      [resizable]="false"
+      [draggable]="false"
+      header="How to play"
+      [style]="{ width: '90vw', maxWidth: '480px' }">
+      <div class="infoModalContent">
+        <ol>
+          <li>Click on any question to expand it.</li>
+          <li>Click <strong>Click for answer</strong> to reveal the answer.</li>
+          <li>Mark each answer as <strong>Correct</strong> or <strong>Incorrect</strong> using the buttons.</li>
+          <li>Your score is tallied automatically as you go.</li>
+          <li>Use the <strong>Download</strong> button to save the quiz as a PDF.</li>
+        </ol>
+      </div>
+    </p-dialog>
+
     <!-- Share Modal -->
     <p-dialog
       [(visible)]="showSharePanel"
@@ -255,6 +301,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     .quizContainer {
+      position: relative;
       width: 100%;
       padding-top: 20px;
       // padding: 20px;
@@ -266,21 +313,55 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     .quizHeader {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
       margin-bottom: 20px;
+      padding: 0 10px;
     }
 
-    .downloadRow {
+    .quizHeaderLeft,
+    .quizHeaderRight {
+      flex: 0 0 auto;
+      min-width: 60px;
       display: flex;
-      justify-content: center;
+    }
+
+    .quizHeaderLeft {
+      justify-content: flex-start;
+    }
+
+    .quizHeaderRight {
+      justify-content: flex-end;
     }
 
     .quizTitle {
+      flex: 1;
       text-align: center;
-      padding: 20px;
+      padding: 20px 8px;
       font-size: 30px;
       font-weight: 600;
       color: var(--primary);
+    }
+
+    .loggedInName {
+      padding: 10px;
+      font-size: 1.2rem;
+      font-style: italic;
+      opacity: 0.75;
+    }
+
+    .infoModalContent {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .infoModalContent ol {
+      padding-left: 1.25rem;
+      margin: 0;
+    }
+
+    .infoModalContent li {
+      margin-bottom: 0.5rem;
     }
 
     .questionText {
@@ -292,10 +373,30 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       display: inline;
     }
 
+    :host ::ng-deep .infoButton .p-button {
+      background-color: transparent;
+      border-color: var(--tertiary);
+      color: var(--tertiary);
+    }
+
+    :host ::ng-deep .infoButton .p-button:hover {
+      filter: brightness(0.9);
+    }
+
     :host ::ng-deep .downloadButton .p-button {
       background-color: transparent;
       border-color: var(--tertiary);
       color: var(--tertiary);
+    }
+
+    :host ::ng-deep .downloadButton .p-button-label {
+      display: none;
+    }
+
+    @media (min-width: 640px) {
+      :host ::ng-deep .downloadButton .p-button-label {
+        display: inline;
+      }
     }
 
     :host ::ng-deep .downloadButton .p-button:hover {
@@ -303,12 +404,13 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     .notes {
-      font-size: var(--header);
-      font-weight: 800;
+      font-size: 2rem;
+      font-weight: 600;
       line-height: 150%;
       padding: 15px 0;
       color: var(--primary);
       text-align: center;
+      margin-top: 30px;
     }
 
     .accordionButton {
@@ -548,7 +650,11 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
   `
 })
-export class QuizDisplayComponent implements OnInit, OnChanges {
+export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
+
+  protected readonly QuizTypeEnum = QuizTypeEnum;
+
+  private authSub?: Subscription;
 
   @Input() quizId?: string;
   @Input() quiz?: Quiz;          // for preview mode
@@ -556,6 +662,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   @Input() previewMode = false;  // no Firestore, no results
 
   loading = true;
+  logoIsSquare = false;
 
   // Quiz state
   score = 0;
@@ -566,6 +673,8 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   answerRevealed: boolean[] = [];
 
   userId?: string;
+  userEmail?: string;
+  disableStats = false;
   resultId?: string;
 
   // Submission form state
@@ -583,6 +692,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   sharePercentile?: number;
   copySuccess = false;
   showSharePanel = false;
+  showInfoModal = false;
   sharePreviewDataUrl?: string;
   generatingPreview = false;
 
@@ -591,6 +701,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     private quizResultsService: QuizResultsService,
     private quizStatsService: QuizStatsService,
     private authService: AuthService,
+    private userService: UserService,
     private quizPdfService: QuizPdfService,
     private submissionFormService: SubmissionFormService,
     private quizSubmissionService: QuizSubmissionService,
@@ -602,6 +713,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
 
   get sortedFields() {
     return [...(this.submissionForm?.fields ?? [])].sort((a, b) => a.order - b.order);
+  }
+
+  ngOnDestroy() {
+    this.authSub?.unsubscribe();
   }
 
   // ---------------------------------------------
@@ -621,6 +736,19 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   // INIT
   // ---------------------------------------------
   async ngOnInit() {
+    await firstValueFrom(this.authService.initialized$.pipe(filter(v => v)));
+    this.userId = this.authService.currentUserId ?? undefined;
+
+    this.authSub = this.authService.user$.subscribe(async user => {
+      this.userEmail = user?.email ?? undefined;
+      this.userId = user?.uid ?? undefined;
+      if (user?.uid) {
+        const userDoc = await firstValueFrom(this.userService.getUser(user.uid));
+        this.disableStats = userDoc?.disableStats ?? false;
+      }
+    });
+
+
     if (this.config?.data?.quiz) {
       this.quiz = this.config.data.quiz;
     }
@@ -670,11 +798,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   // ---------------------------------------------
   private async loadQuiz() {
     this.loading = true;
+    this.logoIsSquare = false;
     this.quiz = undefined;
 
     try {
-      await firstValueFrom(this.authService.initialized$);
-      this.userId = this.authService.currentUserId ?? undefined;
 
       if (!this.quizId) return;
 
@@ -754,7 +881,8 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     this.resultId = await this.quizResultsService.createResult(
       quiz.quizId.toString(),
       this.userId,
-      this.totalQuestions
+      this.totalQuestions,
+      this.disableStats || undefined
     );
   }
 
@@ -855,6 +983,11 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   // ---------------------------------------------
   // UI HELPERS
   // ---------------------------------------------
+  onLogoLoad(event: Event) {
+    const img = event.target as HTMLImageElement;
+    this.logoIsSquare = img.naturalWidth === img.naturalHeight;
+  }
+
   getQuizTitle(): string {
     if (!this.quiz) return '';
     if (this.quiz.quizType === QuizTypeEnum.Weekly && this.quiz.deploymentDate) {
@@ -898,7 +1031,8 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
       this.resultId = await this.quizResultsService.createResult(
         this.quiz.quizId.toString(),
         this.userId,
-        this.totalQuestions
+        this.totalQuestions,
+        this.disableStats || undefined
       );
 
       this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
