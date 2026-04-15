@@ -91,6 +91,15 @@ export const appRoutes: Routes = [
       { path: 'fiftyPlus/questionQuizzes', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes' } },
       { path: 'fiftyPlus/questionQuizzes/:quizid', component: FiftyPageComponent, data: { type: 4 } },
 
+      // Daily Games
+      { path: 'fiftyPlus/games', loadComponent: () => import('@/pages/games/games-hub/games-hub').then(m => m.GamesHubComponent) },
+      { path: 'fiftyPlus/games/make-ten', loadComponent: () => import('@/pages/games/make-ten/make-ten').then(m => m.MakeTenComponent) },
+      { path: 'fiftyPlus/games/chain-game', loadComponent: () => import('@/pages/games/chain-game/chain-game').then(m => m.ChainGameComponent) },
+      { path: 'fiftyPlus/games/movie-emoji', loadComponent: () => import('@/pages/games/movie-emoji/movie-emoji').then(m => m.MovieEmojiComponent) },
+      { path: 'fiftyPlus/games/rush-hour', loadComponent: () => import('@/pages/games/rush-hour/rush-hour').then(m => m.RushHourComponent) },
+      { path: 'fiftyPlus/games/country-jumble', loadComponent: () => import('@/pages/games/country-jumble/country-jumble').then(m => m.CountryJumbleComponent) },
+      { path: 'fiftyPlus/games/tile-run', loadComponent: () => import('@/pages/games/tile-run/tile-run').then(m => m.TileRunComponent) },
+
       // ------------------------------
       // 🛠 ADMIN ROUTES
       // ------------------------------
@@ -113,6 +122,16 @@ export const appRoutes: Routes = [
           { path: 'submissionForms', component: SubmissionFormTableComponent },
           { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
           { path: 'users', component: UserTableComponent },
+          {
+            path: 'games',
+            children: [
+              { path: 'stats', loadComponent: () => import('@/pages/admin/games/game-stats/game-stats').then(m => m.GameStatsComponent) },
+              { path: 'movie-emoji', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-list').then(m => m.MovieEmojiListComponent) },
+              { path: 'movie-emoji/:id', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-detail').then(m => m.MovieEmojiDetailComponent) },
+              { path: 'rush-hour', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-list').then(m => m.RushHourListComponent) },
+              { path: 'rush-hour/:id', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-detail').then(m => m.RushHourDetailComponent) },
+            ]
+          },
         ]
       }
     ]

@@ -62,7 +62,16 @@ export class AppMenu implements OnInit {
                 { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] },
                 { label: 'Submission Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
                 { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/admin/users'] },
-                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] }
+                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] },
+                {
+                    label: 'Games',
+                    icon: 'pi pi-fw pi-bolt',
+                    items: [
+                        { label: 'Game Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/games/stats'] },
+                        { label: 'Movie Emoji', icon: 'pi pi-fw pi-face-smile', routerLink: ['/fiftyPlus/admin/games/movie-emoji'] },
+                        { label: 'Rush Hour', icon: 'pi pi-fw pi-table', routerLink: ['/fiftyPlus/admin/games/rush-hour'] },
+                    ]
+                }
             ]
         };
 
@@ -73,7 +82,8 @@ export class AppMenu implements OnInit {
                 { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/archives'] },
                 { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
                 { label: 'Collaborations', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/collabs'] },
-                { label: 'Question Quizzes', icon: 'pi pi-fw pi-list', routerLink: ['/fiftyPlus/questionQuizzes'] }
+                { label: 'Question Quizzes', icon: 'pi pi-fw pi-list', routerLink: ['/fiftyPlus/questionQuizzes'] },
+                { label: 'Daily Games', icon: 'pi pi-fw pi-bolt', routerLink: ['/fiftyPlus/games'] }
             ]
         };
 
