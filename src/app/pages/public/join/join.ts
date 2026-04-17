@@ -111,7 +111,7 @@ const PRICES = {
                             <div class="text-center py-4">
                                 <i class="pi pi-user text-4xl text-primary mb-4 block"></i>
                                 <p class="text-surface-700 dark:text-surface-300 mb-6">Create a free account first, then subscribe to unlock Fifty+.</p>
-                                <p-button label="Create Free Account" styleClass="w-full mb-3" (click)="router.navigate(['/login'], { queryParams: { mode: 'register' } })"></p-button>
+                                <p-button label="Create Free Account" styleClass="w-full mb-3" (click)="router.navigate(['/join'])"></p-button>
                                 <p class="text-surface-500 text-sm mt-3">Already have an account? <a class="text-primary cursor-pointer" (click)="router.navigate(['/login'])">Sign in</a></p>
                             </div>
                         } @else if (!showPaymentElement) {
@@ -130,10 +130,11 @@ const PRICES = {
                                 } @else {
                                     <p class="text-surface-400 text-sm mb-4">Billed every 3 months</p>
                                 }
+                                <p-button label="Start 7 Day Free Trial" icon="pi pi-lock" styleClass="w-full mb-3" [loading]="loadingIntent" (click)="setupPayment()"></p-button>
                                 <p class="text-surface-500 text-xs">Cancel anytime from your account settings</p>
                             </div>
 
-                            <p-button label="Set Up Payment" icon="pi pi-lock" styleClass="w-full" [loading]="loadingIntent" (click)="setupPayment()"></p-button>
+                            
 
                             @if (error) {
                                 <p class="text-red-500 mt-4 text-center text-sm">{{ error }}</p>

@@ -78,18 +78,9 @@ export class AppMenu implements OnInit {
             ]
         };
 
-        // Become a Member CTA (shown only for free, non-admin users)
-        const joinMenu: MenuItem = {
-            label: 'Fifty+ Membership',
-            items: [
-                { label: 'Become a Member', icon: 'pi pi-fw pi-star', routerLink: ['/join'] }
-            ]
-        };
-
         // Build model dynamically
         this.model = [homeMenu];
 
-        // if (!isMember && !isAdmin) this.model.push(joinMenu);
         if (isAdmin) this.model.push(adminMenu);
 
         this.model.push(fiftyPlusMenu);

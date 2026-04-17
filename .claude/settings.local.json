@@ -23,7 +23,9 @@
       "Bash(ls -la /Users/tomgehling/Desktop/fiftyAdmin/src/app/*.ts)",
       "Bash(grep -E \"\\\\.\\(ts|html\\)$\")",
       "WebFetch(domain:theweeklyfifty.com.au)",
-      "Bash(node -e \"const s = require\\('./node_modules/stripe/package.json'\\); console.log\\(s.version\\)\")"
+      "Bash(node -e \"const s = require\\('./node_modules/stripe/package.json'\\); console.log\\(s.version\\)\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)"
     ]
   }
 }

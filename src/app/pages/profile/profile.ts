@@ -10,7 +10,6 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CheckboxModule } from 'primeng/checkbox';
 import { AuthService } from '@/shared/services/auth.service';
 import { UserService } from '@/shared/services/user.service';
-import { MembershipService } from '@/shared/services/membership.service';
 import { NotifyService } from '@/shared/services/notify.service';
 
 @Component({
@@ -30,10 +29,10 @@ import { NotifyService } from '@/shared/services/notify.service';
                         </div>
                         <div>
                             <h2 class="text-2xl font-semibold m-0">{{ displayName || 'Your Profile' }}</h2>
-                            @if (membershipType) {
+                            @if (isMember) {
                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1"
                                     style="background: rgba(76,251,171,0.15); color: var(--primary-color); border: 1px solid var(--primary-color)">
-                                    <i class="pi pi-check-circle text-xs"></i> {{ membershipType }}
+                                    <i class="pi pi-check-circle text-xs"></i> Fifty+ Member
                                 </span>
                             }
                         </div>
@@ -151,7 +150,6 @@ export class ProfilePage implements OnInit {
     private functions = inject(Functions);
     private authService = inject(AuthService);
     private userService = inject(UserService);
-    private membershipService = inject(MembershipService);
     private notify = inject(NotifyService);
 
     private uid = '';
@@ -160,7 +158,6 @@ export class ProfilePage implements OnInit {
     displayName = '';
     email = '';
     joinedAt: Date | null = null;
-    membershipType = '';
     isMember = false;
     followers = 0;
     following = 0;
@@ -191,10 +188,6 @@ export class ProfilePage implements OnInit {
             this.uid = user.uid;
             this.displayName = user.displayName || '';
             this.email = user.email || '';
-
-            this.membershipService.membership$.subscribe(tier => {
-                this.membershipType = tier;
-            });
 
             this.authService.isMember$.subscribe(val => {
                 this.isMember = !!val;

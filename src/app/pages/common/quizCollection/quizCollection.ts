@@ -12,7 +12,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@/shared/services/auth.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
-import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
 import { QuizTheme } from '@/shared/models/quiz.model';
 import { DialogService, DynamicDialogModule } from 'primeng/dynamicdialog';
 import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.component';
@@ -158,7 +157,7 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
   drawerVisible = false;
   quizHeaders: { quizId: string; quizTitle?: string; theme?: QuizTheme; collabId?: string }[] = [];
   completedQuizIds = new Set<string>();
-  membershipTier: MembershipTier = MembershipTier.Fifty;
+  isMember = false;
   collaborators: Collaborator[] = [];
 
   get collabGroups(): { collabId: string; collabName: string; quizzes: { quizId: string; quizTitle?: string; theme?: QuizTheme; collabId?: string }[] }[] {
@@ -179,14 +178,14 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
     private userService: UserService,
     private quizzesService: QuizzesService,
     private quizResultsService: QuizResultsService,
-    private membershipService: MembershipService,
+    private authService: AuthService,
     private dialogService: DialogService,
     private router: Router,
     private collaboratorsService: CollaboratorsService
   ) {}
 
   async ngOnInit() {
-    this.membershipService.membership$.subscribe(tier => this.membershipTier = tier);
+    this.authService.isMember$.subscribe(val => this.isMember = !!val);
     if (this.quizType === 'collaborations') {
       this.collaboratorsService.getAll().subscribe(c => this.collaborators = c);
     }
@@ -264,7 +263,7 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
 
   isLocked(index: number): boolean {
   // Premium/Gold/Admin have full access
-  if (this.membershipTier !== MembershipTier.Fifty) {
+  if (this.isMember || this.authService.isAdmin$.value) {
     return false;
   }
 

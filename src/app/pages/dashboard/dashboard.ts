@@ -1,8 +1,8 @@
 import { Component, OnDestroy } from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { NotificationsWidget } from './components/notificationswidget';
 import { StatsWidget } from './components/statswidget';
-import { RecentSalesWidget } from './components/recentsaleswidget';
 import { BestSellingWidget } from './components/bestsellingwidget';
 import { MembershipReportWidget } from './components/membershipreport';
 import { SubmissionsWallWidget } from './components/submissionwallwidget';
@@ -13,49 +13,45 @@ import { FiftyQuizzesDashboardComponent } from './components/fiftyquizzes';
 import { QuizStatsWidgetComponent } from './components/quizstatswidget';
 import { UserQuizHistoryWidget } from "./components/userquizhistory";
 import { UserSummaryWidget } from "./components/usersummary";
-import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
 import { RecentQuizzesWidget } from "./components/userrecentquizzes";
 import { VenueCalendarComponent } from "./components/venuecalendar";
 
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget, VenueCalendarComponent],
+    imports: [CommonModule, StatsWidget, BestSellingWidget, MembershipReportWidget, NotificationsWidget, SubmissionsWallWidget, AsyncPipe, FiftyQuizzesDashboardComponent, QuizStatsWidgetComponent, UserQuizHistoryWidget, UserSummaryWidget, RecentQuizzesWidget, VenueCalendarComponent, RouterModule],
     template: `
         <div class="grid grid-cols-12 gap-8">
-            <!-- [x]: fiftyBorder to all widgets -->
-            <!-- Only show stats widget if user is NOT admin -->
-            <app-stats-widget class="contents" *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" />
-            <!-- [x]: widget with dataview for all quiz score history-->
+            @if (!(auth.isMember$ | async) && !(auth.isAdmin$ | async)) {
+                <div class="col-span-12">
+                    <a routerLink="/join" class="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl font-bold text-xl cursor-pointer no-underline transition-opacity hover:opacity-90" style="background: var(--accent-green); color: var(--accent-green-contrast)">
+                        <i class="pi pi-star text-2xl"></i>
+                        Become A Fifty+ Member
+                    </a>
+                </div>
+            }
+            <!-- Only show stats widget for admins -->
+            <app-stats-widget class="contents" *ngIf="auth.isAdmin$ | async" />
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-user-summary-widget />
                 <app-fifty-quizzes-dashboard />
-                <!-- <app-quiz-stats-widget *ngIf="membershipTier != MembershipTier.Fifty" /> -->
-                <app-user-quiz-history-widget *ngIf="membershipTier != MembershipTier.Fifty" />
-                <!-- <app-best-selling-widget /> -->
+                <!-- <app-quiz-stats-widget *ngIf="auth.isMember$ | async" /> -->
+                <app-user-quiz-history-widget *ngIf="auth.isMember$ | async" />
             </div>
 
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                 <app-venue-calendar class="contents" />
-
-
                 <app-submissions-wall-widget />
-                <!-- <app-membership-report-widget *ngIf="(auth.isAdmin$ | async) && membershipTier == MembershipTier.Admin" /> -->
+                <!-- <app-membership-report-widget *ngIf="auth.isAdmin$ | async" /> -->
                 <!-- <app-notifications-widget /> -->
             </div>
-
-            
         </div>
     `
 })
 export class Dashboard implements OnDestroy {
-    membershipTier: MembershipTier = MembershipTier.FiftyGold;
-    MembershipTier = MembershipTier;
     private sub = new Subscription();
-    constructor(public auth: AuthService, private membershipService: MembershipService) {}
-    ngOnInit() {
-        this.sub.add(this.membershipService.membership$.subscribe(tier => this.membershipTier = tier));
-    }
+    constructor(public auth: AuthService) {}
+    ngOnInit() {}
     ngOnDestroy() {
         this.sub.unsubscribe();
     }

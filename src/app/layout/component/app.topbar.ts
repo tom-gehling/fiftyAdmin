@@ -93,7 +93,7 @@ export class AppTopbar implements OnInit {
     readonly publicNavLinks = [
         { label: 'Home', route: '/home' },
         { label: 'The Fifty', route: '/weekly-quiz' },
-        { label: 'Fifty+', route: '/join' },
+        { label: 'Fifty+', route: '/fiftyPlus' },
         { label: 'Find a Venue', route: '/find-a-venue' },
         { label: 'Shop', route: '/fiftyshop' },
         { label: 'Contact Us', route: '/contact-us' },
