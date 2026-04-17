@@ -31,46 +31,45 @@ interface ExprToken {
       [completionResult]="completionResult"
       (shareCopied)="onShareCopied()">
 
-      @if (!loading && !alreadyPlayed && !showCompletion) {
-        <div class="flex flex-col gap-5">
+      @if (!loading) {
+        <div class="flex flex-col gap-5"
+             [class]="(alreadyPlayed || showCompletion) ? 'pointer-events-none opacity-60 select-none' : ''">
 
           <!-- Instructions -->
-          <p class="text-surface-500 text-sm m-0 text-center">
+          <p class="text-surface-500 text-base m-0 text-center">
             Use all 4 numbers with +, −, ×, ÷ (and brackets) to make <strong class="text-surface-800 dark:text-surface-100">10</strong>
           </p>
 
           <!-- Expression display -->
-          <p-card>
-            <div class="min-h-14 flex items-center justify-center flex-wrap gap-1 py-2 px-1">
-              @if (expression.length === 0) {
-                <span class="text-surface-400 text-sm">Tap digits and operators below to build your expression</span>
-              }
-              @for (token of expression; track $index) {
-                <div
-                  class="flex items-center justify-center rounded px-2 py-1 text-lg font-bold cursor-pointer select-none transition-all hover:opacity-70 active:scale-95"
-                  [class]="token.type === 'digit'
-                    ? 'bg-primary text-white min-w-9'
-                    : token.type === 'op'
-                    ? 'bg-surface-200 dark:bg-surface-700 text-surface-800 dark:text-surface-100 min-w-9'
-                    : 'bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 min-w-7'"
-                  (click)="removeToken($index)"
-                  title="Click to remove">
-                  {{ token.value }}
-                </div>
-              }
-            </div>
-          </p-card>
+          <div class="min-h-24 flex items-center justify-center flex-wrap gap-2 py-6 px-4 rounded-2xl border-2 border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800">
+            @if (expression.length === 0) {
+              <span class="text-surface-400 text-base">Tap digits and operators below</span>
+            }
+            @for (token of expression; track $index) {
+              <div
+                class="game-tile cursor-pointer hover:opacity-70 text-xl"
+                [ngClass]="{
+                  'w-11 h-11 bg-primary text-white border-primary-600 shadow-md': token.type === 'digit',
+                  'w-11 h-11 bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 border-surface-300 dark:border-surface-600': token.type === 'op',
+                  'w-9 h-9 bg-surface-50 dark:bg-surface-900 text-surface-500 dark:text-surface-300 border-surface-200 dark:border-surface-700': token.type === 'lparen' || token.type === 'rparen'
+                }"
+                (click)="removeToken($index)"
+                title="Click to remove">
+                {{ token.value }}
+              </div>
+            }
+          </div>
 
           <!-- Number tiles -->
           <div>
-            <p class="text-xs text-surface-400 mb-2 text-center">Your numbers (each must be used once)</p>
+            <p class="text-sm text-surface-400 mb-3 text-center uppercase tracking-widest">Your numbers</p>
             <div class="flex justify-center gap-3">
               @for (d of digits; track $index) {
                 <button
-                  class="w-14 h-14 rounded-xl text-2xl font-bold shadow-sm transition-all active:scale-95 select-none"
+                  class="game-tile w-16 h-16 text-4xl shadow-md"
                   [class]="usedDigitIndices.has($index)
-                    ? 'bg-surface-200 dark:bg-surface-700 text-surface-400 cursor-not-allowed opacity-50'
-                    : 'bg-primary text-white cursor-pointer hover:bg-primary-600'"
+                    ? 'bg-surface-100 dark:bg-surface-800 text-surface-300 dark:text-surface-600 border-surface-200 dark:border-surface-700 cursor-not-allowed opacity-40'
+                    : 'bg-primary text-white border-primary-600 cursor-pointer hover:brightness-110'"
                   [disabled]="usedDigitIndices.has($index)"
                   (click)="addDigit(d, $index)">
                   {{ d }}
@@ -81,22 +80,22 @@ interface ExprToken {
 
           <!-- Operators and brackets -->
           <div>
-            <p class="text-xs text-surface-400 mb-2 text-center">Operators &amp; brackets</p>
+            <p class="text-xs text-surface-400 mb-3 text-center uppercase tracking-widest">Operators &amp; brackets</p>
             <div class="flex justify-center gap-2 flex-wrap">
               @for (op of ops; track op) {
                 <button
-                  class="w-12 h-12 rounded-lg text-xl font-semibold bg-surface-200 dark:bg-surface-700 text-surface-800 dark:text-surface-100 hover:bg-surface-300 dark:hover:bg-surface-600 transition-all active:scale-95 cursor-pointer"
+                  class="game-tile w-12 h-12 text-2xl bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 border-surface-300 dark:border-surface-600 cursor-pointer hover:brightness-95 dark:hover:brightness-110"
                   (click)="addOp(op)">
                   {{ opDisplay(op) }}
                 </button>
               }
               <button
-                class="w-12 h-12 rounded-lg text-xl font-semibold bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-all active:scale-95 cursor-pointer"
+                class="game-tile w-11 h-11 text-xl bg-surface-50 dark:bg-surface-900 text-surface-500 dark:text-surface-300 border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800"
                 (click)="addParen('(')">
                 (
               </button>
               <button
-                class="w-12 h-12 rounded-lg text-xl font-semibold bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700 transition-all active:scale-95 cursor-pointer"
+                class="game-tile w-11 h-11 text-xl bg-surface-50 dark:bg-surface-900 text-surface-500 dark:text-surface-300 border-surface-200 dark:border-surface-700 cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800"
                 (click)="addParen(')')">
                 )
               </button>
@@ -131,13 +130,13 @@ interface ExprToken {
           </div>
 
           @if (submitError) {
-            <p class="text-red-500 text-sm text-center m-0">
+            <p class="text-red-500 text-base text-center m-0">
               <i class="pi pi-times-circle mr-1"></i>{{ submitError }}
             </p>
           }
 
           @if (attempts > 0) {
-            <p class="text-surface-400 text-xs text-center m-0">{{ attempts }} attempt{{ attempts > 1 ? 's' : '' }}</p>
+            <p class="text-surface-400 text-sm text-center m-0">{{ attempts }} attempt{{ attempts > 1 ? 's' : '' }}</p>
           }
 
         </div>
@@ -180,9 +179,6 @@ export class MakeTenComponent implements OnInit {
         scoreLabel: existing.attempts ? `Solved in ${existing.attempts} attempt${existing.attempts > 1 ? 's' : ''}` : undefined,
         shareText: this.buildShareText(existing.attempts ?? 1),
       };
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
     }
 
     this.digits = this.generateDigits(this.dateKey);

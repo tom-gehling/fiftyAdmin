@@ -92,16 +92,17 @@ const BLOCK_COLORS = [
       [completionResult]="completionResult"
       (shareCopied)="onShareCopied()">
 
-      @if (!loading && !alreadyPlayed && !showCompletion) {
-        <div class="flex flex-col gap-4">
+      @if (!loading) {
+        <div class="flex flex-col gap-4"
+             [class]="(alreadyPlayed || showCompletion) ? 'pointer-events-none opacity-60 select-none' : ''">
 
-          <p class="text-surface-500 text-sm m-0 text-center">
+          <p class="text-surface-500 text-base m-0 text-center">
             Slide the <span class="font-semibold text-red-500">red block</span> to the right exit.
             Click a block to select it, then use the arrows to slide.
           </p>
 
           <!-- Stats bar -->
-          <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center justify-between text-base">
             <span class="text-surface-500">Moves: <strong class="text-surface-800 dark:text-surface-100">{{ moveCount }}</strong></span>
             @if (par) {
               <span class="text-surface-500">Par: <strong class="text-surface-800 dark:text-surface-100">{{ par }}</strong></span>
@@ -149,11 +150,11 @@ const BLOCK_COLORS = [
           <!-- Move controls -->
           <div class="flex flex-col items-center gap-1">
             @if (selectedBlockId) {
-              <p class="text-xs text-surface-400 m-0 mb-1">
+              <p class="text-sm text-surface-400 m-0 mb-1">
                 Moving: <strong class="text-surface-700 dark:text-surface-200 uppercase">{{ selectedBlockId }}</strong>
               </p>
             } @else {
-              <p class="text-xs text-surface-400 m-0 mb-1">Tap a block to select it</p>
+              <p class="text-sm text-surface-400 m-0 mb-1">Tap a block to select it</p>
             }
             <div class="grid grid-cols-3 gap-1 w-32">
               <div></div>
@@ -223,9 +224,6 @@ export class RushHourComponent implements OnInit {
         scoreLabel: `${moves} move${moves !== 1 ? 's' : ''}${par ? ` (par ${par})` : ''}`,
         shareText: this.buildShareText(moves, par),
       };
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
     }
 
     // Try Firestore, fall back to seeded hardcoded board

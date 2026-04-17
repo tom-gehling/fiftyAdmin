@@ -77,7 +77,7 @@ export class AppMenu implements OnInit {
 
         // Fifty+ section (all fiftyPlus/admin)
         const fiftyPlusMenu: MenuItem = {
-            label: 'Fifty+',
+            label: 'Fifty+ Quizzes',
             items: [
                 { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/archives'] },
                 { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
@@ -87,10 +87,24 @@ export class AppMenu implements OnInit {
             ]
         };
 
+        const gamesMenu: MenuItem = {
+            label: 'Daily Puzzles',
+            items: [
+                { label: 'Puzzle Hub', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games'] },
+                { label: 'Make10', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/make-ten'] },
+                { label: 'Word Chain', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/chain-game'] },
+                { label: 'Country Jumble', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/country-jumble'] },
+                { label: 'Movie Emoji', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/movie-emoji'] },
+                { label: 'Puzzle Slide', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/puzzle-slide'] },
+                { label: 'Tile Run', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/tile-run'] },
+            ]
+        };
+
         // Build model dynamically
         this.model = [homeMenu];
 
         if (isAdmin) this.model.push(adminMenu);
         if (isMember || isAdmin) this.model.push(fiftyPlusMenu);
+        if (isMember || isAdmin) this.model.push(gamesMenu);
     }
 }

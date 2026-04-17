@@ -190,16 +190,17 @@ function generatePuzzle(dateKey: string, seedSvc: DailySeedService): {
       [completionResult]="completionResult"
       (shareCopied)="onShareCopied()">
 
-      @if (!loading && !alreadyPlayed && !showCompletion) {
-        <div class="flex flex-col gap-4 items-center">
+      @if (!loading) {
+        <div class="flex flex-col gap-4 items-center"
+             [class]="(alreadyPlayed || showCompletion) ? 'pointer-events-none opacity-60 select-none' : ''">
 
-          <p class="text-surface-500 text-sm m-0 text-center">
+          <p class="text-surface-500 text-base m-0 text-center">
             Step through every tile <strong>exactly once</strong> to reach the
             <span class="text-orange-500 font-semibold">end</span>.
           </p>
 
           <!-- Stats -->
-          <div class="flex items-center justify-between w-full max-w-xs text-sm">
+          <div class="flex items-center justify-between w-full max-w-xs text-base">
             <span class="text-surface-500">
               Visited: <strong class="text-surface-800 dark:text-surface-100">{{ visitedCount }}/{{ totalTiles }}</strong>
             </span>
@@ -247,7 +248,7 @@ function generatePuzzle(dateKey: string, seedSvc: DailySeedService): {
 
           @if (isStuck) {
             <div class="text-center">
-              <p class="text-red-500 text-sm m-0 mb-2">
+              <p class="text-red-500 text-base m-0 mb-2">
                 <i class="pi pi-times-circle mr-1"></i>No valid moves left — restart and try a different path!
               </p>
             </div>
@@ -315,9 +316,6 @@ export class TileRunComponent implements OnInit {
         scoreLabel: `Completed${restarts ? ` — ${restarts} restart${restarts > 1 ? 's' : ''}` : ' first try!'}`,
         shareText: this.buildShareText(restarts ?? 0),
       };
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
     }
 
     const puzzle = generatePuzzle(this.dateKey, this.seedSvc);

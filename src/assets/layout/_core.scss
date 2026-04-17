@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
+
 html {
     height: 100%;
     font-size: 14px;
@@ -34,4 +36,24 @@ a {
   border-bottom: 2px solid var(--primary-color);
   transition: border-color var(--element-transition-duration);
   border-radius: var(--content-border-radius);
+}
+
+.game-title {
+  font-family: 'Nunito', 'Lato', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.game-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Nunito', monospace;
+  font-weight: 800;
+  border-radius: 6px;
+  user-select: none;
+  border: 2px solid;
+  transition: transform 0.1s, opacity 0.15s;
+
+  &:active { transform: scale(0.93); }
 }

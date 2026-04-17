@@ -27,47 +27,48 @@ import { NotifyService } from '@/shared/services/notify.service';
       [completionResult]="completionResult"
       (shareCopied)="onShareCopied()">
 
-      @if (!loading && !alreadyPlayed && !showCompletion) {
-        <div class="flex flex-col gap-4">
+      @if (!loading) {
+        <div class="flex flex-col gap-4"
+             [class]="(alreadyPlayed || showCompletion) ? 'pointer-events-none opacity-60 select-none' : ''">
 
           <!-- Goal display -->
-          <p-card>
-            <div class="flex items-center justify-between py-1">
-              <div class="text-center flex-1">
-                <p class="text-xs text-surface-400 mb-1 m-0">Start</p>
-                <span class="text-2xl font-bold tracking-widest uppercase text-primary">{{ pair?.start }}</span>
-              </div>
-              <div class="flex flex-col items-center gap-1 px-4">
-                <i class="pi pi-arrow-right text-surface-400"></i>
-                <span class="text-xs text-surface-400">{{ chain.length - 1 }} steps</span>
-                <span class="text-xs text-surface-300">(par {{ par }})</span>
-              </div>
-              <div class="text-center flex-1">
-                <p class="text-xs text-surface-400 mb-1 m-0">Goal</p>
-                <span class="text-2xl font-bold tracking-widest uppercase text-primary-700 dark:text-primary-300">{{ pair?.end }}</span>
-              </div>
+          <div class="flex items-center justify-between gap-4 rounded-2xl border-2 border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-5">
+            <div class="text-center flex-1">
+              <p class="text-sm text-surface-400 mb-2 m-0 uppercase tracking-widest">Start</p>
+              <span class="game-title text-3xl text-primary uppercase">{{ pair?.start }}</span>
             </div>
-          </p-card>
+            <div class="flex flex-col items-center gap-1 text-surface-400">
+              <span class="text-xl">→</span>
+              <span class="text-sm">{{ chain.length - 1 }} / {{ par }}</span>
+            </div>
+            <div class="text-center flex-1">
+              <p class="text-sm text-surface-400 mb-2 m-0 uppercase tracking-widest">Goal</p>
+              <span class="game-title text-3xl text-primary-700 dark:text-primary-300 uppercase">{{ pair?.end }}</span>
+            </div>
+          </div>
 
           <!-- Instructions -->
-          <p class="text-surface-500 text-sm m-0 text-center">
+          <p class="text-surface-500 text-base m-0 text-center">
             Change one letter at a time to reach the goal word. Each word must be valid.
           </p>
 
           <!-- Chain so far -->
-          <div class="flex flex-col gap-1">
+          <div class="flex flex-col gap-2">
             @for (word of chain; track $index) {
-              <div class="flex items-center gap-2 px-3 py-2 rounded-lg"
-                   [class]="$index === 0
-                     ? 'bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800'
-                     : 'bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700'">
-                <span class="text-surface-400 text-xs w-4 text-right">{{ $index }}</span>
-                <span class="font-mono font-bold tracking-widest uppercase"
-                      [class]="$index === 0 ? 'text-primary' : 'text-surface-800 dark:text-surface-100'">
-                  {{ word }}
-                </span>
+              <div class="flex items-center gap-3">
+                <span class="text-surface-400 text-sm w-5 text-right flex-shrink-0">{{ $index }}</span>
+                <div class="flex gap-1.5">
+                  @for (letter of word.split(''); track $index) {
+                    <div class="game-tile w-10 h-10 text-base"
+                         [class]="$index === 0
+                           ? 'bg-primary text-white border-primary-600'
+                           : 'bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 border-surface-300 dark:border-surface-600'">
+                      {{ letter.toUpperCase() }}
+                    </div>
+                  }
+                </div>
                 @if ($index === 0) {
-                  <span class="text-xs text-primary ml-auto">START</span>
+                  <span class="text-sm font-bold text-primary ml-1">START</span>
                 }
               </div>
             }
@@ -95,12 +96,12 @@ import { NotifyService } from '@/shared/services/notify.service';
               </button>
             </div>
             @if (showError) {
-              <p class="text-red-500 text-sm m-0">
+              <p class="text-red-500 text-base m-0">
                 <i class="pi pi-times-circle mr-1"></i>{{ errorMessage }}
               </p>
             }
             @if (diffWarning) {
-              <p class="text-yellow-600 dark:text-yellow-400 text-sm m-0">
+              <p class="text-yellow-600 dark:text-yellow-400 text-base m-0">
                 <i class="pi pi-exclamation-triangle mr-1"></i>{{ diffWarning }}
               </p>
             }
@@ -117,7 +118,7 @@ import { NotifyService } from '@/shared/services/notify.service';
               (click)="showHint()">
             </button>
           } @else {
-            <div class="text-xs text-yellow-700 dark:text-yellow-400 text-center">
+            <div class="text-sm text-yellow-700 dark:text-yellow-400 text-center">
               <i class="pi pi-lightbulb mr-1"></i>
               Try: <strong class="tracking-widest uppercase">{{ hintWord }}</strong>
             </div>
@@ -180,16 +181,13 @@ export class ChainGameComponent implements OnInit {
         usedHint: existing.usedHint,
         shareText: this.buildShareText(steps, existing.metadata?.['par'] as number, existing.usedHint),
       };
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
     }
 
     this.pair = await this.wordList.pickDailyPair(this.dateKey);
     this.wordLength = this.pair.start.length as 4 | 5;
-    this.par = this.pair.path.length - 1; // steps = words - 1
+    this.par = this.pair.path.length - 1;
     this.chain = [this.pair.start];
-    this.startTime = Date.now();
+    if (!this.alreadyPlayed) this.startTime = Date.now();
     this.loading = false;
     this.cdr.markForCheck();
   }

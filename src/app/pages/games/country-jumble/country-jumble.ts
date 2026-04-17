@@ -30,33 +30,35 @@ interface Country { name: string; continent: string; }
       [completionResult]="completionResult"
       (shareCopied)="onShareCopied()">
 
-      @if (!loading && !alreadyPlayed && !showCompletion) {
-        <div class="flex flex-col gap-4">
+      @if (!loading) {
+        <div class="flex flex-col gap-4"
+             [class]="(alreadyPlayed || showCompletion) ? 'pointer-events-none opacity-60 select-none' : ''">
 
           <!-- Streak banner -->
           @if (currentStreak > 1) {
-            <div class="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg">
-              <i class="pi pi-fire text-orange-500"></i>
-              <span class="text-sm text-orange-700 dark:text-orange-300 font-medium">
+            <div class="flex items-center gap-2 px-4 py-3 bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-800 rounded-2xl">
+              <span class="text-xl">🔥</span>
+              <span class="text-base font-bold text-orange-700 dark:text-orange-300">
                 {{ currentStreak }}-day streak! Keep it going.
               </span>
             </div>
           }
 
           <!-- Jumbled letters -->
-          <p-card>
-            <div class="flex flex-col items-center gap-4 py-2">
-              <p class="text-surface-500 text-sm m-0">Unscramble this country name</p>
-              <div class="flex flex-wrap justify-center gap-2">
-                @for (letter of jumbledLetters; track $index) {
-                  <div class="w-10 h-10 flex items-center justify-center rounded-lg
-                              bg-primary text-white font-bold text-lg shadow-sm">
+          <div class="rounded-2xl border-2 border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-6">
+            <p class="text-surface-500 text-base m-0 mb-4 text-center">Unscramble this country name</p>
+            <div class="flex flex-wrap justify-center gap-2">
+              @for (letter of jumbledLetters; track $index) {
+                @if (letter === ' ') {
+                  <div class="w-3"></div>
+                } @else {
+                  <div class="game-tile w-14 h-14 text-2xl bg-primary text-white border-primary-600 shadow-md select-none">
                     {{ letter }}
                   </div>
                 }
-              </div>
+              }
             </div>
-          </p-card>
+          </div>
 
           <!-- Hint -->
           @if (!hintShown) {
@@ -69,7 +71,7 @@ interface Country { name: string; continent: string; }
               (click)="showHint()">
             </button>
           } @else {
-            <div class="flex items-center justify-center gap-2 text-sm text-yellow-700 dark:text-yellow-400">
+            <div class="flex items-center justify-center gap-2 text-base text-yellow-700 dark:text-yellow-400">
               <i class="pi pi-lightbulb"></i>
               <span>This country is in <strong>{{ todayCountry?.continent }}</strong></span>
             </div>
@@ -77,7 +79,7 @@ interface Country { name: string; continent: string; }
 
           <!-- Answer input -->
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">Your answer</label>
+            <label class="text-base font-medium text-surface-700 dark:text-surface-200">Your answer</label>
             <div class="flex gap-2">
               <input pInputText
                 [(ngModel)]="userAnswer"
@@ -96,12 +98,12 @@ interface Country { name: string; continent: string; }
               </button>
             </div>
             @if (showError) {
-              <p class="text-red-500 text-sm m-0">
+              <p class="text-red-500 text-base m-0">
                 <i class="pi pi-times-circle mr-1"></i>Not quite! Try again.
               </p>
             }
             @if (attempts > 1) {
-              <p class="text-surface-400 text-xs m-0">{{ attempts }} attempts so far</p>
+              <p class="text-surface-400 text-sm m-0">{{ attempts }} attempts so far</p>
             }
           </div>
 
@@ -141,7 +143,6 @@ export class CountryJumbleComponent implements OnInit {
     const user = this.auth.user$.value;
     if (!user) return;
 
-    // Check if already played
     const existing = await this.puzzleResult.getTodayResult(user.uid, 'countryJumble', this.dateKey);
     if (existing?.status === 'completed') {
       this.alreadyPlayed = true;
@@ -150,20 +151,17 @@ export class CountryJumbleComponent implements OnInit {
         usedHint: existing.usedHint,
         shareText: this.buildShareText(existing.score, existing.usedHint),
       };
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
     }
 
-    // Load streak
-    const stats = await this.puzzleResult.getUserGameStats(user.uid);
-    this.currentStreak = stats?.currentStreak ?? 0;
+    if (!this.alreadyPlayed) {
+      const stats = await this.puzzleResult.getUserGameStats(user.uid);
+      this.currentStreak = stats?.currentStreak ?? 0;
+    }
 
-    // Load countries and pick today's
     const countries = await firstValueFrom(this.http.get<Country[]>('/assets/games/countries.json'));
     this.todayCountry = this.seed.pickFromArray(countries, `countryJumble_${this.dateKey}`);
     this.jumbledLetters = this.buildJumble(this.todayCountry.name);
-    this.startTime = Date.now();
+    if (!this.alreadyPlayed) this.startTime = Date.now();
     this.loading = false;
     this.cdr.markForCheck();
   }

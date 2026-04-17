@@ -26,64 +26,73 @@ interface GameCard {
   imports: [CommonModule, RouterModule, CardModule, TagModule, ButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-col gap-6 max-w-3xl mx-auto">
+    <div class="flex flex-col gap-6 max-w-2xl mx-auto py-2">
 
       <!-- Header -->
-      <div>
-        <h2 class="text-3xl font-bold text-surface-900 dark:text-surface-0 m-0">Daily Games</h2>
-        <p class="text-surface-500 mt-1 mb-0">{{ todayLabel }} — New puzzles each day</p>
+      <div class="text-center pb-5 border-b border-surface-200 dark:border-surface-700">
+        <div class="flex items-center justify-center gap-2 mb-2">
+          <span class="text-3xl">🎮</span>
+          <h1 class="game-title text-3xl text-surface-900 dark:text-surface-0 m-0">Daily Games</h1>
+        </div>
+        <p class="text-sm text-surface-400 m-0 uppercase tracking-widest">{{ todayLabel }}</p>
       </div>
 
-      <!-- Progress bar -->
+      <!-- Progress pills -->
       @if (!loading) {
-        <div class="flex items-center gap-3">
-          <div class="flex gap-1.5 flex-1">
+        <div class="flex items-center justify-center gap-3">
+          <div class="flex gap-2">
             @for (card of games; track card.type) {
               @if (card.available) {
-                <div class="h-2 flex-1 rounded-full transition-colors"
-                     [class]="card.played ? 'bg-green-400' : 'bg-surface-200 dark:bg-surface-700'">
+                <div class="h-3 w-10 rounded-full transition-all duration-300"
+                     [style]="card.played ? 'background-color: ' + gameColor(card.type) : ''"
+                     [class]="card.played ? '' : 'bg-surface-200 dark:bg-surface-700'">
                 </div>
               }
             }
           </div>
-          <span class="text-sm text-surface-400">{{ playedCount }}/{{ availableCount }} done</span>
+          <span class="text-base font-semibold text-surface-500">{{ playedCount }}/{{ availableCount }}</span>
         </div>
       }
 
       <!-- Game cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         @for (game of games; track game.type) {
-          <div
-            class="relative rounded-xl border transition-all overflow-hidden"
-            [class]="!game.played
-              ? 'border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 hover:border-primary hover:shadow-md cursor-pointer'
-              : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20'">
+          <a [routerLink]="game.route" class="block no-underline group">
+            <div class="rounded-2xl border-2 overflow-hidden transition-all duration-200"
+                 [class]="game.played
+                   ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/20'
+                   : 'border-surface-200 dark:border-surface-700 bg-surface-0 dark:bg-surface-900 group-hover:shadow-lg group-hover:-translate-y-0.5'">
 
-            @if (game.played) {
-              <div class="absolute top-3 right-3">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
-                  <i class="pi pi-check text-xs"></i> Done
-                </span>
-              </div>
-            }
+              <!-- Color accent stripe -->
+              <div class="h-1.5" [style]="'background-color: ' + gameColor(game.type)"></div>
 
-            <a [routerLink]="game.route"
-               class="block p-5 no-underline">
-              <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                     [class]="game.played ? 'bg-green-100 dark:bg-green-900/40' : 'bg-primary-50 dark:bg-primary-950/30'">
-                  <i [class]="game.icon + (game.played ? ' text-green-500' : ' text-primary')"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-semibold text-surface-800 dark:text-surface-100 m-0 mb-1">{{ game.title }}</h3>
-                  <p class="text-sm text-surface-500 m-0 leading-snug">{{ game.description }}</p>
-                  @if (game.played && game.scoreLabel) {
-                    <p class="text-xs text-green-600 dark:text-green-400 mt-1 mb-0">{{ game.scoreLabel }}</p>
+              <div class="p-5">
+                <!-- Emoji + completed badge -->
+                <div class="flex items-start justify-between mb-3">
+                  <span class="text-4xl">{{ gameEmoji(game.type) }}</span>
+                  @if (game.played) {
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-bold bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
+                      ✓ Done
+                    </span>
                   }
                 </div>
+
+                <h3 class="game-title text-xl text-surface-800 dark:text-surface-100 m-0 mb-1">{{ game.title }}</h3>
+                <p class="text-base text-surface-500 m-0 leading-snug">{{ game.description }}</p>
+
+                @if (game.played && game.scoreLabel) {
+                  <p class="text-sm font-semibold mt-3 mb-0" [style]="'color: ' + gameColor(game.type)">
+                    {{ game.scoreLabel }}
+                  </p>
+                }
+                @if (!game.played) {
+                  <p class="text-base font-bold mt-3 mb-0 transition-colors" [style]="'color: ' + gameColor(game.type)">
+                    Play →
+                  </p>
+                }
               </div>
-            </a>
-          </div>
+            </div>
+          </a>
         }
       </div>
 
@@ -108,6 +117,22 @@ export class GamesHubComponent implements OnInit {
 
   get todayLabel(): string {
     return new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  gameEmoji(type: GameType): string {
+    const map: Record<GameType, string> = {
+      makeTen: '🔢', chainGame: '🔗', countryJumble: '🌍',
+      movieEmoji: '🎬', rushHour: '🧩', tileRun: '🏃',
+    };
+    return map[type] ?? '🎮';
+  }
+
+  gameColor(type: GameType): string {
+    const map: Record<GameType, string> = {
+      makeTen: '#f59e0b', chainGame: '#6366f1', countryJumble: '#10b981',
+      movieEmoji: '#ef4444', rushHour: '#8b5cf6', tileRun: '#3b82f6',
+    };
+    return map[type] ?? '#677c73';
   }
 
   get playedCount(): number {

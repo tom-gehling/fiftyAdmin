@@ -54,43 +54,43 @@ const FALLBACK_PUZZLES: Omit<Puzzle, 'id' | 'gameType' | 'dateKey' | 'isActive' 
       [completionResult]="completionResult"
       (shareCopied)="onShareCopied()">
 
-      @if (!loading && !alreadyPlayed && !showCompletion) {
-        <div class="flex flex-col gap-5">
+      @if (!loading) {
+        <div class="flex flex-col gap-5"
+             [class]="(alreadyPlayed || showCompletion) ? 'pointer-events-none opacity-60 select-none' : ''">
 
-          <p class="text-surface-500 text-sm m-0 text-center">
+          <p class="text-surface-500 text-base m-0 text-center">
             Guess the movie from the emojis below
           </p>
 
           <!-- Emoji display -->
-          <p-card>
-            <div class="flex flex-col items-center gap-4 py-4">
-              <div class="flex justify-center gap-4">
-                @for (emoji of visibleEmojis; track $index) {
-                  <span class="text-6xl select-none">{{ emoji }}</span>
-                }
-              </div>
-              @if (puzzle && puzzle.emojis && puzzle.emojis.length > 2 && !hintShown) {
-                <button pButton
-                  label="Show hint emoji"
-                  icon="pi pi-lightbulb"
-                  severity="secondary"
-                  size="small"
-                  (click)="showHint()">
-                </button>
-              }
-              @if (score < 100) {
-                <div class="flex gap-2">
-                  @for (star of scoreStars; track $index) {
-                    <i class="pi text-sm" [class]="star ? 'pi-star-fill text-yellow-400' : 'pi-star text-surface-300'"></i>
-                  }
-                </div>
+          <div class="rounded-2xl border-2 border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-8 text-center">
+            <div class="flex justify-center gap-6 flex-wrap">
+              @for (emoji of visibleEmojis; track $index) {
+                <span class="text-7xl select-none">{{ emoji }}</span>
               }
             </div>
-          </p-card>
+            @if (score < 100) {
+              <div class="flex justify-center gap-2 mt-5">
+                @for (star of scoreStars; track $index) {
+                  <span class="text-xl">{{ star ? '⭐' : '☆' }}</span>
+                }
+              </div>
+            }
+          </div>
+          @if (puzzle && puzzle.emojis && puzzle.emojis.length > 2 && !hintShown) {
+            <button pButton
+              label="Show hint emoji"
+              icon="pi pi-lightbulb"
+              severity="secondary"
+              size="small"
+              class="self-center"
+              (click)="showHint()">
+            </button>
+          }
 
           <!-- Answer input -->
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-medium text-surface-700 dark:text-surface-200">Your answer</label>
+            <label class="text-base font-medium text-surface-700 dark:text-surface-200">Your answer</label>
             <div class="flex gap-2">
               <input pInputText
                 [(ngModel)]="userAnswer"
@@ -108,12 +108,12 @@ const FALLBACK_PUZZLES: Omit<Puzzle, 'id' | 'gameType' | 'dateKey' | 'isActive' 
               </button>
             </div>
             @if (showError) {
-              <p class="text-red-500 text-sm m-0">
+              <p class="text-red-500 text-base m-0">
                 <i class="pi pi-times-circle mr-1"></i>Not quite! Try again.
               </p>
             }
             @if (wrongAttempts > 0) {
-              <p class="text-surface-400 text-xs m-0">{{ wrongAttempts }} wrong attempt{{ wrongAttempts > 1 ? 's' : '' }}</p>
+              <p class="text-surface-400 text-sm m-0">{{ wrongAttempts }} wrong attempt{{ wrongAttempts > 1 ? 's' : '' }}</p>
             }
           </div>
 
@@ -166,12 +166,8 @@ export class MovieEmojiComponent implements OnInit {
         usedHint: existing.usedHint,
         shareText: this.buildShareText(existing.score ?? 0, existing.usedHint),
       };
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
     }
 
-    // Try Firestore puzzle first, fall back to seeded hardcoded
     const firestorePuzzle = await firstValueFrom(this.puzzleSvc.getTodayPuzzle('movieEmoji', this.dateKey));
     if (firestorePuzzle) {
       this.puzzle = firestorePuzzle;
