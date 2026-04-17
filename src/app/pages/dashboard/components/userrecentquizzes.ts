@@ -72,6 +72,7 @@ export class RecentQuizzesWidget implements OnInit {
 
     this.auth.user$.subscribe(async user => {
       if (!user?.uid) {
+        this.recentQuizzes = [];
         this.loading = false;
         return;
       }
@@ -87,7 +88,7 @@ export class RecentQuizzesWidget implements OnInit {
 
       // Filter completed and sort by completion date descending
       const sortedResults = results
-        .filter(r => r.status === 'completed')
+        .filter(r => r.status === 'completed' && !r.userHidden)
         .sort((a, b) => {
           const getTime = (d: any) => {
             if (!d) return 0;
@@ -107,7 +108,7 @@ export class RecentQuizzesWidget implements OnInit {
           this.quizzesService.getQuizByQuizId(r.quizId.toString())
         );
 
-        const totalQuestions = r.totalQuestions || 1;
+        const totalQuestions = r.total || quiz?.questions?.length || 0;
         const score = r.score ?? 0;
         const completionPercentage = Math.min(100, Math.round((score / totalQuestions) * 100));
 

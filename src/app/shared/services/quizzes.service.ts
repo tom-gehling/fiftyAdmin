@@ -183,7 +183,7 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
     map(quizzes => {
       const list = quizzes.filter(q => q.quizType === QuizTypeEnum.Collab);
       return getHeader
-        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme }))
+        ? list.map(q => ({ quizId: q.quizId, quizTitle: q.quizTitle, theme: q.theme, collabId: q.collabId }))
         : list;
     })
   );

@@ -22,9 +22,10 @@ export interface QuizResult {
     completedAt?: Date;
     answers: QuizAnswer[];
     score?: number;              // count of correct answers, set when completed
-    totalQuestions: number;      // taken from quiz.questions.length
+    total: number;               // total number of questions in the quiz
     ip?: string;                 // IP address of the user
     geo?: GeoLocation;           // Geolocation data from IP lookup
     retro?: boolean;             // true if manually recorded (backwards compatibility)
     taggedUsers?: TaggedUser[];  // users who took the quiz together
+    userHidden?: boolean;        // true when user has opted out of stats tracking; result still stored for admin use
 }

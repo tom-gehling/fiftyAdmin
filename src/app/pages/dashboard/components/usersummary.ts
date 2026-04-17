@@ -86,9 +86,21 @@ export class UserSummaryWidget implements OnInit {
   following = 0;
   weeklyStreak = 0;
 
+  private resetState() {
+    this.displayName = null;
+    this.completedCount = 0;
+    this.correctRate = 0;
+    this.followers = 0;
+    this.following = 0;
+    this.weeklyStreak = 0;
+  }
+
   async ngOnInit() {
     onAuthStateChanged(this.auth, async user => {
-      if (!user) return;
+      if (!user) {
+        this.resetState();
+        return;
+      }
 
       // Display name
       this.displayName = user.displayName || user.email?.split('@')[0] || 'User';
@@ -108,7 +120,7 @@ export class UserSummaryWidget implements OnInit {
       // Correct rate as percentage (score out of totalQuestions)
       if (completed.length) {
         const totalCorrect = completed.reduce((sum, r) => sum + (r.score ?? 0), 0);
-        const totalQuestions = completed.reduce((sum, r) => sum + (r.totalQuestions ?? 0), 0);
+        const totalQuestions = completed.reduce((sum, r) => sum + (r.total ?? 0), 0);
         this.correctRate = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0;
       }
 

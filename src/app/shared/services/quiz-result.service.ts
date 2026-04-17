@@ -20,14 +20,15 @@ export class QuizResultsService {
   private collectionName = 'quizResults'; // top-level collection
 
   /** Create a new result (in-progress) */
-  async createResult(quizId: string, userId: string, totalQuestions: number): Promise<string> {
+  async createResult(quizId: string, userId: string, totalQuestions: number, userHidden?: boolean): Promise<string> {
     const result: QuizResult = {
       quizId,
       userId,
       status: 'in_progress',
       startedAt: new Date(),
-      totalQuestions,
+      total: totalQuestions,
       answers: [],
+      ...(userHidden ? { userHidden: true } : {}),
     };
 
     const resultsCollection = collection(this.firestore, this.collectionName);
@@ -109,7 +110,7 @@ export class QuizResultsService {
       status: 'completed',
       startedAt: new Date(),
       completedAt: new Date(),
-      totalQuestions,
+      total: totalQuestions,
       score,
       answers: [],
       retro: true,
@@ -136,8 +137,8 @@ export class QuizResultsService {
     const snapshot = await firstValueFrom(collectionData(q, { idField: 'resultId' }));
     const results = snapshot as QuizResult[];
 
-    // Filter for quizId <= 1000 in memory
-    const filteredResults = results.filter(r => Number(r.quizId) <= 1000);
+    // Filter for quizId <= 1000 in memory, and exclude user-hidden results
+    const filteredResults = results.filter(r => Number(r.quizId) <= 1000 && !r.userHidden);
 
     // Convert to { quizId, score }
     const scores = filteredResults.map(r => ({

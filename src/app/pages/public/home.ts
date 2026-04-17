@@ -32,6 +32,7 @@ const LOGOS = [
   'SA.png', 'Yearl-2023.png', 'fiftyplus.png', '2010s-clear-1.png',
   'HOTTEST-20 (1).png', 'swifty (1).png'
 ];
+import { AuthModalService } from '@/shared/services/auth-modal.service';
 
 @Component({
   selector: 'app-home',
@@ -120,6 +121,7 @@ const LOGOS = [
 
       </div>
     </div>
+
   `,
   styles: [`
     /* ─── Host — tall scroll container ─────────────────────────────── */

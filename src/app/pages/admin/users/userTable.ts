@@ -5,10 +5,8 @@ import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { firstValueFrom } from 'rxjs';
 
 import { UserService } from '@/shared/services/user.service';
-import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { UserDetailComponent } from './userDetail';
 
 interface UserRow {
@@ -17,11 +15,10 @@ interface UserRow {
   email: string;
   lastLoginAt: any;
   membershipType: string;
-  completedQuizzes: number;
   raw: any;
 }
 
-type SortKey = 'displayName' | 'membershipType' | 'lastLoginAt' | 'completedQuizzes';
+type SortKey = 'displayName' | 'membershipType' | 'lastLoginAt';
 
 @Component({
   selector: 'app-user-table',
@@ -96,7 +93,7 @@ type SortKey = 'displayName' | 'membershipType' | 'lastLoginAt' | 'completedQuiz
               <td class="p-3">
                 <div class="flex flex-col min-w-0">
                   <span class="font-semibold text-surface-900 dark:text-surface-100 truncate">
-                    {{ user.displayName || 'Unknown' }}
+                    {{ user.displayName }}
                   </span>
                   <span class="text-sm text-gray-500 truncate">{{ user.email || '' }}</span>
                 </div>
@@ -145,7 +142,6 @@ export class UserTableComponent implements OnInit {
 
   constructor(
     private userService: UserService,
-    private quizResultsService: QuizResultsService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -157,26 +153,14 @@ export class UserTableComponent implements OnInit {
     this.loading = true;
     const allUsers = await this.userService.getAllUsers();
 
-    const rows: UserRow[] = [];
-    for (const u of allUsers) {
-      let completedQuizzes = 0;
-      try {
-        const results = await firstValueFrom(this.quizResultsService.getUserResults(u.uid));
-        completedQuizzes = results.filter(r => r.status === 'completed').length;
-      } catch {}
-
-      const membershipType = u.isAdmin ? 'Admin' : u.isMember ? 'Member' : 'Guest';
-
-      rows.push({
-        uid: u.uid,
-        displayName: u.displayName ?? '',
-        email: u.email ?? '',
-        lastLoginAt: u.lastLoginAt ?? u.createdAt,
-        membershipType,
-        completedQuizzes,
-        raw: u
-      });
-    }
+    const rows: UserRow[] = allUsers.map(u => ({
+      uid: u.uid,
+      displayName: u.displayName || u.email || '',
+      email: u.email ?? '',
+      lastLoginAt: u.lastLoginAt ?? u.createdAt,
+      membershipType: u.isAdmin ? 'Admin' : u.isMember ? 'Member' : 'Guest',
+      raw: u
+    }));
 
     this.users = rows;
     this.applyFilter();

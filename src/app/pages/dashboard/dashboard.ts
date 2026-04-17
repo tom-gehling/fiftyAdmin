@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { NotificationsWidget } from './components/notificationswidget';
 import { StatsWidget } from './components/statswidget';
 import { RecentSalesWidget } from './components/recentsaleswidget';
@@ -47,11 +48,15 @@ import { VenueCalendarComponent } from "./components/venuecalendar";
         </div>
     `
 })
-export class Dashboard {
+export class Dashboard implements OnDestroy {
     membershipTier: MembershipTier = MembershipTier.FiftyGold;
     MembershipTier = MembershipTier;
+    private sub = new Subscription();
     constructor(public auth: AuthService, private membershipService: MembershipService) {}
     ngOnInit() {
-        this.membershipService.membership$.subscribe(tier => this.membershipTier = tier);
+        this.sub.add(this.membershipService.membership$.subscribe(tier => this.membershipTier = tier));
+    }
+    ngOnDestroy() {
+        this.sub.unsubscribe();
     }
 }

@@ -1,6 +1,6 @@
 import { Component, Renderer2, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, ActivatedRouteSnapshot, NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { AppTopbar } from './app.topbar';
 import { AppSidebar } from './app.sidebar';
@@ -12,7 +12,7 @@ import { LayoutService } from '../service/layout.service';
     standalone: true,
     imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter],
     template: `<div class="layout-wrapper" [ngClass]="containerClass">
-        <app-topbar></app-topbar>
+        <app-topbar [bgColor]="topbarColor"></app-topbar>
         <app-sidebar></app-sidebar>
         <div class="layout-main-container">
             <div class="layout-main">
@@ -28,6 +28,8 @@ export class AppLayout {
 
     menuOutsideClickListener: any;
 
+    topbarColor = 'var(--fifty-green)';
+
     @ViewChild(AppSidebar) appSidebar!: AppSidebar;
 
     @ViewChild(AppTopbar) appTopBar!: AppTopbar;
@@ -35,7 +37,8 @@ export class AppLayout {
     constructor(
         public layoutService: LayoutService,
         public renderer: Renderer2,
-        public router: Router
+        public router: Router,
+        private activatedRoute: ActivatedRoute
     ) {
         this.overlayMenuOpenSubscription = this.layoutService.overlayOpen$.subscribe(() => {
             if (!this.menuOutsideClickListener) {
@@ -53,7 +56,15 @@ export class AppLayout {
 
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
             this.hideMenu();
+            this.topbarColor = this.resolveTopbarColor(this.activatedRoute.snapshot);
         });
+    }
+
+    private resolveTopbarColor(snapshot: ActivatedRouteSnapshot): string {
+        let route = snapshot;
+        while (route.firstChild) route = route.firstChild;
+        const token = route.data['topbarColor'] ?? route.parent?.data['topbarColor'];
+        return token === 'black' ? 'var(--p-surface-900)' : 'var(--fifty-green)';
     }
 
     isOutsideClicked(event: MouseEvent) {

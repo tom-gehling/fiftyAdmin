@@ -16,6 +16,8 @@ import { MembershipService, MembershipTier } from '@/shared/services/membership.
 import { QuizTheme } from '@/shared/models/quiz.model';
 import { DialogService, DynamicDialogModule } from 'primeng/dynamicdialog';
 import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.component';
+import { CollaboratorsService } from '@/shared/services/collaborators.service';
+import { Collaborator } from '@/shared/models/collaborator.model';
 
 @Component({
   selector: 'app-quiz-collection',
@@ -24,49 +26,71 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
   providers: [DialogService],
   template: `
     <p-card class="flex flex-col h-full">
-      <div class="flex items-center justify-center mb-4 relative">
-      <p-button 
-        icon="pi pi-chevron-right" 
-        (onClick)="drawerVisible = true" 
-        class="p-button-text p-button-sm absolute left-0">
-      </p-button>
-      <h2 class="text-xxl font-semibold">{{ title }}</h2>
-    </div>
-
       <p-drawer [(visible)]="drawerVisible" position="left" [style]="{width: '300px'}">
         <h3>{{ title }}</h3>
         <ng-container *ngIf="quizHeaders.length > 0; else noQuizzes">
-          <ul class="quiz-list">
-            <li
-              *ngFor="let quiz of quizHeaders; let i = index"
-              [class.active]="isQuizSelected(quiz.quizId)"
-              (click)="selectQuiz(quizIdToString(quiz.quizId))"
-            >
-              <span>
-                {{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}
-                <span *ngIf="completedQuizIds.has(quiz.quizId)" class="text-green-600 ml-2">✅</span>
-              </span>
-              <div class="flex items-center gap-1">
-                <i
-                  class="pi pi-pencil text-sm cursor-pointer hover:opacity-70"
-                  title="Manually record score"
-                  (click)="openRetroModal(quiz, $event)">
-                </i>
-                <i
-                  *ngIf="isLocked(i)"
-                  class="pi pi-lock text-gray-500"
-                  title="Locked for your membership tier">
-                </i>
-              </div>
-            </li>
-          </ul>
+
+          <!-- Collaborations: grouped by collaborator -->
+          <ng-container *ngIf="quizType === 'collaborations'; else flatDrawer">
+            <ng-container *ngFor="let group of collabGroups">
+              <div class="collab-heading">{{ group.collabName }}</div>
+              <ul class="quiz-list">
+                <li
+                  *ngFor="let quiz of group.quizzes"
+                  [class.active]="isQuizSelected(quiz.quizId)"
+                  (click)="selectQuiz(quizIdToString(quiz.quizId))"
+                >
+                  <span>
+                    {{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}
+                    <span *ngIf="completedQuizIds.has(quiz.quizId)" class="text-green-600 ml-2">✅</span>
+                  </span>
+                  <div class="flex items-center gap-1">
+                    <i class="pi pi-pencil text-sm cursor-pointer hover:opacity-70"
+                       title="Manually record score"
+                       (click)="openRetroModal(quiz, $event)"></i>
+                    <i *ngIf="isLocked(0)" class="pi pi-lock text-gray-500"
+                       title="Locked for your membership tier"></i>
+                  </div>
+                </li>
+              </ul>
+            </ng-container>
+          </ng-container>
+
+          <!-- All other types: flat list -->
+          <ng-template #flatDrawer>
+            <ul class="quiz-list">
+              <li
+                *ngFor="let quiz of quizHeaders; let i = index"
+                [class.active]="isQuizSelected(quiz.quizId)"
+                (click)="selectQuiz(quizIdToString(quiz.quizId))"
+              >
+                <span>
+                  {{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}
+                  <span *ngIf="completedQuizIds.has(quiz.quizId)" class="text-green-600 ml-2">✅</span>
+                </span>
+                <div class="flex items-center gap-1">
+                  <i class="pi pi-pencil text-sm cursor-pointer hover:opacity-70"
+                     title="Manually record score"
+                     (click)="openRetroModal(quiz, $event)"></i>
+                  <i *ngIf="isLocked(i)" class="pi pi-lock text-gray-500"
+                     title="Locked for your membership tier"></i>
+                </div>
+              </li>
+            </ul>
+          </ng-template>
+
         </ng-container>
         <ng-template #noQuizzes>
           <p class="text-gray-500 mt-4">Sorry, no quizzes available currently!</p>
         </ng-template>
       </p-drawer>
 
-      <div class="mt-10">
+      <div class="relative">
+        <p-button
+          icon="pi pi-chevron-right"
+          (onClick)="drawerVisible = true"
+          class="p-button-text p-button-sm absolute top-2.5 left-2.5 z-10">
+        </p-button>
         <ng-container *ngIf="selectedQuizId; else noQuizSelected">
           <app-quiz-display [quizId]="selectedQuizId" [locked]="selectedQuizLocked"></app-quiz-display>
         </ng-container>
@@ -111,6 +135,19 @@ import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.com
     .quiz-list li:hover:not(.active) {
       opacity: 0.8;
     }
+
+    .collab-heading {
+      padding: 10px 10px 4px;
+      margin-top: 12px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4cfbab;
+      opacity: 0.75;
+      border-bottom: 1px solid rgba(76, 251, 171, 0.2);
+      margin-bottom: 4px;
+    }
   `]
 })
 export class QuizCollectionComponent implements OnInit, OnChanges {
@@ -119,9 +156,23 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
   @Input() selectedQuizId?: string;
   selectedQuizLocked = false;
   drawerVisible = false;
-  quizHeaders: { quizId: string; quizTitle?: string; theme?: QuizTheme }[] = [];
+  quizHeaders: { quizId: string; quizTitle?: string; theme?: QuizTheme; collabId?: string }[] = [];
   completedQuizIds = new Set<string>();
   membershipTier: MembershipTier = MembershipTier.Fifty;
+  collaborators: Collaborator[] = [];
+
+  get collabGroups(): { collabId: string; collabName: string; quizzes: { quizId: string; quizTitle?: string; theme?: QuizTheme; collabId?: string }[] }[] {
+    const map = new Map<string, { collabId: string; collabName: string; quizzes: { quizId: string; quizTitle?: string; theme?: QuizTheme; collabId?: string }[] }>();
+    for (const quiz of this.quizHeaders) {
+      const key = quiz.collabId || '__none__';
+      if (!map.has(key)) {
+        const collab = this.collaborators.find(c => c.id === quiz.collabId);
+        map.set(key, { collabId: key, collabName: collab?.name || 'Unknown', quizzes: [] });
+      }
+      map.get(key)!.quizzes.push(quiz);
+    }
+    return Array.from(map.values()).sort((a, b) => a.collabName.localeCompare(b.collabName));
+  }
 
   constructor(
     private auth: Auth,
@@ -130,11 +181,15 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
     private quizResultsService: QuizResultsService,
     private membershipService: MembershipService,
     private dialogService: DialogService,
-    private router: Router
+    private router: Router,
+    private collaboratorsService: CollaboratorsService
   ) {}
 
   async ngOnInit() {
     this.membershipService.membership$.subscribe(tier => this.membershipTier = tier);
+    if (this.quizType === 'collaborations') {
+      this.collaboratorsService.getAll().subscribe(c => this.collaborators = c);
+    }
     // Step 1: Get the current user
     onAuthStateChanged(this.auth, async user => {
       if (!user) return;
