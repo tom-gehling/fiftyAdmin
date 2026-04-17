@@ -136,6 +136,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Contact form submissions — written only by Cloud Functions (admin SDK bypasses rules), admin read/update
+    match /contactFormSubmissions/{id} {
+      allow create: if false;
+      allow read, update: if isAdmin();
+      allow delete: if false;
+    }
+
     // Default deny everything else
     match /{document=**} {
       allow read, write: if false;

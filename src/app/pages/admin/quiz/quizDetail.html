@@ -131,54 +131,67 @@
 
                 <!-- Color Scheme Tab -->
                 <p-tabpanel value="1">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
-                        <div class="flex flex-col items-center gap-3">
-                            <label class="font-medium text-center">Font Color</label>
-                            <p-colorPicker
-                                [ngModel]="toPickerHex(form.get('theme.fontColor')?.value)"
-                                (ngModelChange)="form.get('theme.fontColor')?.setValue(fromPickerHex($event))"
-                                [ngModelOptions]="{standalone: true}"
-                                [inline]="true"></p-colorPicker>
-                            <div class="flex items-center gap-2 w-full">
-                                <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
-                                     [style.background-color]="form.get('theme.fontColor')?.value"></div>
-                                <input pInputText type="text" class="flex-1 font-mono text-sm"
-                                    [value]="form.get('theme.fontColor')?.value || ''"
-                                    (input)="form.get('theme.fontColor')?.setValue(fromPickerHex($any($event.target).value))"
-                                    placeholder="#fbe2df" />
+                    <div class="flex gap-8 pt-4 items-start">
+                        <!-- Left: color pickers stacked vertically -->
+                        <div class="flex flex-col gap-8 w-1/2">
+                            <div class="flex flex-col items-center gap-3">
+                                <label class="font-medium text-center">Font Color</label>
+                                <div class="w-fit flex flex-col gap-3">
+                                    <p-colorPicker
+                                        [ngModel]="toPickerHex(form.get('theme.fontColor')?.value)"
+                                        (ngModelChange)="form.get('theme.fontColor')?.setValue(fromPickerHex($event))"
+                                        [ngModelOptions]="{standalone: true}"
+                                        [inline]="true"></p-colorPicker>
+                                    <div class="flex items-center gap-2 w-full">
+                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
+                                             [style.background-color]="form.get('theme.fontColor')?.value"></div>
+                                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm"
+                                            [value]="form.get('theme.fontColor')?.value || ''"
+                                            (input)="form.get('theme.fontColor')?.setValue(fromPickerHex($any($event.target).value))"
+                                            placeholder="#fbe2df" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center gap-3">
+                                <label class="font-medium text-center">Background Color</label>
+                                <div class="w-fit flex flex-col gap-3">
+                                    <p-colorPicker
+                                        [ngModel]="toPickerHex(form.get('theme.backgroundColor')?.value)"
+                                        (ngModelChange)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($event))"
+                                        [ngModelOptions]="{standalone: true}"
+                                        [inline]="true"></p-colorPicker>
+                                    <div class="flex items-center gap-2 w-full">
+                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
+                                             [style.background-color]="form.get('theme.backgroundColor')?.value"></div>
+                                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm"
+                                            [value]="form.get('theme.backgroundColor')?.value || ''"
+                                            (input)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($any($event.target).value))"
+                                            placeholder="#677c73" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center gap-3">
+                                <label class="font-medium text-center">Tertiary Color</label>
+                                <div class="w-fit flex flex-col gap-3">
+                                    <p-colorPicker
+                                        [ngModel]="toPickerHex(form.get('theme.tertiaryColor')?.value)"
+                                        (ngModelChange)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($event))"
+                                        [ngModelOptions]="{standalone: true}"
+                                        [inline]="true"></p-colorPicker>
+                                    <div class="flex items-center gap-2 w-full">
+                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
+                                             [style.background-color]="form.get('theme.tertiaryColor')?.value"></div>
+                                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm"
+                                            [value]="form.get('theme.tertiaryColor')?.value || ''"
+                                            (input)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($any($event.target).value))"
+                                            placeholder="#4cfbab" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex flex-col items-center gap-3">
-                            <label class="font-medium text-center">Background Color</label>
-                            <p-colorPicker
-                                [ngModel]="toPickerHex(form.get('theme.backgroundColor')?.value)"
-                                (ngModelChange)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($event))"
-                                [ngModelOptions]="{standalone: true}"
-                                [inline]="true"></p-colorPicker>
-                            <div class="flex items-center gap-2 w-full">
-                                <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
-                                     [style.background-color]="form.get('theme.backgroundColor')?.value"></div>
-                                <input pInputText type="text" class="flex-1 font-mono text-sm"
-                                    [value]="form.get('theme.backgroundColor')?.value || ''"
-                                    (input)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($any($event.target).value))"
-                                    placeholder="#677c73" />
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center gap-3">
-                            <label class="font-medium text-center">Tertiary Color</label>
-                            <p-colorPicker
-                                [ngModel]="toPickerHex(form.get('theme.tertiaryColor')?.value)"
-                                (ngModelChange)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($event))"
-                                [ngModelOptions]="{standalone: true}"
-                                [inline]="true"></p-colorPicker>
-                            <div class="flex items-center gap-2 w-full">
-                                <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
-                                     [style.background-color]="form.get('theme.tertiaryColor')?.value"></div>
-                                <input pInputText type="text" class="flex-1 font-mono text-sm"
-                                    [value]="form.get('theme.tertiaryColor')?.value || ''"
-                                    (input)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($any($event.target).value))"
-                                    placeholder="#4cfbab" />
-                            </div>
+                        <!-- Right: live quiz preview, scrollable but contained -->
+                        <div class="w-1/2 overflow-y-auto rounded-xl max-h-[calc(100vh-250px)]">
+                            <app-quiz-display *ngIf="themePreviewQuiz" [quiz]="themePreviewQuiz" [previewMode]="true" [locked]="true" />
                         </div>
                     </div>
                 </p-tabpanel>

@@ -72,6 +72,7 @@ export class RecentQuizzesWidget implements OnInit {
 
     this.auth.user$.subscribe(async user => {
       if (!user?.uid) {
+        this.recentQuizzes = [];
         this.loading = false;
         return;
       }

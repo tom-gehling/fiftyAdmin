@@ -35,24 +35,24 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     <!-- Quiz Container -->
     <div *ngIf="!loading && quiz" class="quizContainer">
 
-      <!-- Locked message -->
-      <ng-container *ngIf="locked">
-        <p class="text-center text-gray-300 text-lg font-bold mb-4">
-          Upgrade to Fifty+ and access the full quiz!
-        </p>
-      </ng-container>
-
       <!-- Quiz Logo -->
       <div *ngIf="quiz.quizType === QuizTypeEnum.Weekly || quiz.imageUrl" class="flex justify-center mb-4">
         <img
           [src]="quiz.quizType === QuizTypeEnum.Weekly ? 'assets/logos/logo.png' : quiz.imageUrl"
           alt="Quiz logo"
-          [class]="logoIsSquare ? 'w-full sm:w-[50%] object-contain' : 'w-full sm:w-[70%] object-contain'"
+          [class]="logoIsSquare ? 'w-full sm:w-[50%] object-contain' : 'w-[90%] sm:w-[70%] object-contain'"
           (load)="onLogoLoad($event)"
         />
       </div>
+      <!-- Locked message -->
+      <ng-container *ngIf="locked && !previewMode">
+        <p class="text-center text-gray-300 text-lg font-bold mb-4">
+          Upgrade to Fifty+ and access the full quiz!
+        </p>
+      </ng-container>
+
       <!-- Quiz session label -->
-      <div *ngIf="userId && userEmail && !disableStats" class="text-center text-md mb-4 opacity-90 loggedInName">Quiz session recording for {{ userEmail }}</div>
+      <div *ngIf="userId && userEmail && !disableStats && !previewMode" class="text-center text-md mb-4 opacity-90 loggedInName">Quiz session recording for {{ userEmail }}</div>
 
       
 
@@ -69,7 +69,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
         <div class="quizTitle">{{ getQuizTitle() }}</div>
         <div class="quizHeaderRight">
           <p-button
-            *ngIf="!locked"
+            [disabled]="locked"
             icon="pi pi-download"
             label="Download"
             [outlined]="true"
@@ -729,6 +729,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         this.quizId = newId;
         await this.loadQuiz();
       }
+    }
+    if (changes['quiz'] && !changes['quiz'].firstChange) {
+      this.quiz = changes['quiz'].currentValue;
+      this.applyThemeColors();
     }
   }
 

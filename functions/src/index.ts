@@ -1043,6 +1043,49 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
 });
 
 // ===============================
+// POST /api/submitContactForm
+// Server-side spam protection: IP rate limit (max 3 per hour)
+// ===============================
+app.post('/api/submitContactForm', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, email, mobile, message } = req.body as { name?: string; email?: string; mobile?: string; message?: string };
+
+    if (!name?.trim() || !message?.trim()) {
+      res.status(400).json({ error: 'Name, email and message are required.' });
+      return;
+    }
+
+    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.ip || 'unknown';
+
+    const oneHourAgo = Timestamp.fromDate(new Date(Date.now() - 60 * 60 * 1000));
+    const recentSnap = await db.collection('contactFormSubmissions')
+      .where('ip', '==', ip)
+      .where('submittedAt', '>=', oneHourAgo)
+      .get();
+
+    if (recentSnap.size >= 5) {
+      res.status(429).json({ error: 'Too many submissions. Please try again later.' });
+      return;
+    }
+
+    await db.collection('contactFormSubmissions').add({
+      name: name.trim(),
+      email: email?.trim() || '',
+      mobile: mobile?.trim() || '',
+      message: message.trim(),
+      ip,
+      submittedAt: Timestamp.now(),
+      read: false,
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error submitting contact form:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ===============================
 // Export Firebase Function
 // ===============================
 export const api = onRequest(

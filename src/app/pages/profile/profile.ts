@@ -66,7 +66,8 @@ import { NotifyService } from '@/shared/services/notify.service';
                     <!-- Account -->
                     <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem">
                         <h3 class="text-base font-semibold mb-4 m-0">Account</h3>
-                        <div class="flex flex-col gap-3">
+                        <div class="flex flex-col gap-2">
+                            <p class="text-sm m-0" style="color: rgba(255,255,255,0.5)">Forgot your password? Send a reset link to <strong style="color: rgba(255,255,255,0.75)">{{ email }}</strong>.</p>
                             <div class="flex items-center gap-3">
                                 <p-button label="Send Password Reset Email" icon="pi pi-envelope" [outlined]="true"
                                     [loading]="sendingReset" (click)="onSendReset()"></p-button>
@@ -77,17 +78,23 @@ import { NotifyService } from '@/shared/services/notify.service';
                                     <span class="text-sm text-red-400">{{ resetError }}</span>
                                 }
                             </div>
-                            @if (isMember) {
-                                <div class="flex items-center gap-3">
-                                    <p-button label="Manage Billing" icon="pi pi-credit-card" [outlined]="true"
-                                        [loading]="loadingPortal" (click)="onManageBilling()"></p-button>
-                                    @if (portalError) {
-                                        <span class="text-sm text-red-400">{{ portalError }}</span>
-                                    }
-                                </div>
-                            }
                         </div>
                     </div>
+
+                    <!-- Fifty+ Membership -->
+                    @if (isMember) {
+                        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem">
+                            <h3 class="text-base font-semibold mb-1 m-0">Fifty+ Membership</h3>
+                            <p class="text-sm mb-4 m-0" style="color: rgba(255,255,255,0.5)">Manage your subscription, update payment details, or cancel.</p>
+                            <div class="flex items-center gap-3">
+                                <p-button label="Manage Billing" icon="pi pi-credit-card" [outlined]="true"
+                                    [loading]="loadingPortal" (click)="onManageBilling()"></p-button>
+                                @if (portalError) {
+                                    <span class="text-sm text-red-400">{{ portalError }}</span>
+                                }
+                            </div>
+                        </div>
+                    }
 
                     <!-- Preferences -->
                     <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem">

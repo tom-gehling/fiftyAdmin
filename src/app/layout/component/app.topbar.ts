@@ -28,7 +28,10 @@ import { AuthModalService } from '@/shared/services/auth-modal.service';
                 </a>
             </div>
             } @else {
-            <nav class="flex items-center gap-1 sm:gap-3">
+            <button class="sm:hidden flex items-center justify-center w-10 h-10 rounded-lg text-xl" style="color: var(--fifty-pink)" (click)="mobileMenuOpen = !mobileMenuOpen" aria-label="Open menu">
+                <i [class]="mobileMenuOpen ? 'pi pi-times' : 'pi pi-bars'"></i>
+            </button>
+            <nav class="hidden sm:flex items-center gap-1 sm:gap-3">
                 @for (link of publicNavLinks; track link.label) {
                     <a [routerLink]="link.route"
                        routerLinkActive
@@ -39,6 +42,24 @@ import { AuthModalService } from '@/shared/services/auth-modal.service';
                        style="color: var(--fifty-pink)">{{ link.label }}</a>
                 }
             </nav>
+            <div class="sm:hidden absolute top-full left-0 w-full z-50 flex flex-col shadow-lg overflow-hidden"
+                 style="transition: max-height 0.3s ease, opacity 0.3s ease;"
+                 [style.background-color]="bgColor || null"
+                 [style.max-height]="mobileMenuOpen ? '500px' : '0'"
+                 [style.opacity]="mobileMenuOpen ? '1' : '0'">
+                <div class="py-2">
+                    @for (link of publicNavLinks; track link.label) {
+                        <a [routerLink]="link.route"
+                           routerLinkActive
+                           #rla="routerLinkActive"
+                           [routerLinkActiveOptions]="{ exact: true }"
+                           [class]="rla.isActive ? 'font-bold bg-white/10' : 'font-medium hover:font-semibold hover:bg-white/5'"
+                           class="text-lg transition-all duration-150 no-underline px-6 py-3 block"
+                           style="color: var(--fifty-pink)"
+                           (click)="mobileMenuOpen = false">{{ link.label }}</a>
+                    }
+                </div>
+            </div>
             }
 
             <div class="ml-auto flex items-center gap-3">
@@ -67,6 +88,7 @@ export class AppTopbar implements OnInit {
     @Input() bgColor = '';
 
     profileItems: MenuItem[] = [];
+    mobileMenuOpen = false;
 
     readonly publicNavLinks = [
         { label: 'Home', route: '/home' },

@@ -32,6 +32,7 @@ import { VenuesComponent } from '@/pages/admin/venues/venues';
 import { SubmissionFormTableComponent } from '@/pages/admin/submissionForms/submissionFormTable';
 import { SubmissionFormDetailComponent } from '@/pages/admin/submissionForms/submissionFormDetail';
 import { UserTableComponent } from '@/pages/admin/users/userTable';
+import { ContactFormTableComponent } from '@/pages/admin/contactForms/contactFormTable';
 
 // Guards
 import { AuthGuard } from '@/shared/guards/authGuard';
@@ -120,6 +121,7 @@ export const appRoutes: Routes = [
                     { path: 'submissionForms', component: SubmissionFormTableComponent },
                     { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
                     { path: 'users', component: UserTableComponent },
+                    { path: 'contactForms', component: ContactFormTableComponent },
                 ]
             }
         ]

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,7 +10,7 @@ import { SubscriptionService } from '@/shared/services/subscription.service';
 import { injectStripe, StripeElementsDirective, StripePaymentElementComponent } from 'ngx-stripe';
 import type { Appearance, StripeElementsOptionsClientSecret, StripeElements } from '@stripe/stripe-js';
 import { AppFloatingConfigurator } from '../../../layout/component/app.floatingconfigurator';
-import { firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 const PRICES = {
     quarterly: { id: 'price_1TCsduH14haeupiArZVyTSg2', display: '$20 / quarter', savings: '' },
@@ -169,7 +169,7 @@ const PRICES = {
         </div>
     `,
 })
-export class JoinPage implements OnInit {
+export class JoinPage implements OnInit, OnDestroy {
     readonly logos = [
         '/assets/logos/2010s-clear-1.png',
         '/assets/logos/EURO.png',
@@ -218,6 +218,7 @@ export class JoinPage implements OnInit {
 
     billingPeriod: 'quarterly' | 'yearly' = 'quarterly';
     isLoggedIn = false;
+    private userSub: Subscription | null = null;
     returnUrl = '/fiftyPlus';
     showPaymentElement = false;
     loadingIntent = false;
@@ -251,10 +252,15 @@ export class JoinPage implements OnInit {
         private subscriptionService: SubscriptionService
     ) {}
 
-    async ngOnInit() {
+    ngOnInit() {
         this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/fiftyPlus';
-        const user = await firstValueFrom(this.auth.user$);
-        this.isLoggedIn = !!user && !user.isAnon;
+        this.userSub = this.auth.user$.subscribe((user) => {
+            this.isLoggedIn = !!user && !user.isAnon;
+        });
+    }
+
+    ngOnDestroy() {
+        this.userSub?.unsubscribe();
     }
 
     async setupPayment() {
