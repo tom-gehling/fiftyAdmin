@@ -507,7 +507,6 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     /* Submission Form */
     .submissionFormSection {
       margin-top: 30px;
-      border-top: 2px solid var(--primary);
       padding: 20px;
     }
 
@@ -545,12 +544,12 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       font-size: var(--smaller);
       font-family: var(--font);
       border-radius: 10px;
-      border: 2px solid var(--primary);
-      background-color: var(--secondary);
-      color: var(--primary);
+      background-color: var(--tertiary);
+      color: #282828;
       transition: var(--transition);
       width: 100%;
       box-sizing: border-box;
+      font-weight: bold;
     }
 
     .fieldInput:focus {
@@ -568,7 +567,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     .fileInput::file-selector-button {
       background-color: var(--primary);
-      color: var(--secondary);
+      color: #282828;
       border: none;
       border-radius: 8px;
       padding: 6px 12px;
@@ -636,7 +635,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       max-width: 380px;
       border: none;
       background-color: var(--tertiary);
-      color: var(--primary);
+      color: #282828;
     }
 
     .submissionSuccess {
@@ -644,7 +643,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       text-align: center;
       font-size: var(--header);
       font-weight: 800;
-      color: var(--tertiary);
+      color: var(--secondary);
       padding: 20px 0;
     }
 

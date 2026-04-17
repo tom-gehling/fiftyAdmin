@@ -69,15 +69,36 @@ import { AuthModalService } from '@/shared/services/auth-modal.service';
                     } @else {
                         @if (!(auth.isMember$ | async) && !(auth.isAdmin$ | async)) {
                             <p-button label="Become a Fifty+ Member" icon="pi pi-star" size="large" [outlined]="true" [routerLink]="['/join']" [queryParams]="{ returnUrl: router.url }"></p-button>
-                        } @else if (auth.isMember$ | async) {
-                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-lg font-semibold" style="background: rgba(76,251,171,0.15); color: var(--primary-color); border: 1px solid var(--primary-color)">
-                                <i class="pi pi-check-circle text-sm"></i> FIFTY+
-                            </span>
                         }
                         <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>
-                        <button type="button" class="flex items-center justify-center rounded-full font-bold text-sm cursor-pointer border-0" style="width: 36px; height: 36px; background: var(--primary-color); color: #1a1a1a; flex-shrink: 0" (click)="profileMenu.toggle($event)" [title]="(auth.user$ | async)?.displayName || ''">
+                        <div class="relative">
+                        <button
+                            type="button"
+                            class="flex items-center justify-center rounded-full font-bold text-sm cursor-pointer border-0"
+                            style="width: 36px; height: 36px; background: var(--primary-color); color: #1a1a1a; flex-shrink: 0"
+                            (click)="profileMenu.toggle($event)"
+                            [title]="(auth.user$ | async)?.displayName || ''"
+                        >
                             {{ initials }}
                         </button>
+
+                        @if (auth.isMember$ | async) {
+                            <div
+                                class="absolute flex items-center justify-center font-bold"
+                                style="
+                                    top: -8px;
+                                    right: -12px;
+                                    width: 20px;
+                                    height: 20px;
+                                    color: var(--fifty-pink);
+                                    border-radius: 50%;
+                                    font-size: 30px;
+                                "
+                            >
+                                +
+                            </div>
+                        }
+                    </div>
                     }
                 }
             </div>
