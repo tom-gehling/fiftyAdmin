@@ -37,6 +37,7 @@
         "luxon": "^3.7.2",
         "maxmind": "^5.0.3",
         "ngx-quill": "^28.0.1",
+        "ngx-recharts": "github:wook95/ngx-recharts",
         "ngx-stripe": "^20.8.0",
         "p-limit": "^7.2.0",
         "primeclt": "^0.1.5",

@@ -76,11 +76,10 @@ import { QuizResultsService } from '@/shared/services/quiz-result.service';
         <!-- Correct / Incorrect buttons -->
         <div class="flex gap-2 w-full">
           <button
-            class="flex-1 py-2 rounded font-semibold text-white"
-            [ngClass]="{
-              'bg-green-500 hover:bg-green-600': answers[i]?.correct !== true,
-              'bg-green-700': answers[i]?.correct === true
-            }"
+            class="flex-1 py-2 rounded font-semibold transition-opacity"
+            [style.background]="'var(--accent-green)'"
+            [style.color]="'var(--accent-green-contrast)'"
+            [style.opacity]="answers[i]?.correct === true ? '0.65' : '1'"
             (click)="markAnswer(i, true)">
             Correct
           </button>
@@ -105,7 +104,8 @@ import { QuizResultsService } from '@/shared/services/quiz-result.service';
 
       <button
         *ngIf="isQuizCompleted"
-        class="px-4 py-2 rounded bg-green-500 hover:bg-yellow-600 text-white font-semibold"
+        class="px-4 py-2 rounded font-semibold transition-opacity hover:opacity-90"
+        style="background: var(--accent-green); color: var(--accent-green-contrast);"
         (click)="resetQuiz()">
         Reset Quiz
       </button>

@@ -135,7 +135,7 @@
                         <!-- Left: color pickers stacked vertically -->
                         <div class="flex flex-col gap-8 w-1/2">
                             <div class="flex flex-col items-center gap-3">
-                                <label class="font-medium text-center">Font Color</label>
+                                <label class="font-medium text-center">Font Colour</label>
                                 <div class="w-fit flex flex-col gap-3">
                                     <p-colorPicker
                                         [ngModel]="toPickerHex(form.get('theme.fontColor')?.value)"
@@ -153,7 +153,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col items-center gap-3">
-                                <label class="font-medium text-center">Background Color</label>
+                                <label class="font-medium text-center">Background Colour</label>
                                 <div class="w-fit flex flex-col gap-3">
                                     <p-colorPicker
                                         [ngModel]="toPickerHex(form.get('theme.backgroundColor')?.value)"
@@ -171,7 +171,7 @@
                                 </div>
                             </div>
                             <div class="flex flex-col items-center gap-3">
-                                <label class="font-medium text-center">Tertiary Color</label>
+                                <label class="font-medium text-center">Tertiary Colour</label>
                                 <div class="w-fit flex flex-col gap-3">
                                     <p-colorPicker
                                         [ngModel]="toPickerHex(form.get('theme.tertiaryColor')?.value)"
@@ -190,7 +190,7 @@
                             </div>
                         </div>
                         <!-- Right: live quiz preview, scrollable but contained -->
-                        <div class="w-1/2 overflow-y-auto rounded-xl max-h-[calc(100vh-250px)]">
+                        <div class="w-1/2 overflow-y-auto rounded-xl max-h-[calc(80vh-250px)]">
                             <app-quiz-display *ngIf="themePreviewQuiz" [quiz]="themePreviewQuiz" [previewMode]="true" [locked]="true" />
                         </div>
                     </div>

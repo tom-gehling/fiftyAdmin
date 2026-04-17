@@ -1,4 +1,5 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -101,6 +102,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
                 <p-panel
                   *ngFor="let venue of filteredVenues"
                   [toggleable]="true"
+                  toggler="header"
                   [collapsed]="venueCollapsed[venue.id!] !== false"
                   (collapsedChange)="onPanelToggle(venue, $event)"
                   styleClass="venue-panel">
@@ -196,6 +198,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
           <p-panel
             *ngFor="let venue of filteredVenues"
             [toggleable]="true"
+            toggler="header"
             [collapsed]="venueCollapsed[venue.id!] !== false"
             (collapsedChange)="onPanelToggle(venue, $event)"
             styleClass="venue-panel">
@@ -471,7 +474,18 @@ import { PublicTopbarComponent } from './components/public-topbar';
       display: block;
       border-radius: var(--p-panel-border-radius);
       color: var(--p-panel-color);
+      background: var(--p-panel-color);
     }
+
+
+    :host ::ng-deep .p-button-text.p-button-secondary:not(:disabled):hover {
+      background: transparent !important;
+    }
+    
+    :host ::ng-deep .p-button-text.p-button-secondary:not(:disabled):active {
+        background: transparent;
+    }
+
 
     .p-button-text.p-button-secondary {
       background: transparent;

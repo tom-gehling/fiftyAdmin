@@ -22,8 +22,7 @@ interface ServiceCard {
     imports: [CommonModule, FormsModule, RouterModule, CarouselModule, InputTextModule, TextareaModule, ButtonModule, ToastModule],
     providers: [],
     template: `
-
-
+    <div class="py-20">
         <!-- Hero -->
         <div class="hero-section">
             <img src="assets/logos/logo.png" alt="The Weekly Fifty" class="hero-logo" />
@@ -125,6 +124,7 @@ interface ServiceCard {
                 ></button>
             </form>
         </div>
+    </div>
     `,
     styles: [`
         :host {
@@ -144,7 +144,7 @@ interface ServiceCard {
         }
 
         .hero-logo {
-            width: 180px;
+            width: 80%;
             max-width: 80%;
             margin-bottom: 1.5rem;
         }
@@ -277,9 +277,9 @@ interface ServiceCard {
         }
 
         :host ::ng-deep .send-btn.p-button {
+            color: var(--fifty-green);
             background: var(--fifty-pink);
             border-color: var(--fifty-pink);
-            color: white;
             font-weight: 700;
             padding: 0.65rem 2rem;
         }
