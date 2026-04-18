@@ -25,7 +25,8 @@
       "WebFetch(domain:theweeklyfifty.com.au)",
       "Bash(node -e \"const s = require\\('./node_modules/stripe/package.json'\\); console.log\\(s.version\\)\")",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(xargs grep *)"
     ]
   }
 }
