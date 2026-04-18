@@ -189,6 +189,18 @@ getCollaborations(getHeader: boolean = false): Observable<any[]> {
   );
 }
 
+getFeaturedOnWeeklyQuizzes(): Observable<Quiz[]> {
+  return this.getAllQuizzes().pipe(
+    map(quizzes =>
+      quizzes.filter(q =>
+        q.quizType === QuizTypeEnum.FiftyPlus &&
+        q.featuredOnWeekly === true &&
+        !!q.imageUrl
+      )
+    )
+  );
+}
+
 getQuestionQuizzes(getHeader: boolean = false): Observable<any[]> {
   return this.getAllQuizzes().pipe(
     map(quizzes => {

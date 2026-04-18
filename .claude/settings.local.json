@@ -10,7 +10,25 @@
       "Bash(firebase:*)",
       "Bash(xargs cat:*)",
       "Bash(npx ng:*)",
-      "Bash(npx firebase:*)"
+      "Bash(npx firebase:*)",
+      "Bash(grep -l \"stripe\\\\|payment\\\\|subscription\\\\|checkout\" /Users/tomgehling/Desktop/fiftyAdmin/src/app/shared/services/*.ts)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.get\\('dependencies',{}\\).items\\(\\)}, indent=2\\)\\)\")",
+      "Bash(npm view:*)",
+      "Bash(npm run:*)",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(s.LATEST_API_VERSION\\)\")",
+      "Bash(node -e \"const Stripe = require\\('stripe'\\); console.log\\(Stripe.LATEST_API_VERSION\\)\")",
+      "Bash(node -e \"const Stripe = require\\('stripe'\\); const s = new Stripe\\('test'\\); console.log\\(s.constructor.LATEST_API_VERSION\\)\")",
+      "Bash(node -e \"const types = require\\('/Users/tomgehling/Desktop/fiftyAdmin/functions/node_modules/stripe/types/index.d.ts'\\)\")",
+      "Bash(grep -l \"payment_intent\" /Users/tomgehling/Desktop/fiftyAdmin/functions/node_modules/stripe/types/*.d.ts)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e \"const s = require\\('/Users/tomgehling/Desktop/fiftyAdmin/functions/node_modules/stripe'\\); console.log\\(Object.keys\\(s\\).slice\\(0,10\\)\\)\")",
+      "Bash(node -e \"const s = require\\('/Users/tomgehling/Desktop/fiftyAdmin/functions/node_modules/stripe'\\); console.log\\(s.API_VERSION\\)\")",
+      "Bash(ls -la /Users/tomgehling/Desktop/fiftyAdmin/src/app/*.ts)",
+      "Bash(grep -E \"\\\\.\\(ts|html\\)$\")",
+      "WebFetch(domain:theweeklyfifty.com.au)",
+      "Bash(node -e \"const s = require\\('./node_modules/stripe/package.json'\\); console.log\\(s.version\\)\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)"
     ]
   }
 }

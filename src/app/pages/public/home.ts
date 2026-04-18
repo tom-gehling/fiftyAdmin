@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthModalService } from '@/shared/services/auth-modal.service';
 
 @Component({
   selector: 'app-home',
@@ -25,12 +26,6 @@ import { CommonModule } from '@angular/common';
       </div>
     </div>
 
-    <!-- Navbar -->
-    <nav class="navbar">
-      <div class="auth-buttons">
-        <button class="auth-btn" (click)="test()">LOGIN / SIGN UP</button>
-      </div>
-    </nav>
 
     <!-- Diagonal green overlay -->
     <div class="green-overlay"></div>
@@ -39,9 +34,10 @@ import { CommonModule } from '@angular/common';
     <div class="menu-wrapper">
       <div class="menu-buttons">
         <button routerLink="/weekly-quiz" class="menu-btn">THIS WEEK'S QUIZ</button>
-        <button routerLink="/login" class="menu-btn">FIFTY+</button>
+        <button routerLink="/fiftyPlus" class="menu-btn">FIFTY+</button>
         <button routerLink="/find-a-venue" class="menu-btn">FIND A VENUE</button>
         <button routerLink="https://theweeklyfifty.com.au/pshop/" class="menu-btn">FIFTY SHOP</button>
+        <button routerLink="/contact-us" class="menu-btn">CONTACT US</button>
       </div>
     </div>
 
@@ -49,6 +45,7 @@ import { CommonModule } from '@angular/common';
     <div class="main-logo">
       <img src="assets/logos/logo.png" alt="Fifty Logo" />
     </div>
+
   `,
   styles: [`
     :host {
@@ -343,12 +340,8 @@ export class HomePage implements OnInit {
     [1, 3, 5, 7, 2, 4, 6]
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, public authModal: AuthModalService) {}
 
   async ngOnInit() {}
-
-  test(){
-    this.router.navigate(['/login']);
-  }
 
 }

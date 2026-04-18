@@ -60,16 +60,16 @@ export class AppMenu implements OnInit {
                 },
                 { label: 'Quizzes', icon: 'pi pi-fw pi-pencil', routerLink: ['/fiftyPlus/admin/quizzes'] },
                 { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] },
-                { label: 'Submission Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
+                { label: 'Quiz Sub Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
                 { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/admin/users'] },
                 { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] },
+                { label: 'Form Submissions', icon: 'pi pi-fw pi-envelope', routerLink: ['/fiftyPlus/admin/contactForms'] },
+                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] },
                 {
-                    label: 'Games',
+                    label: 'Puzzles',
                     icon: 'pi pi-fw pi-bolt',
                     items: [
-                        { label: 'Game Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/games/stats'] },
-                        { label: 'Movie Emoji', icon: 'pi pi-fw pi-face-smile', routerLink: ['/fiftyPlus/admin/games/movie-emoji'] },
-                        { label: 'Rush Hour', icon: 'pi pi-fw pi-table', routerLink: ['/fiftyPlus/admin/games/rush-hour'] },
+                        { label: 'Puzzle Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/games/stats'] },
                     ]
                 }
             ]
@@ -105,6 +105,5 @@ export class AppMenu implements OnInit {
 
         if (isAdmin) this.model.push(adminMenu);
         if (isMember || isAdmin) this.model.push(fiftyPlusMenu);
-        if (isMember || isAdmin) this.model.push(gamesMenu);
     }
 }

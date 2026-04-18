@@ -223,7 +223,7 @@ export class AuthService {
       photoUrl: user.photoURL ?? '',
       createdAt: snapshot.exists() ? snapshot.data()?.['createdAt'].toDate() : now,
       isAdmin,
-      isMember: true, // admins are also members
+      isMember: isAdmin ? true : (snapshot.exists() ? snapshot.data()?.['isMember'] ?? false : false),
       isAnon,
       followers: snapshot.exists() ? snapshot.data()?.['followers'] ?? [] : [],
       following: snapshot.exists() ? snapshot.data()?.['following'] ?? [] : [],

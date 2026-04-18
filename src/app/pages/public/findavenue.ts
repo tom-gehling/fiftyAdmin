@@ -1,4 +1,5 @@
-import { Component, OnInit, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,7 +31,6 @@ import { PublicTopbarComponent } from './components/public-topbar';
     PublicTopbarComponent
   ],
   template: `
-    <app-public-topbar />
     <div class="venue-finder">
       <!-- Header -->
       <div class="venue-header">
@@ -102,6 +102,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
                 <p-panel
                   *ngFor="let venue of filteredVenues"
                   [toggleable]="true"
+                  toggler="header"
                   [collapsed]="venueCollapsed[venue.id!] !== false"
                   (collapsedChange)="onPanelToggle(venue, $event)"
                   styleClass="venue-panel">
@@ -197,6 +198,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
           <p-panel
             *ngFor="let venue of filteredVenues"
             [toggleable]="true"
+            toggler="header"
             [collapsed]="venueCollapsed[venue.id!] !== false"
             (collapsedChange)="onPanelToggle(venue, $event)"
             styleClass="venue-panel">
@@ -472,7 +474,18 @@ import { PublicTopbarComponent } from './components/public-topbar';
       display: block;
       border-radius: var(--p-panel-border-radius);
       color: var(--p-panel-color);
+      background: var(--p-panel-color);
     }
+
+
+    :host ::ng-deep .p-button-text.p-button-secondary:not(:disabled):hover {
+      background: transparent !important;
+    }
+    
+    :host ::ng-deep .p-button-text.p-button-secondary:not(:disabled):active {
+        background: transparent;
+    }
+
 
     .p-button-text.p-button-secondary {
       background: transparent;
@@ -660,7 +673,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
     }
   `]
 })
-export class FindAVenuePage implements OnInit, AfterViewInit {
+export class FindAVenuePage implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapElement') mapElement!: ElementRef;
 
   venues: Venue[] = [];
@@ -668,6 +681,8 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
   selectedVenue: Venue | null = null;
   loading = true;
   userLocation: { lat: number; lng: number } | null = null;
+
+  private venueSub?: Subscription;
 
   map!: google.maps.Map;
   markers: google.maps.Marker[] = [];
@@ -714,50 +729,33 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
       return;
     }
 
-    // Try to center on user's location, fall back to Melbourne
-    let center = { lat: -37.8136, lng: 144.9631 };
-    let zoom = 10;
-
-    if (navigator.geolocation) {
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000,
-            maximumAge: 60000
-          });
-        });
-        center = { lat: position.coords.latitude, lng: position.coords.longitude };
-        this.userLocation = center;
-        zoom = 11;
-      } catch {
-        // Permission denied or unavailable — use Melbourne default
-      }
-    }
-
+    // Create map immediately with Melbourne default — don't block on geolocation
     this.map = new google.maps.Map(this.mapElement.nativeElement, {
-      center,
-      zoom,
-      // 'cooperative' requires two fingers to pan/zoom on mobile,
-      // keeping single-finger scroll available for the page
+      center: { lat: -37.8136, lng: 144.9631 },
+      zoom: 10,
       gestureHandling: 'cooperative',
-      styles: [
-        {
-          featureType: 'poi',
-          elementType: 'labels',
-          stylers: [{ visibility: 'off' }]
-        }
-      ]
+      styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
     });
 
     this.infoWindow = new google.maps.InfoWindow();
 
-    if (this.userLocation) {
-      this.addUserLocationMarker();
-    }
-
-    // Venues may have loaded before the map was ready — add markers now
+    // Add markers immediately if venues already loaded
     if (this.filteredVenues.length > 0) {
       this.addMarkers();
+    }
+
+    // Update center/zoom with user location in background (non-blocking)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          this.userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+          this.map.setCenter(this.userLocation);
+          this.map.setZoom(11);
+          this.addUserLocationMarker();
+        },
+        () => { /* Permission denied or unavailable — Melbourne default stays */ },
+        { timeout: 5000, maximumAge: 60000 }
+      );
     }
   }
 
@@ -789,19 +787,23 @@ export class FindAVenuePage implements OnInit, AfterViewInit {
 
   loadVenues(): void {
     this.loading = true;
-    this.venueService.getActiveVenues().subscribe({
+    this.venueSub = this.venueService.getActiveVenues().subscribe({
       next: (venues) => {
         this.venues = venues;
         this.filteredVenues = venues;
         this.buildStateOptions();
-        this.addMarkers();
         this.loading = false;
+        this.addMarkers();
       },
       error: (error) => {
         console.error('Failed to load venues', error);
         this.loading = false;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.venueSub?.unsubscribe();
   }
 
   addMarkers(): void {

@@ -12,7 +12,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '@/shared/services/auth.service';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
-import { MembershipService, MembershipTier } from '@/shared/services/membership.service';
 import { QuizTheme } from '@/shared/models/quiz.model';
 import { DialogService, DynamicDialogModule } from 'primeng/dynamicdialog';
 import { RetroQuizResultComponent } from '../retroQuizResult/retroQuizResult.component';
@@ -26,15 +25,6 @@ import { Collaborator } from '@/shared/models/collaborator.model';
   providers: [DialogService],
   template: `
     <p-card class="flex flex-col h-full">
-      <div class="flex items-center justify-center mb-4 relative">
-      <p-button 
-        icon="pi pi-chevron-right" 
-        (onClick)="drawerVisible = true" 
-        class="p-button-text p-button-sm absolute left-0">
-      </p-button>
-      <h2 class="text-xxl font-semibold">{{ title }}</h2>
-    </div>
-
       <p-drawer [(visible)]="drawerVisible" position="left" [style]="{width: '300px'}">
         <h3>{{ title }}</h3>
         <ng-container *ngIf="quizHeaders.length > 0; else noQuizzes">
@@ -94,7 +84,12 @@ import { Collaborator } from '@/shared/models/collaborator.model';
         </ng-template>
       </p-drawer>
 
-      <div class="mt-10">
+      <div class="relative">
+        <p-button
+          icon="pi pi-chevron-right"
+          (onClick)="drawerVisible = true"
+          class="p-button-text p-button-sm absolute top-2.5 left-2.5 z-10">
+        </p-button>
         <ng-container *ngIf="selectedQuizId; else noQuizSelected">
           <app-quiz-display [quizId]="selectedQuizId" [locked]="selectedQuizLocked"></app-quiz-display>
         </ng-container>
@@ -162,7 +157,7 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
   drawerVisible = false;
   quizHeaders: { quizId: string; quizTitle?: string; theme?: QuizTheme; collabId?: string }[] = [];
   completedQuizIds = new Set<string>();
-  membershipTier: MembershipTier = MembershipTier.Fifty;
+  isMember = false;
   collaborators: Collaborator[] = [];
 
   get collabGroups(): { collabId: string; collabName: string; quizzes: { quizId: string; quizTitle?: string; theme?: QuizTheme; collabId?: string }[] }[] {
@@ -183,14 +178,14 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
     private userService: UserService,
     private quizzesService: QuizzesService,
     private quizResultsService: QuizResultsService,
-    private membershipService: MembershipService,
+    private authService: AuthService,
     private dialogService: DialogService,
     private router: Router,
     private collaboratorsService: CollaboratorsService
   ) {}
 
   async ngOnInit() {
-    this.membershipService.membership$.subscribe(tier => this.membershipTier = tier);
+    this.authService.isMember$.subscribe(val => this.isMember = !!val);
     if (this.quizType === 'collaborations') {
       this.collaboratorsService.getAll().subscribe(c => this.collaborators = c);
     }
@@ -268,7 +263,7 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
 
   isLocked(index: number): boolean {
   // Premium/Gold/Admin have full access
-  if (this.membershipTier !== MembershipTier.Fifty) {
+  if (this.isMember || this.authService.isAdmin$.value) {
     return false;
   }
 

@@ -1,9 +1,10 @@
-import { Component, ElementRef, Input, OnChanges, OnInit, Optional, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, filter, Subscription, take } from 'rxjs';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { PanelModule } from 'primeng/panel';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 import { Quiz } from '@/shared/models/quiz.model';
@@ -17,14 +18,15 @@ import { QuizSubmissionService } from '@/shared/services/quiz-submission.service
 import { SubmissionForm, SubmissionFormField } from '@/shared/models/submissionForm.model';
 import { TaggedUser } from '@/shared/models/quizSubmission.model';
 import { QuizStatsService } from '@/shared/services/quiz-stats.service';
+import { UserService } from '@/shared/services/user.service';
 import { UserTagSelectorComponent } from '../userTagSelector/userTagSelector.component';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-quiz-display',
   standalone: true,
-  imports: [CommonModule, ProgressSpinnerModule, ButtonModule, DialogModule, ReactiveFormsModule, UserTagSelectorComponent],
+  imports: [CommonModule, RouterModule, ProgressSpinnerModule, ButtonModule, DialogModule, PanelModule, ReactiveFormsModule, UserTagSelectorComponent],
   template: `
     <!-- Loading Spinner -->
     <div *ngIf="loading" class="flex items-center justify-center h-96">
@@ -34,82 +36,140 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     <!-- Quiz Container -->
     <div *ngIf="!loading && quiz" class="quizContainer">
 
+      <!-- Quiz Logo -->
+      <div *ngIf="quiz.quizType === QuizTypeEnum.Weekly || quiz.imageUrl" class="flex justify-center mb-4">
+        <img
+          [src]="quiz.quizType === QuizTypeEnum.Weekly ? 'assets/logos/logo.png' : quiz.imageUrl"
+          alt="Quiz logo"
+          [class]="logoIsSquare ? 'w-full sm:w-[50%] object-contain' : 'w-[90%] sm:w-[70%] object-contain'"
+          (load)="onLogoLoad($event)"
+        />
+      </div>
       <!-- Locked message -->
-      <ng-container *ngIf="locked">
+      <ng-container *ngIf="locked && !previewMode">
         <p class="text-center text-gray-300 text-lg font-bold mb-4">
           Upgrade to Fifty+ and access the full quiz!
         </p>
       </ng-container>
+      
 
-      <!-- Title and Download -->
+      <!-- Title row: info | title | download -->
       <div class="quizHeader">
+        <div class="quizHeaderLeft">
+          
+        </div>
         <div class="quizTitle">{{ getQuizTitle() }}</div>
-        <div *ngIf="!locked" class="downloadRow">
+        <div class="quizHeaderRight">
           <p-button
+            icon="pi pi-info-circle"
+            [outlined]="false"
+            (onClick)="showInfoModal = true"
+            class="infoButton"
+            size="large">
+          </p-button>
+          <p-button
+            [disabled]="locked"
             icon="pi pi-download"
             label="Download"
             [outlined]="true"
             (onClick)="downloadPdf()"
-            class="downloadButton">
+            class="downloadButton"
+            size="large">
           </p-button>
         </div>
       </div>
 
+      <!-- Quiz session label -->
+      <div *ngIf="userId && userEmail && !disableStats && !previewMode" class="text-center text-md mb-4 opacity-90 loggedInName">Quiz stats recording for {{ userEmail }}</div>
+      <div *ngIf="!userId && !userEmail && !previewMode" class="text-center text-md mb-4 opacity-90 loggedInName">Sign in to have quiz stats recorded</div>
+      
+
       <!-- Notes Above -->
       <div *ngIf="quiz.notesAbove" class="notes" [innerHTML]="quiz.notesAbove"></div>
 
-      <!-- Questions -->
-      <ng-container *ngFor="let q of quiz.questions; let i = index">
-        <div class="question" *ngIf="!locked || i < 3">
+      <!-- View toggle -->
+      <div class="viewToggle"> 
+        <button class="viewToggleBtn" [class.active]="viewMode === 'classic'" (click)="viewMode = 'classic'">Classic Panels</button>
+        <button class="viewToggleBtn" [class.active]="viewMode === 'panel'" (click)="viewMode = 'panel'">(TEST) New Panels</button>
+      </div>
 
-          <!-- Question button -->
-          <button
-            class="accordionButton"
-            [class.active]="questionClicked[i]"
-            (click)="toggleQuestion(i)"
-          >
-            <span class="dot" [ngClass]="{ removed: answers[i]?.correct !== null }"></span>
-            <span class="questionText"><b>Q{{ i + 1 }}. </b> <span [innerHTML]="q.question"></span></span>
-          </button>
+      <!-- Questions: Panel view -->
+      @if (viewMode === 'panel') {
+        @for (q of quiz.questions; track i; let i = $index) {
+          @if (!locked || i < 3) {
+            <p-panel [toggleable]="true" toggler="header" [collapsed]="true">
+              <ng-template pTemplate="header">
+                <span class="dot" [ngClass]="{ removed: answers[i]?.correct !== null }"></span>
+                <span class="questionText"><b>Q{{ i + 1 }}.</b>&nbsp;<span [innerHTML]="q.question"></span></span>
+              </ng-template>
 
-          <!-- "Click for answer" -->
-          <div *ngIf="questionClicked[i]" class="flex justify-center my-2">
-            <button class="genericButton" [ngClass]="{ reveal: answerRevealed[i] }" (click)="toggleAnswer(i)">
-              Click for answer
-            </button>
-          </div>
+              <div class="flex justify-center my-2">
+                <button class="genericButton" [ngClass]="{ reveal: answerRevealed[i] }" (click)="toggleAnswer(i)">
+                  Click for answer
+                </button>
+              </div>
 
-          <!-- Answer & buttons -->
-          <div *ngIf="questionClicked[i] && answerRevealed[i]" class="panel answer">
-            <p [innerHTML]="q.answer"></p>
+              @if (answerRevealed[i]) {
+                <div class="panel answer">
+                  <p [innerHTML]="q.answer"></p>
 
-            <ng-container *ngIf="!locked">
-              <div class="flex flex-col items-center gap-1">
-                <div class="flex gap-2">
-                  <button
-                    class="genericButton"
-                    [ngClass]="{ correct: answers[i]?.correct === true }"
-                    (click)="markAnswer(i, true)"
-                  >
-                    Correct
-                  </button>
-                  <button
-                    class="genericButton"
-                    [ngClass]="{ incorrect: answers[i]?.correct === false }"
-                    (click)="markAnswer(i, false)"
-                  >
-                    Incorrect
+                  @if (!locked) {
+                    <div class="flex flex-col items-center gap-1">
+                      <div class="flex gap-2">
+                        <button class="genericButton" [ngClass]="{ correct: answers[i]?.correct === true }" (click)="markAnswer(i, true)">Correct</button>
+                        <button class="genericButton" [ngClass]="{ incorrect: answers[i]?.correct === false }" (click)="markAnswer(i, false)">Incorrect</button>
+                      </div>
+                      @if (answers[i]?.percentCorrect !== undefined) {
+                        <span class="questionStat">({{ answers[i]?.percentCorrect }}% got this right)</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </p-panel>
+          }
+        }
+      }
+
+      <!-- Questions: Classic view -->
+      @if (viewMode === 'classic') {
+        @for (q of quiz.questions; track i; let i = $index) {
+          @if (!locked || i < 3) {
+            <div class="question">
+              <button class="accordionButton" [class.active]="questionClicked[i]" (click)="toggleQuestion(i)">
+                <span class="dot" [ngClass]="{ removed: answers[i]?.correct !== null }"></span>
+                <span class="questionText"><b>Q{{ i + 1 }}.</b>&nbsp;<span [innerHTML]="q.question"></span></span>
+              </button>
+
+              @if (questionClicked[i]) {
+                <div class="flex justify-center my-2">
+                  <button class="genericButton" [ngClass]="{ reveal: answerRevealed[i] }" (click)="toggleAnswer(i)">
+                    Click for answer
                   </button>
                 </div>
-                <span *ngIf="answers[i]?.percentCorrect !== undefined" class="questionStat">
-                  ({{ answers[i]?.percentCorrect }}% got this right)
-                </span>
-              </div>
-            </ng-container>
-          </div>
+              }
 
-        </div>
-      </ng-container>
+              @if (questionClicked[i] && answerRevealed[i]) {
+                <div class="panel answer">
+                  <p [innerHTML]="q.answer"></p>
+
+                  @if (!locked) {
+                    <div class="flex flex-col items-center gap-1">
+                      <div class="flex gap-2">
+                        <button class="genericButton" [ngClass]="{ correct: answers[i]?.correct === true }" (click)="markAnswer(i, true)">Correct</button>
+                        <button class="genericButton" [ngClass]="{ incorrect: answers[i]?.correct === false }" (click)="markAnswer(i, false)">Incorrect</button>
+                      </div>
+                      @if (answers[i]?.percentCorrect !== undefined) {
+                        <span class="questionStat">({{ answers[i]?.percentCorrect }}% got this right)</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        }
+      }
 
       <!-- Score & Reset -->
       <ng-container *ngIf="!locked && !previewMode">
@@ -199,8 +259,52 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       <div *ngIf="submitted" class="submissionSuccess">
         Thanks for submitting!
       </div>
+      
+      <!-- Fifty+ Advertisement -->
+      <div *ngIf="quiz?.quizType === QuizTypeEnum.Weekly && featuredLogoUrls.length > 0" class="fiftyPlusPromo">
+        <div class="promoDivider"></div>
+        <h4 class="promoHeading">Want More Quizzing? <br />Head to <img
+          src="/assets/logos/fiftyplus.png"
+          alt="Fifty Admin Logo"
+          class="mx-auto"
+          style="width: 30vw; max-width: 200px; height: auto;"
+        /></h4>
+        <div class="promoLogos">
+          @for (url of featuredLogoUrls; track url; let i = $index) {
+            <a
+              class="promoLogoWrap"
+              [class.promoLogoActive]="i === activePulseIndex"
+              routerLink="/fiftyPlus"
+            >
+              <img [src]="url" class="promoLogoImg" />
+            </a>
+          }
+        </div>
+      </div>
 
     </div>
+
+    <!-- Info Modal -->
+    <p-dialog
+      [(visible)]="showInfoModal"
+      [modal]="true"
+      [closable]="true"
+      [resizable]="false"
+      [draggable]="false"
+      header="Welcome to the Fifty!"
+      [style]="{ width: '90vw', maxWidth: '480px' }">
+      <div class="infoModalContent">
+        <ol>
+          <li>First time? Easy.</li>
+          <li><br />Once you've settled on your answer, click on the question to see if you're correct.</li>
+          <li>Mark accordingly.</li>
+          <li>Your score is tallied automatically as you go.</li>
+          <li>Once you're done, submit your score or share to with your friends</li>
+          <li>Happy quizzing!</li>
+          <li><br />All our love, <br> The Weekly Fifty xx</li>
+        </ol>
+      </div>
+    </p-dialog>
 
     <!-- Share Modal -->
     <p-dialog
@@ -255,6 +359,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     }
 
     .quizContainer {
+      position: relative;
       width: 100%;
       padding-top: 20px;
       // padding: 20px;
@@ -266,25 +371,59 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     .quizHeader {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
       margin-bottom: 20px;
+      padding: 0 10px;
     }
 
-    .downloadRow {
+    .quizHeaderLeft,
+    .quizHeaderRight {
+      flex: 0 0 20%;
       display: flex;
-      justify-content: center;
+      gap: 5px;
+    }
+
+    .quizHeaderLeft {
+      justify-content: flex-start;
+    }
+
+    .quizHeaderRight {
+      justify-content: flex-end;
     }
 
     .quizTitle {
+      flex: 0 0 60%;
       text-align: center;
-      padding: 20px;
+      padding: 20px 8px;
       font-size: 30px;
       font-weight: 600;
       color: var(--primary);
     }
 
+    .loggedInName {
+      padding: 10px;
+      font-size: 1.2rem;
+      font-style: italic;
+      opacity: 0.75;
+    }
+
+    .infoModalContent {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .infoModalContent ol {
+      padding-left: 1.25rem;
+      margin: 0;
+    }
+
+    .infoModalContent li {
+      margin-bottom: 0.5rem;
+    }
+
     .questionText {
-      display: contents;
+      display: inline;
     }
 
     ::ng-deep .accordionButton p {
@@ -292,23 +431,130 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       display: inline;
     }
 
-    :host ::ng-deep .downloadButton .p-button {
-      background-color: transparent;
-      border-color: var(--tertiary);
-      color: var(--tertiary);
+    :host ::ng-deep .p-panel {
+      border: 3px solid var(--secondary);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: 20px;
+      background: transparent;
+      margin-bottom: 20px;
+      margin-left: 2%;
+      margin-right: 2%;
+      overflow: hidden;
     }
 
+    :host ::ng-deep .p-panel .p-panel-header {
+      width: 100%;
+      padding: 25px;
+      font-size: var(--header);
+      font-weight: 400;
+      text-align: center;
+      justify-content: flex-start;
+      align-items: center;
+      line-height: 130%;
+      color: var(--primary);
+      background-color: var(--secondary);
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+      overflow: visible;
+      box-sizing: border-box;
+    }
+
+    :host ::ng-deep .p-panel .p-panel-header .questionText {
+      flex: 1;
+      text-align: center;
+    }
+
+    :host ::ng-deep .p-panel:not(.p-panel-collapsed) {
+      border: 3px solid var(--tertiary);
+    }
+
+    :host ::ng-deep .p-panel .p-panel-content {
+      border: none;
+      background: transparent;
+      padding: 0;
+    }
+
+    :host ::ng-deep .p-panel .p-panel-header p {
+      margin: 0;
+      display: inline;
+    }
+
+    :host ::ng-deep .infoButton .p-button,
+    :host ::ng-deep .downloadButton .p-button {
+      background-color: transparent;
+      border: none;
+      color: var(--primary);
+      height: 2.5rem;
+    }
+
+    :host ::ng-deep .infoButton .p-button i,
+    :host ::ng-deep .infoButton .p-button .p-icon,
+    :host ::ng-deep .downloadButton .p-button i,
+    :host ::ng-deep .downloadButton .p-button .p-icon {
+      font-size: 1.2rem;
+      -webkit-text-stroke: 0.4px var(--primary);
+    }
+
+    @media (min-width: 800px) {
+      :host ::ng-deep .infoButton .p-button i,
+      :host ::ng-deep .infoButton .p-button .p-icon,
+      :host ::ng-deep .downloadButton .p-button i,
+      :host ::ng-deep .downloadButton .p-button .p-icon {
+        font-size: 1.6rem;
+      }
+    }
+
+    :host ::ng-deep .infoButton .p-button:hover,
     :host ::ng-deep .downloadButton .p-button:hover {
-      filter: brightness(0.9);
+      filter: brightness(0.8);
+    }
+
+    :host ::ng-deep .downloadButton .p-button-label {
+      display: none;
+    }
+
+    @media (min-width: 800px) {
+      :host ::ng-deep .downloadButton .p-button-label {
+        display: inline;
+      }
     }
 
     .notes {
-      font-size: var(--header);
-      font-weight: 800;
+      font-size: 2rem;
+      font-weight: 600;
       line-height: 150%;
       padding: 15px 0;
       color: var(--primary);
       text-align: center;
+      margin-top: 30px;
+    }
+
+    .viewToggle {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .viewToggleBtn {
+      padding: 6px 18px;
+      font-size: 14px;
+      font-family: var(--font);
+      font-weight: 600;
+      border-radius: 20px;
+      border: 2px solid var(--primary);
+      background-color: transparent;
+      color: var(--primary);
+      cursor: pointer;
+      opacity: 0.5;
+      transition: var(--transition);
+    }
+
+    .viewToggleBtn.active {
+      background-color: var(--primary);
+      color: var(--secondary);
+      opacity: 1;
     }
 
     .accordionButton {
@@ -372,8 +618,10 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     .dot {
       width: 10px;
       height: 10px;
+      min-width: 10px;
       margin-right: 10px;
       display: inline-block;
+      flex-shrink: 0;
       border-radius: 50%;
       background-color: var(--tertiary);
     }
@@ -392,6 +640,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     .panel.answer {
       font-size: var(--header);
       font-weight: 800;
+      color: var(--primary);
     }
 
     .score {
@@ -405,7 +654,6 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
     /* Submission Form */
     .submissionFormSection {
       margin-top: 30px;
-      border-top: 2px solid var(--primary);
       padding: 20px;
     }
 
@@ -443,12 +691,12 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       font-size: var(--smaller);
       font-family: var(--font);
       border-radius: 10px;
-      border: 2px solid var(--primary);
-      background-color: var(--secondary);
-      color: var(--primary);
+      background-color: var(--tertiary);
+      color: #282828;
       transition: var(--transition);
       width: 100%;
       box-sizing: border-box;
+      font-weight: bold;
     }
 
     .fieldInput:focus {
@@ -466,7 +714,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
     .fileInput::file-selector-button {
       background-color: var(--primary);
-      color: var(--secondary);
+      color: #282828;
       border: none;
       border-radius: 8px;
       padding: 6px 12px;
@@ -534,7 +782,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       max-width: 380px;
       border: none;
       background-color: var(--tertiary);
-      color: var(--primary);
+      color: #282828;
     }
 
     .submissionSuccess {
@@ -542,20 +790,93 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
       text-align: center;
       font-size: var(--header);
       font-weight: 800;
-      color: var(--tertiary);
+      color: var(--secondary);
       padding: 20px 0;
+    }
+
+    /* Fifty+ Promo */
+    .fiftyPlusPromo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 20px 0 30px;
+    }
+
+    .promoDivider {
+      width: 80%;
+      height: 2px;
+      background-color: var(--tertiary);
+      margin-bottom: 20px;
+    }
+
+    .promoHeading {
+      font-size: var(--header);
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .promoLogos {
+      display: flex;
+      width: 100%;
+      justify-content: space-evenly;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0 10px;
+    }
+
+    .promoLogoWrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      opacity: 1;
+      transition: opacity 0.1s ease;
+      flex: 1;
+      min-width: 120px;
+      max-width: 210px;
+    }
+
+    .promoLogoWrap.promoLogoActive {
+      opacity: 1;
+      animation: promoLogoPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes promoLogoPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    .promoLogoImg {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 12px;
     }
 
   `
 })
-export class QuizDisplayComponent implements OnInit, OnChanges {
+export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
+
+  protected readonly QuizTypeEnum = QuizTypeEnum;
+
+  private authSub?: Subscription;
 
   @Input() quizId?: string;
-  @Input() quiz?: Quiz;          // for preview mode
-  @Input() locked = false;       // restricts to 3 questions
-  @Input() previewMode = false;  // no Firestore, no results
+  @Input() quiz?: Quiz;
+  @Input() locked = false;
+  @Input() previewMode = false;
 
   loading = true;
+
+  // Featured Fifty+ promo state
+  featuredLogoUrls: string[] = [];
+  activePulseIndex = 0;
+  private rotationInterval?: ReturnType<typeof setInterval>;
+  logoIsSquare = false;
 
   // Quiz state
   score = 0;
@@ -564,8 +885,11 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   answers: { correct: boolean | null; percentCorrect?: number }[] = [];
   questionClicked: boolean[] = [];
   answerRevealed: boolean[] = [];
+  viewMode: 'panel' | 'classic' = 'panel';
 
   userId?: string;
+  userEmail?: string;
+  disableStats = false;
   resultId?: string;
 
   // Submission form state
@@ -583,6 +907,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   sharePercentile?: number;
   copySuccess = false;
   showSharePanel = false;
+  showInfoModal = false;
   sharePreviewDataUrl?: string;
   generatingPreview = false;
 
@@ -591,6 +916,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     private quizResultsService: QuizResultsService,
     private quizStatsService: QuizStatsService,
     private authService: AuthService,
+    private userService: UserService,
     private quizPdfService: QuizPdfService,
     private submissionFormService: SubmissionFormService,
     private quizSubmissionService: QuizSubmissionService,
@@ -604,6 +930,11 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     return [...(this.submissionForm?.fields ?? [])].sort((a, b) => a.order - b.order);
   }
 
+  ngOnDestroy() {
+    this.authSub?.unsubscribe();
+    clearInterval(this.rotationInterval);
+  }
+
   // ---------------------------------------------
   // CHANGES
   // ---------------------------------------------
@@ -615,12 +946,29 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
         await this.loadQuiz();
       }
     }
+    if (changes['quiz'] && !changes['quiz'].firstChange) {
+      this.quiz = changes['quiz'].currentValue;
+      this.applyThemeColors();
+    }
   }
 
   // ---------------------------------------------
   // INIT
   // ---------------------------------------------
   async ngOnInit() {
+    await firstValueFrom(this.authService.initialized$.pipe(filter(v => v)));
+    this.userId = this.authService.currentUserId ?? undefined;
+
+    this.authSub = this.authService.user$.subscribe(async user => {
+      this.userEmail = user?.email ?? undefined;
+      this.userId = user?.uid ?? undefined;
+      if (user?.uid) {
+        const userDoc = await firstValueFrom(this.userService.getUser(user.uid));
+        this.disableStats = userDoc?.disableStats ?? false;
+      }
+    });
+
+
     if (this.config?.data?.quiz) {
       this.quiz = this.config.data.quiz;
     }
@@ -632,6 +980,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
       this.initializeQuizState(this.quiz);
       this.applyThemeColors();
       await this.loadSubmissionForm();
+      this.loadFeaturedQuizzes();
       this.loading = false;
       return;
     }
@@ -670,11 +1019,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   // ---------------------------------------------
   private async loadQuiz() {
     this.loading = true;
+    this.logoIsSquare = false;
     this.quiz = undefined;
 
     try {
-      await firstValueFrom(this.authService.initialized$);
-      this.userId = this.authService.currentUserId ?? undefined;
 
       if (!this.quizId) return;
 
@@ -682,6 +1030,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
       if (loaded) {
         await this.initializeOrResumeQuiz(loaded);
         await this.loadSubmissionForm();
+        this.loadFeaturedQuizzes();
       }
     } catch (err) {
       console.error('Error during loadQuiz()', err);
@@ -690,6 +1039,22 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     }
 
     this.applyThemeColors();
+  }
+
+  // ---------------------------------------------
+  // FEATURED FIFTY+ PROMO
+  // ---------------------------------------------
+  private loadFeaturedQuizzes() {
+    if (this.quiz?.quizType !== QuizTypeEnum.Weekly || this.previewMode) return;
+    this.quizService.getFeaturedOnWeeklyQuizzes().pipe(take(1)).subscribe(quizzes => {
+      this.featuredLogoUrls = quizzes.map(q => q.imageUrl!);
+      if (this.featuredLogoUrls.length > 0) {
+        clearInterval(this.rotationInterval);
+        this.rotationInterval = setInterval(() => {
+          this.activePulseIndex = (this.activePulseIndex + 1) % this.featuredLogoUrls.length;
+        }, 2000);
+      }
+    });
   }
 
   // ---------------------------------------------
@@ -754,7 +1119,8 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
     this.resultId = await this.quizResultsService.createResult(
       quiz.quizId.toString(),
       this.userId,
-      this.totalQuestions
+      this.totalQuestions,
+      this.disableStats || undefined
     );
   }
 
@@ -855,6 +1221,11 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
   // ---------------------------------------------
   // UI HELPERS
   // ---------------------------------------------
+  onLogoLoad(event: Event) {
+    const img = event.target as HTMLImageElement;
+    this.logoIsSquare = img.naturalWidth === img.naturalHeight;
+  }
+
   getQuizTitle(): string {
     if (!this.quiz) return '';
     if (this.quiz.quizType === QuizTypeEnum.Weekly && this.quiz.deploymentDate) {
@@ -898,7 +1269,8 @@ export class QuizDisplayComponent implements OnInit, OnChanges {
       this.resultId = await this.quizResultsService.createResult(
         this.quiz.quizId.toString(),
         this.userId,
-        this.totalQuestions
+        this.totalQuestions,
+        this.disableStats || undefined
       );
 
       this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
