@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
@@ -154,7 +154,7 @@ import { firstValueFrom } from 'rxjs';
     </div>
   `
 })
-export class Login {
+export class Login implements OnInit {
   readonly logos = [
     '/assets/logos/2010s-clear-1.png',
     '/assets/logos/EURO.png',
@@ -166,9 +166,7 @@ export class Login {
     '/assets/logos/aussie.png',
     '/assets/logos/boomer.png',
     '/assets/logos/chrissy.png',
-    '/assets/logos/fiftyAdminLogo.png',
     '/assets/logos/footy.png',
-    '/assets/logos/logo.png',
     '/assets/logos/loser.png',
     '/assets/logos/movie2.png',
     '/assets/logos/olympic.png',
@@ -203,7 +201,13 @@ export class Login {
   error: string | null = null;
   isRegisterMode: boolean = false;
 
-  constructor(private auth: AuthService, private router: Router) { }
+  constructor(private auth: AuthService, private router: Router, private route: ActivatedRoute) { }
+
+  ngOnInit() {
+    if (this.route.snapshot.queryParamMap.get('register') === 'true') {
+      this.isRegisterMode = true;
+    }
+  }
 
   async onSubmit() {
     this.loading = true;

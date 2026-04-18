@@ -1,5 +1,4 @@
-import { onRequest} from 'firebase-functions/v2/https';
-// import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -8,8 +7,8 @@ import cors from 'cors';
 import { FieldValue } from "firebase-admin/firestore";
 import * as maxmind from 'maxmind';
 import * as path from 'path';
-// import Stripe from 'stripe';
-// import { PRICE_TIER_MAP, STRIPE_PRICES } from './stripe-config.js';
+import Stripe from 'stripe';
+import { PRICE_TIER_MAP } from './stripe-config.js';
 
 const luxon = require('luxon')
 
@@ -1044,6 +1043,49 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
 });
 
 // ===============================
+// POST /api/submitContactForm
+// Server-side spam protection: IP rate limit (max 3 per hour)
+// ===============================
+app.post('/api/submitContactForm', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, email, mobile, message } = req.body as { name?: string; email?: string; mobile?: string; message?: string };
+
+    if (!name?.trim() || !message?.trim()) {
+      res.status(400).json({ error: 'Name, email and message are required.' });
+      return;
+    }
+
+    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.ip || 'unknown';
+
+    const oneHourAgo = Timestamp.fromDate(new Date(Date.now() - 60 * 60 * 1000));
+    const recentSnap = await db.collection('contactFormSubmissions')
+      .where('ip', '==', ip)
+      .where('submittedAt', '>=', oneHourAgo)
+      .get();
+
+    if (recentSnap.size >= 5) {
+      res.status(429).json({ error: 'Too many submissions. Please try again later.' });
+      return;
+    }
+
+    await db.collection('contactFormSubmissions').add({
+      name: name.trim(),
+      email: email?.trim() || '',
+      mobile: mobile?.trim() || '',
+      message: message.trim(),
+      ip,
+      submittedAt: Timestamp.now(),
+      read: false,
+    });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error submitting contact form:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ===============================
 // Export Firebase Function
 // ===============================
 export const api = onRequest(
@@ -1063,11 +1105,60 @@ export const api = onRequest(
 // Non-sensitive config (functions/.env, git-ignored):
 //   STRIPE_GUEST_PASS_PRICE_ID=price_1XYZ...
 // ===============================
-// const getStripe = (): Stripe => {
-//   const key = process.env['STRIPE_SECRET_KEY'];
-//   if (!key) throw new Error('STRIPE_SECRET_KEY not configured');
-//   return new Stripe(key, { apiVersion: '2025-02-24.acacia' });
-// };
+const getStripe = (): InstanceType<typeof Stripe> => {
+    const key = process.env['STRIPE_SECRET_KEY'];
+    if (!key) throw new Error('STRIPE_SECRET_KEY not configured');
+    return new Stripe(key, { apiVersion: '2026-03-25.dahlia' });
+};
+
+// -----------------------------------------------
+// Callable: createSubscriptionIntent
+// Creates a Stripe Subscription and returns a client_secret for
+// the embedded Stripe Payment Element to confirm payment on the frontend.
+// -----------------------------------------------
+export const createSubscriptionIntent = onCall(
+    { secrets: ['STRIPE_SECRET_KEY'] },
+    async (req) => {
+        if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+        const { priceId } = req.data as { priceId: string };
+        if (!priceId) throw new HttpsError('invalid-argument', 'priceId is required');
+
+        const stripe = getStripe();
+        const uid = req.auth.uid;
+        const userDoc = await db.collection('users').doc(uid).get();
+        const userData = userDoc.data() ?? {};
+
+        // Retrieve or create Stripe Customer
+        let customerId: string = userData['stripeCustomerId'] ?? '';
+        if (!customerId) {
+            const customer = await stripe.customers.create({
+                email: userData['email'] ?? undefined,
+                name: userData['displayName'] ?? undefined,
+                metadata: { uid },
+            });
+            customerId = customer.id;
+            await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
+        }
+
+        // Create subscription with incomplete payment — returns a client_secret for frontend confirmation
+        const subscription = await stripe.subscriptions.create({
+            customer: customerId,
+            items: [{ price: priceId }],
+            payment_behavior: 'default_incomplete',
+            payment_settings: { save_default_payment_method: 'on_subscription' },
+            expand: ['latest_invoice.payment_intent'],
+            metadata: { uid },
+        });
+
+        const invoice = subscription.latest_invoice as any;
+        const paymentIntent = invoice?.payment_intent as any;
+
+        return {
+            clientSecret: paymentIntent?.client_secret ?? null,
+            subscriptionId: subscription.id,
+        };
+    }
+);
 
 
 // const GUEST_PASS_PRICE_ID = process.env['STRIPE_GUEST_PASS_PRICE_ID'] ?? 'price_guest_pass';
@@ -1163,31 +1254,31 @@ export const api = onRequest(
 //   }
 // );
 
-// // -----------------------------------------------
-// // Callable: createPortalSession
-// // Opens the Stripe Customer Portal for self-service
-// // -----------------------------------------------
-// export const createPortalSession = onCall(
-//   { secrets: ['STRIPE_SECRET_KEY'] },
-//   async (req) => {
-//     if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+// -----------------------------------------------
+// Callable: createPortalSession
+// Opens the Stripe Customer Portal for self-service
+// -----------------------------------------------
+export const createPortalSession = onCall(
+    { secrets: ['STRIPE_SECRET_KEY'] },
+    async (req) => {
+        if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
 
-//     const { returnUrl } = req.data as { returnUrl: string };
-//     const stripe   = getStripe();
-//     const uid      = req.auth.uid;
-//     const userDoc  = await db.collection('users').doc(uid).get();
-//     const customerId: string = userDoc.data()?.['stripeCustomerId'] ?? '';
+        const { returnUrl } = req.data as { returnUrl: string };
+        const stripe = getStripe();
+        const uid = req.auth.uid;
+        const userDoc = await db.collection('users').doc(uid).get();
+        const customerId: string = userDoc.data()?.['stripeCustomerId'] ?? '';
 
-//     if (!customerId) throw new HttpsError('not-found', 'No Stripe customer found for this user');
+        if (!customerId) throw new HttpsError('not-found', 'No Stripe customer found for this user');
 
-//     const session = await stripe.billingPortal.sessions.create({
-//       customer:   customerId,
-//       return_url: returnUrl,
-//     });
+        const session = await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: returnUrl,
+        });
 
-//     return { url: session.url };
-//   }
-// );
+        return { url: session.url };
+    }
+);
 
 // // -----------------------------------------------
 // // Callable: getSubscriptionPlanNames
@@ -1212,61 +1303,58 @@ export const api = onRequest(
 //   }
 // );
 
-// // -----------------------------------------------
-// // HTTP: stripeWebhook
-// // Handles Stripe events and writes to Firestore
-// // -----------------------------------------------
-// export const stripeWebhook = onRequest(
-//   { secrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] },
-//   async (req, res) => {
-//     const sig    = req.headers['stripe-signature'] as string;
-//     const secret = process.env['STRIPE_WEBHOOK_SECRET'];
-//     if (!secret) { res.status(500).send('Webhook secret not configured'); return; }
+// -----------------------------------------------
+// HTTP: stripeWebhook
+// Handles Stripe events and writes to Firestore
+// -----------------------------------------------
+export const stripeWebhook = onRequest(
+    { secrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] },
+    async (req, res) => {
+        const sig = req.headers['stripe-signature'] as string;
+        const secret = process.env['STRIPE_WEBHOOK_SECRET'];
+        if (!secret) { res.status(500).send('Webhook secret not configured'); return; }
 
-//     const stripe = getStripe();
-//     let event: Stripe.Event;
+        const stripe = getStripe();
+        let event: any;
 
-//     try {
-//       event = stripe.webhooks.constructEvent(req.rawBody, sig, secret);
-//     } catch (err: any) {
-//       console.error('Webhook signature verification failed:', err.message);
-//       res.status(400).send(`Webhook Error: ${err.message}`);
-//       return;
-//     }
+        try {
+            event = stripe.webhooks.constructEvent(req.rawBody, sig, secret);
+        } catch (err: any) {
+            console.error('Webhook signature verification failed:', err.message);
+            res.status(400).send(`Webhook Error: ${err.message}`);
+            return;
+        }
 
-//     try {
-//       switch (event.type) {
-//         case 'checkout.session.completed':
-//           await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, stripe);
-//           break;
-//         case 'customer.subscription.updated':
-//         case 'customer.subscription.deleted':
-//           await handleSubscriptionChange(event.data.object as Stripe.Subscription);
-//           break;
-//         case 'invoice.payment_succeeded':
-//           await handleInvoicePaid(event.data.object as Stripe.Invoice, stripe);
-//           break;
-//         case 'invoice.payment_failed':
-//           await handleInvoiceFailed(event.data.object as Stripe.Invoice);
-//           break;
-//         default:
-//           // Unhandled event type — ignore
-//       }
-//     } catch (err) {
-//       console.error('Error handling Stripe event:', err);
-//       res.status(500).send('Internal error handling webhook');
-//       return;
-//     }
+        try {
+            switch (event.type) {
+                case 'customer.subscription.updated':
+                case 'customer.subscription.deleted':
+                    await handleSubscriptionChange(event.data.object);
+                    break;
+                case 'invoice.payment_succeeded':
+                    await handleInvoicePaid(event.data.object, stripe);
+                    break;
+                case 'invoice.payment_failed':
+                    await handleInvoiceFailed(event.data.object);
+                    break;
+                default:
+                    // Unhandled event type — ignore
+            }
+        } catch (err) {
+            console.error('Error handling Stripe event:', err);
+            res.status(500).send('Internal error handling webhook');
+            return;
+        }
 
-//     res.json({ received: true });
-//   }
-// );
+        res.json({ received: true });
+    }
+);
 
-// async function findUidByCustomerId(customerId: string): Promise<string | null> {
-//   const snap = await db.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
-//   if (snap.empty) return null;
-//   return snap.docs[0].id;
-// }
+async function findUidByCustomerId(customerId: string): Promise<string | null> {
+    const snap = await db.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
+    if (snap.empty) return null;
+    return snap.docs[0].id;
+}
 
 // async function handleCheckoutCompleted(session: Stripe.Checkout.Session, stripe: Stripe) {
 //   const uid  = session.metadata?.['uid'];
@@ -1310,173 +1398,175 @@ export const api = onRequest(
 //   }
 // }
 
-// function stripeIntervalToBillingInterval(recurring: Stripe.Price.Recurring | null): 'quarter' | 'year' | null {
-//   if (!recurring) return null;
-//   if (recurring.interval === 'year') return 'year';
-//   if (recurring.interval === 'month' && recurring.interval_count === 3) return 'quarter';
-//   return null;
-// }
+function stripeIntervalToBillingInterval(recurring: any | null): 'quarter' | 'year' | null {
+    if (!recurring) return null;
+    if (recurring.interval === 'year') return 'year';
+    if (recurring.interval === 'month' && recurring.interval_count === 3) return 'quarter';
+    return null;
+}
 
-// async function handleSubscriptionChange(sub: Stripe.Subscription) {
-//   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
-//   const uid = await findUidByCustomerId(customerId);
-//   if (!uid) return;
+async function handleSubscriptionChange(sub: any) {
+    const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+    const uid = await findUidByCustomerId(customerId);
+    if (!uid) return;
 
-//   const price    = sub.items.data[0]?.price;
-//   const priceId  = price?.id ?? '';
-//   const status   = sub.status;
-//   const isActive = status === 'active' || status === 'trialing';
+    const price = sub.items.data[0]?.price;
+    const priceId = price?.id ?? '';
+    const status = sub.status;
+    const isActive = status === 'active' || status === 'trialing';
 
-//   const writes: Promise<unknown>[] = [
-//     db.collection('users').doc(uid).set({
-//       subscriptionId:               sub.id,
-//       subscriptionStatus:           status,
-//       subscriptionTier:             PRICE_TIER_MAP[priceId] ?? null,
-//       subscriptionCurrentPeriodEnd: Timestamp.fromMillis(sub.current_period_end * 1000),
-//       cancelAtPeriodEnd:            sub.cancel_at_period_end,
-//       stripePriceId:                priceId,
-//       billingInterval:              stripeIntervalToBillingInterval(price?.recurring ?? null),
-//       billingAmountCents:           price?.unit_amount ?? 0,
-//       isMember:                     isActive,
-//       ...(status === 'canceled' ? { canceledAt: Timestamp.now() } : {}),
-//     }, { merge: true }),
-//   ];
+    const writes: Promise<unknown>[] = [
+        db.collection('users').doc(uid).set({
+            subscriptionId: sub.id,
+            subscriptionStatus: status,
+            subscriptionTier: PRICE_TIER_MAP[priceId] ?? null,
+            subscriptionCurrentPeriodEnd: Timestamp.fromMillis(sub.current_period_end * 1000),
+            cancelAtPeriodEnd: sub.cancel_at_period_end,
+            stripePriceId: priceId,
+            billingInterval: stripeIntervalToBillingInterval(price?.recurring ?? null),
+            billingAmountCents: price?.unit_amount ?? 0,
+            isMember: isActive,
+            ...(status === 'canceled' ? { canceledAt: Timestamp.now() } : {}),
+        }, { merge: true }),
+    ];
 
-//   if (status === 'canceled') {
-//     // Record cancellation event — doc ID prevents duplicates on webhook retry
-//     writes.push(
-//       db.collection('userEvents').doc(`subscription_cancelled_${sub.id}`).set({
-//         type:      'subscription_cancelled',
-//         uid,
-//         tier:      PRICE_TIER_MAP[priceId] ?? null,
-//         timestamp: Timestamp.now(),
-//       })
-//     );
-//   }
+    if (status === 'canceled') {
+        writes.push(
+            db.collection('userEvents').doc(`subscription_cancelled_${sub.id}`).set({
+                type: 'subscription_cancelled',
+                uid,
+                tier: PRICE_TIER_MAP[priceId] ?? null,
+                timestamp: Timestamp.now(),
+            })
+        );
+    }
 
-//   await Promise.all(writes);
-// }
+    await Promise.all(writes);
+}
 
-// async function handleInvoicePaid(invoice: Stripe.Invoice, stripe: Stripe) {
-//   const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
-//   const uid = await findUidByCustomerId(customerId);
-//   if (!uid) return;
+async function handleInvoicePaid(invoice: any, stripe: InstanceType<typeof Stripe>) {
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
+    const uid = await findUidByCustomerId(customerId);
+    if (!uid) return;
 
-//   const userSnap   = await db.collection('users').doc(uid).get();
-//   const userData   = userSnap.data() ?? {};
-//   const priceId    = invoice.lines?.data?.[0]?.price?.id ?? '';
-//   const tier       = PRICE_TIER_MAP[priceId] ?? null;
+    const userSnap = await db.collection('users').doc(uid).get();
+    const userData = userSnap.data() ?? {};
+    const priceId = (invoice.lines?.data?.[0] as any)?.price?.id ?? '';
+    const tier = PRICE_TIER_MAP[priceId] ?? null;
 
-//   await db.collection('payments').add({
-//     uid,
-//     displayName:           userData['displayName'] ?? '',
-//     email:                 userData['email'] ?? '',
-//     amount:                invoice.amount_paid ?? 0,
-//     currency:              invoice.currency ?? 'aud',
-//     status:                'succeeded',
-//     type:                  'subscription',
-//     tier,
-//     description:           invoice.description ?? `Subscription — ${tier ?? 'unknown'}`,
-//     stripeInvoiceId:       invoice.id,
-//     stripePaymentIntentId: typeof invoice.payment_intent === 'string' ? invoice.payment_intent : '',
-//     createdAt:             Timestamp.now(),
-//   });
-// }
+    await db.collection('payments').add({
+        uid,
+        displayName: userData['displayName'] ?? '',
+        email: userData['email'] ?? '',
+        amount: invoice.amount_paid ?? 0,
+        currency: invoice.currency ?? 'aud',
+        status: 'succeeded',
+        type: 'subscription',
+        tier,
+        description: invoice.description ?? `Subscription — ${tier ?? 'unknown'}`,
+        stripeInvoiceId: invoice.id,
+        stripePaymentIntentId: typeof invoice.payment_intent === 'string' ? invoice.payment_intent : '',
+        createdAt: Timestamp.now(),
+    });
 
-// async function handleInvoiceFailed(invoice: Stripe.Invoice) {
-//   const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
-//   const uid = await findUidByCustomerId(customerId);
-//   if (!uid) return;
+    // suppress unused variable warning — stripe param kept for API consistency
+    void stripe;
+}
 
-//   const userSnap = await db.collection('users').doc(uid).get();
-//   const userData = userSnap.data() ?? {};
-//   const priceId  = invoice.lines?.data?.[0]?.price?.id ?? '';
-//   const tier     = PRICE_TIER_MAP[priceId] ?? null;
+async function handleInvoiceFailed(invoice: any) {
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
+    const uid = await findUidByCustomerId(customerId);
+    if (!uid) return;
 
-//   await db.collection('users').doc(uid).set({
-//     subscriptionStatus: 'past_due',
-//     isMember: false,
-//   }, { merge: true });
+    const userSnap = await db.collection('users').doc(uid).get();
+    const userData = userSnap.data() ?? {};
+    const priceId = (invoice.lines?.data?.[0] as any)?.price?.id ?? '';
+    const tier = PRICE_TIER_MAP[priceId] ?? null;
 
-//   await db.collection('payments').add({
-//     uid,
-//     displayName:     userData['displayName'] ?? '',
-//     email:           userData['email'] ?? '',
-//     amount:          invoice.amount_due ?? 0,
-//     currency:        invoice.currency ?? 'aud',
-//     status:          'failed',
-//     type:            'subscription',
-//     tier,
-//     description:     `Failed payment — ${tier ?? 'unknown'}`,
-//     stripeInvoiceId: invoice.id,
-//     createdAt:       Timestamp.now(),
-//   });
-// }
+    await db.collection('users').doc(uid).set({
+        subscriptionStatus: 'past_due',
+        isMember: false,
+    }, { merge: true });
 
-// // -----------------------------------------------
-// // Admin Callable: adminCancelSubscription
-// // -----------------------------------------------
-// export const adminCancelSubscription = onCall(
-//   { secrets: ['STRIPE_SECRET_KEY'] },
-//   async (req) => {
-//     await assertAdmin(req.auth?.uid);
-//     const { subscriptionId } = req.data as { uid: string; subscriptionId: string };
-//     if (!subscriptionId) throw new HttpsError('invalid-argument', 'subscriptionId required');
+    await db.collection('payments').add({
+        uid,
+        displayName: userData['displayName'] ?? '',
+        email: userData['email'] ?? '',
+        amount: invoice.amount_due ?? 0,
+        currency: invoice.currency ?? 'aud',
+        status: 'failed',
+        type: 'subscription',
+        tier,
+        description: `Failed payment — ${tier ?? 'unknown'}`,
+        stripeInvoiceId: invoice.id,
+        createdAt: Timestamp.now(),
+    });
+}
 
-//     const stripe = getStripe();
-//     await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
-//     return { success: true };
-//   }
-// );
+// -----------------------------------------------
+// Admin Callable: adminCancelSubscription
+// -----------------------------------------------
+export const adminCancelSubscription = onCall(
+    { secrets: ['STRIPE_SECRET_KEY'] },
+    async (req) => {
+        await assertAdmin(req.auth?.uid);
+        const { subscriptionId } = req.data as { uid: string; subscriptionId: string };
+        if (!subscriptionId) throw new HttpsError('invalid-argument', 'subscriptionId required');
 
-// // -----------------------------------------------
-// // Admin Callable: adminRefundPayment
-// // -----------------------------------------------
-// export const adminRefundPayment = onCall(
-//   { secrets: ['STRIPE_SECRET_KEY'] },
-//   async (req) => {
-//     await assertAdmin(req.auth?.uid);
-//     const { paymentId, paymentIntentId } = req.data as {
-//       paymentId: string; paymentIntentId: string;
-//     };
-//     if (!paymentIntentId) throw new HttpsError('invalid-argument', 'paymentIntentId required');
+        const stripe = getStripe();
+        await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
+        return { success: true };
+    }
+);
 
-//     const stripe = getStripe();
-//     const refund = await stripe.refunds.create({ payment_intent: paymentIntentId });
+// -----------------------------------------------
+// Admin Callable: adminRefundPayment
+// -----------------------------------------------
+export const adminRefundPayment = onCall(
+    { secrets: ['STRIPE_SECRET_KEY'] },
+    async (req) => {
+        await assertAdmin(req.auth?.uid);
+        const { paymentId, paymentIntentId } = req.data as {
+            paymentId: string; paymentIntentId: string;
+        };
+        if (!paymentIntentId) throw new HttpsError('invalid-argument', 'paymentIntentId required');
 
-//     await db.collection('payments').doc(paymentId).set({
-//       status:       'refunded',
-//       refundedAt:   Timestamp.now(),
-//       refundAmount: refund.amount,
-//     }, { merge: true });
+        const stripe = getStripe();
+        const refund = await stripe.refunds.create({ payment_intent: paymentIntentId });
 
-//     return { success: true, refundId: refund.id };
-//   }
-// );
+        await db.collection('payments').doc(paymentId).set({
+            status: 'refunded',
+            refundedAt: Timestamp.now(),
+            refundAmount: refund.amount,
+        }, { merge: true });
 
-// // -----------------------------------------------
-// // Admin Callable: adminGrantGuestAccess
-// // Manually grants permanent quiz access to any user
-// // -----------------------------------------------
-// export const adminGrantGuestAccess = onCall(async (req) => {
-//   await assertAdmin(req.auth?.uid);
-//   const { uid, quizId } = req.data as { uid: string; quizId: string };
-//   if (!uid)    throw new HttpsError('invalid-argument', 'uid required');
-//   if (!quizId) throw new HttpsError('invalid-argument', 'quizId required');
+        return { success: true, refundId: refund.id };
+    }
+);
 
-//   await db.collection('users').doc(uid)
-//     .collection('quizAccess').doc(quizId).set({
-//       quizId,
-//       paidAt:          Timestamp.now(),
-//       paymentIntentId: 'admin_granted',
-//       amount:          0,
-//     });
+// -----------------------------------------------
+// Admin Callable: adminGrantGuestAccess
+// Manually grants permanent quiz access to any user
+// -----------------------------------------------
+export const adminGrantGuestAccess = onCall(async (req) => {
+    await assertAdmin(req.auth?.uid);
+    const { uid, quizId } = req.data as { uid: string; quizId: string };
+    if (!uid) throw new HttpsError('invalid-argument', 'uid required');
+    if (!quizId) throw new HttpsError('invalid-argument', 'quizId required');
 
-//   return { success: true };
-// });
+    await db.collection('users').doc(uid)
+        .collection('quizAccess').doc(quizId).set({
+            quizId,
+            paidAt: Timestamp.now(),
+            paymentIntentId: 'admin_granted',
+            amount: 0,
+        });
 
-// async function assertAdmin(uid?: string) {
-//   if (!uid) throw new HttpsError('unauthenticated', 'Must be logged in');
-//   const userSnap = await db.collection('users').doc(uid).get();
-//   if (!userSnap.data()?.['isAdmin']) throw new HttpsError('permission-denied', 'Admin only');
-// }
+    return { success: true };
+});
+
+async function assertAdmin(uid?: string) {
+    if (!uid) throw new HttpsError('unauthenticated', 'Must be logged in');
+    const userSnap = await db.collection('users').doc(uid).get();
+    if (!userSnap.data()?.['isAdmin']) throw new HttpsError('permission-denied', 'Admin only');
+}

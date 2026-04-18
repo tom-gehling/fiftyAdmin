@@ -7,9 +7,8 @@ import { PublicTopbarComponent } from './components/public-topbar';
     standalone: true,
     imports: [RouterModule, PublicTopbarComponent],
     template: `
-        <app-public-topbar />
         <div class="page-content">
-           Fifty Shop
+            FIFTY SHOP COMINFG SOON
         </div>
     `,
     styles: [`

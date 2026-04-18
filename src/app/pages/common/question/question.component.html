@@ -9,7 +9,7 @@
         <p class="font-bold" [innerHTML]="question?.answer"></p>
 
         <div class="flex gap-2 mt-2">
-            <button class="flex-1 py-2 rounded bg-green-500 text-white font-semibold hover:bg-green-600 disabled:opacity-50" (click)="markCorrect()" [disabled]="correct || incorrect">Correct</button>
+            <button class="flex-1 py-2 rounded font-semibold disabled:opacity-50 transition-opacity hover:opacity-90" style="background: var(--accent-green); color: var(--accent-green-contrast);" (click)="markCorrect()" [disabled]="correct || incorrect">Correct</button>
             <button class="flex-1 py-2 rounded bg-red-500 text-white font-semibold hover:bg-red-600 disabled:opacity-50" (click)="markIncorrect()" [disabled]="correct || incorrect">Incorrect</button>
         </div>
     </div>

@@ -60,15 +60,16 @@ export class AppMenu implements OnInit {
                 },
                 { label: 'Quizzes', icon: 'pi pi-fw pi-pencil', routerLink: ['/fiftyPlus/admin/quizzes'] },
                 { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] },
-                { label: 'Submission Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
+                { label: 'Quiz Sub Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
                 { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/admin/users'] },
-                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] }
+                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] },
+                { label: 'Form Submissions', icon: 'pi pi-fw pi-envelope', routerLink: ['/fiftyPlus/admin/contactForms'] }
             ]
         };
 
         // Fifty+ section (all fiftyPlus/admin)
         const fiftyPlusMenu: MenuItem = {
-            label: 'Fifty+',
+            label: 'Fifty+ Quizzes',
             items: [
                 { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/archives'] },
                 { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
@@ -81,6 +82,7 @@ export class AppMenu implements OnInit {
         this.model = [homeMenu];
 
         if (isAdmin) this.model.push(adminMenu);
-        if (isMember || isAdmin) this.model.push(fiftyPlusMenu);
+
+        this.model.push(fiftyPlusMenu);
     }
 }

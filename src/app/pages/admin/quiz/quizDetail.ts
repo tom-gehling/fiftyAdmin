@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -37,7 +37,8 @@ import { QuizTag } from '@/shared/models/quizTags.model';
 import { NotifyService } from '@/shared/services/notify.service';
 import { SubmissionFormService } from '@/shared/services/submission-form.service';
 import { SubmissionForm } from '@/shared/models/submissionForm.model';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 import { MenuItem } from 'primeng/api';
 import { MenuModule } from 'primeng/menu';
 import { OverlayModule } from 'primeng/overlay';
@@ -73,11 +74,12 @@ import { TooltipModule } from 'primeng/tooltip';
     SpeedDialModule,
     MenuModule,
     DividerModule,
-    TooltipModule
+    TooltipModule,
+    QuizDisplayComponent
   ],
   templateUrl: './quizDetail.html'
 })
-export class QuizDetailComponent implements OnInit {
+export class QuizDetailComponent implements OnInit, OnDestroy {
   id!: string;
   quiz!: Quiz;
   form!: FormGroup;
@@ -122,6 +124,9 @@ export class QuizDetailComponent implements OnInit {
   ];
 
   extraMenuItems: MenuItem[] = [];
+
+  themePreviewQuiz: Quiz | null = null;
+  private themePreviewSub?: Subscription;
 
   private removedQuestionsBackup: any[] = [];
   logoDialogVisible: boolean = false;
@@ -293,6 +298,20 @@ uploadNewImage(event: any) {
       this.setQuestionCount(count);
       this.syncQuestionMenus();
     });
+
+    this.setupThemePreview();
+  }
+
+  private setupThemePreview(): void {
+    this.themePreviewSub?.unsubscribe();
+    this.themePreviewQuiz = { ...this.form.value, questions: this.questions.value, theme: { ...this.form.get('theme')?.value } };
+    this.themePreviewSub = this.form.get('theme')!.valueChanges.pipe(debounceTime(150)).subscribe(() => {
+      this.themePreviewQuiz = { ...this.form.value, questions: this.questions.value, theme: { ...this.form.get('theme')?.value } };
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.themePreviewSub?.unsubscribe();
   }
 
   get questions(): FormArray {
