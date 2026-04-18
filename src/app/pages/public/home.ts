@@ -135,9 +135,15 @@ const LOGOS = [
             <div class="section-headline">The Fifty Shop</div>
             <div class="section-body">Gear up with official Weekly Fifty merch</div>
             <div class="s5-images">
-              <div class="s5-placeholder-img"></div>
-              <div class="s5-placeholder-img"></div>
-              <div class="s5-placeholder-img"></div>
+              <div class="s5-placeholder-img">
+                <img src="https://firebasestorage.googleapis.com/v0/b/weeklyfifty-7617b.firebasestorage.app/o/assets%2Fwebsite-book.png?alt=media&token=d9cc7265-63e3-456f-b8d9-57140884f122" />
+              </div>
+              <div class="s5-placeholder-img">
+                <img src="https://firebasestorage.googleapis.com/v0/b/weeklyfifty-7617b.firebasestorage.app/o/assets%2Fwebsite-hat.jpg?alt=media&token=9c8c6c6e-4e6d-45ff-88a3-1cda092d146e" />
+              </div>
+              <div class="s5-placeholder-img">
+                <img src="https://firebasestorage.googleapis.com/v0/b/weeklyfifty-7617b.firebasestorage.app/o/assets%2Fwebsite-tote.png?alt=media&token=13d55b2a-ec51-4edb-ae8e-9cf458cafda7" />
+              </div>
             </div>
             <a href="https://theweeklyfifty.com.au/pshop/" target="_blank" rel="noopener"
                class="section-btn section-btn-link"
@@ -527,6 +533,14 @@ const LOGOS = [
       background: rgba(255, 255, 255, 0.07);
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+
+    .s5-placeholder-img img {
+      width: 100%;
+      height: 100%;
+      border-radius: 12px;
+      display: block;
     }
 
     /* ─── Navbar ─────────────────────────────────────────────────── */
