@@ -49,8 +49,8 @@ const PRICES = {
                 width: auto;
                 object-fit: contain;
                 margin: 0 16px;
-                opacity: 0.06;
-                filter: grayscale(100%);
+                opacity: 0.2;
+                filter: grayscale(20%);
                 flex-shrink: 0;
             }
             @keyframes scroll-logos {
@@ -79,39 +79,46 @@ const PRICES = {
                 }
             </div>
 
-            <div class="flex flex-col items-center justify-center relative" style="z-index: 1; width: 100%; max-width: 640px; padding: 0 16px;">
+            <div class="flex flex-col items-center justify-center relative" style="z-index: 1; width: 100%; max-width: 960px; padding: 0 16px;">
                 <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%); width: 100%">
                     <div class="w-full bg-surface-0 dark:bg-surface-900 py-12 px-8 sm:px-14" style="border-radius: 53px">
 
                         <!-- Logo -->
                         <div class="text-center mb-6">
-                            <img src="/assets/logos/fiftyplus.png" alt="Fifty+" class="mx-auto mb-4" style="width: 40vw; max-width: 180px; height: auto;" />
-                            <h1 class="text-surface-900 dark:text-surface-0 text-2xl font-semibold mb-1">Unlock the full Fifty+ experience</h1>
-                            <p class="text-surface-500 dark:text-surface-400 text-md">Join thousands of quiz enthusiasts with access to everything Fifty+ has to offer.</p>
+                            <img src="/assets/logos/fiftyplus.png" alt="Fifty+" class="mx-auto mb-4" style="width: 100%; max-width: 500px !important; height: auto;" />
+                            <h1 class="text-surface-900 dark:text-surface-0 text-xl lg:text-2xl font-semibold mb-1">Unlock the full Fifty+ experience</h1>
+                            <p class="text-surface-500 dark:text-surface-400 text-xl lg:text-2xl">Join thousands of quiz enthusiasts with access to everything Fifty+ has to offer.</p>
                         </div>
 
-                        <!-- Benefits list -->
-                        <ul class="list-none p-0 m-0 mb-8">
-                            @for (benefit of benefits; track benefit.label) {
-                                <li class="flex items-center gap-3 py-2">
-                                    <i [class]="benefit.icon + ' text-primary text-xl'"></i>
-                                    <div>
-                                        <span class="text-surface-900 dark:text-surface-0 font-medium">{{ benefit.label }}</span>
-                                        <span class="text-surface-500 dark:text-surface-400 text-sm ml-2">{{ benefit.description }}</span>
-                                    </div>
-                                </li>
-                            }
-                        </ul>
+                        <!-- Two-column layout on large screens -->
+                        <div class="flex flex-col lg:flex-row lg:gap-8">
 
-                        <p-divider />
+                            <!-- Benefits list -->
+                            <ul class="list-none p-0 m-0 lg:flex-1 mb-6 lg:mb-0">
+                                @for (benefit of benefits; track benefit.label) {
+                                    <li class="flex items-center gap-3 py-2">
+                                        <i [class]="benefit.icon + ' text-primary text-xl'"></i>
+                                        <div>
+                                            <span class="text-surface-900 dark:text-surface-0 font-medium">{{ benefit.label }}</span>
+                                            <span class="text-surface-500 dark:text-surface-400 text-sm ml-2">{{ benefit.description }}</span>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+
+                            <div class="lg:hidden"><p-divider /></div>
+                            <div class="hidden lg:flex mx-2"><p-divider layout="vertical" /></div>
+
+                            <!-- Right side: login / billing / payment -->
+                            <div class="lg:flex-1">
 
                         @if (!isLoggedIn) {
                             <!-- Not logged in — prompt to create account -->
                             <div class="text-center py-4">
                                 <i class="pi pi-user text-4xl text-primary mb-4 block"></i>
                                 <p class="text-surface-700 dark:text-surface-300 mb-6">Create a free account first, then subscribe to unlock Fifty+.</p>
-                                <p-button label="Create Free Account" styleClass="w-full mb-3" (click)="router.navigate(['/join'])"></p-button>
-                                <p class="text-surface-500 text-sm mt-3">Already have an account? <a class="text-primary cursor-pointer" (click)="router.navigate(['/login'])">Sign in</a></p>
+                                <p-button label="Create Free Account" styleClass="w-full mb-3" (click)="router.navigate(['/login'], { queryParams: { register: 'true' } })"></p-button>
+                                <p class="text-surface-500 text-lg mt-3">Already have an account? <a class="text-primary cursor-pointer" (click)="router.navigate(['/login'])">Sign in</a></p>
                             </div>
                         } @else if (!showPaymentElement) {
                             <!-- Billing toggle + pricing card -->
@@ -163,6 +170,9 @@ const PRICES = {
                                 <a class="text-surface-400 text-xl cursor-pointer hover:text-primary" (click)="manageBilling()">Already a member? Manage your subscription</a>
                             </div>
                         }
+
+                            </div> <!-- /right column -->
+                        </div> <!-- /two-column flex -->
                     </div>
                 </div>
             </div>
@@ -202,11 +212,11 @@ export class JoinPage implements OnInit, OnDestroy {
     readonly logoRows = [{ delay: '0s' }, { delay: '-35s' }, { delay: '-17s' }, { delay: '-52s' }];
 
     readonly benefits = [
-        { icon: 'pi pi-book', label: 'Full Quiz Archives', description: 'Every quiz ever run, at your fingertips' },
+        { icon: 'pi pi-book', label: 'Full Quiz Archives', description: 'Every quiz ever we\'ve written, at your fingertips' },
         { icon: 'pi pi-star', label: 'Exclusive Fifty+ Quizzes', description: 'Premium quizzes only for members' },
-        { icon: 'pi pi-users', label: 'Collaborations', description: 'Special events and team content' },
-        { icon: 'pi pi-chart-bar', label: 'Stats & Leaderboards', description: 'Track your performance over time' },
-        { icon: 'pi pi-question-circle', label: 'Question Quizzes', description: 'Unique question-based challenges' },
+        { icon: 'pi pi-users', label: 'Collaboration Quizzes', description: 'All of our special events and content' },
+        { icon: 'pi pi-chart-bar', label: 'Peronalised Stats', description: 'Track your quiz performance over time' },
+        { icon: 'pi pi-question-circle', label: 'Daily Puzzles', description: 'For those who want more challenges' },
     ];
 
     readonly billingOptions = [

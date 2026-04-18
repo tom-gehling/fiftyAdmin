@@ -38,6 +38,7 @@ export interface Quiz {
     quizType?: QuizTypeEnum;        // could be enum: Weekly, Fifty+, Collab
     isPremium?: boolean;
     isActive?: boolean;
+    featuredOnWeekly?: boolean;
 
     questions: QuizQuestion[];
     theme?: QuizTheme;
