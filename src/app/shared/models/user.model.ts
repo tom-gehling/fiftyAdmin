@@ -15,6 +15,11 @@ export interface AppUser {
   externalQuizId?: string; // links the user to external quiz system
   lastLoginAt?: Date;      // track last login
   updatedAt?: Date;        // last profile update
+
+  // Profile preferences
+  disableStats?: boolean;
+  defaultTeamName?: string;
+  defaultTeamMembers?: string[];
 }
 
 // Subcollection interfaces remain the same
