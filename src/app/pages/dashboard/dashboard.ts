@@ -33,7 +33,7 @@ import { VenueCalendarComponent } from "./components/venuecalendar";
             <!-- Only show stats widget for admins -->
             <app-stats-widget class="contents" *ngIf="auth.isAdmin$ | async" />
             <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
-                <app-user-summary-widget />
+                <app-user-summary-widget *ngIf="auth.isMember$ | async"/>
                 <app-fifty-quizzes-dashboard />
                 <!-- <app-quiz-stats-widget *ngIf="auth.isMember$ | async" /> -->
                 <app-user-quiz-history-widget *ngIf="auth.isMember$ | async" />

@@ -213,6 +213,15 @@ import { Collaborator } from '@/shared/models/collaborator.model';
                     ></p-checkbox>
                     Fifty+
                   </label>
+                  <label class="flex items-center gap-2 cursor-pointer select-none text-sm">
+                    <p-checkbox
+                      [(ngModel)]="quiz.featuredOnWeekly"
+                      [binary]="true"
+                      (ngModelChange)="markDirty(quiz)"
+                      (click)="$event.stopPropagation()"
+                    ></p-checkbox>
+                    Featured on Weekly
+                  </label>
                 </div>
               </div>
             </div>
@@ -233,6 +242,13 @@ import { Collaborator } from '@/shared/models/collaborator.model';
                     class="px-2 py-0.5 text-xs font-semibold text-white bg-green-500 rounded-full"
                   >
                     Active
+                  </span>
+                  <span
+                    *ngIf="quiz?.featuredOnWeekly"
+                    style="background-color: var(--fifty-neon-green)"
+                    class="px-2 py-0.5 text-xs font-semibold text-black rounded-full"
+                  >
+                    Featured
                   </span>
                 </div>
               </div>

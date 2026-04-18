@@ -26,10 +26,9 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(uid)/quizAccess/$(quizId));
     }
 
-    // Venues — public read for active/non-deleted venues, admin write
+    // Venues — public read (app layer filters isActive/deletedAt), admin write
     match /venues/{id} {
-      allow read: if resource.data.isActive == true && resource.data.deletedAt == null;
-      allow read: if isAdmin();
+      allow read: if true;
       allow write: if isAdmin();
     }
 

@@ -37,6 +37,7 @@ import { AuthModalService } from '@/shared/services/auth-modal.service';
         <button routerLink="/fiftyPlus" class="menu-btn">FIFTY+</button>
         <button routerLink="/find-a-venue" class="menu-btn">FIND A VENUE</button>
         <button routerLink="https://theweeklyfifty.com.au/pshop/" class="menu-btn">FIFTY SHOP</button>
+        <button routerLink="/contact-us" class="menu-btn">CONTACT US</button>
       </div>
     </div>
 

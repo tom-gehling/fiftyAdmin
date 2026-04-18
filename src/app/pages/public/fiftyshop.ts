@@ -8,7 +8,7 @@ import { PublicTopbarComponent } from './components/public-topbar';
     imports: [RouterModule, PublicTopbarComponent],
     template: `
         <div class="page-content">
-           Fifty Shop
+            FIFTY SHOP COMINFG SOON
         </div>
     `,
     styles: [`
