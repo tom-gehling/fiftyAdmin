@@ -151,6 +151,9 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+
+      this.checkScreen();
+      window.addEventListener('resize', this.checkScreen.bind(this));
      this.extraMenuItems = [
       {
         label: 'Export Detailed JSON',
@@ -649,6 +652,13 @@ exportJson(simple: boolean = false): void {
       this.savingLogo = false;
     }
   }
+
+  isMobile = false;
+
+
+checkScreen() {
+  this.isMobile = window.innerWidth < 1024; // matches lg breakpoint
+}
 
   cancelLogoDialog(): void {
     this.logoDialogVisible = false;
