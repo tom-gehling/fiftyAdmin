@@ -1,6 +1,7 @@
-import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, HostListener, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges, isDevMode } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom, filter, Subscription, take } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -763,6 +764,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     private rotationInterval?: ReturnType<typeof setInterval>;
     logoIsSquare = false;
 
+    // Presence tracking
+    private heartbeatInterval?: ReturnType<typeof setInterval>;
+    private readonly HEARTBEAT_MS = 2 * 60 * 1000;
+
     // Quiz state
     score = 0;
     totalQuestions = 0;
@@ -817,6 +822,44 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     ngOnDestroy() {
         this.authSub?.unsubscribe();
         clearInterval(this.rotationInterval);
+        this.stopHeartbeat();
+    }
+
+    @HostListener('document:visibilitychange')
+    onVisibilityChange() {
+        if (!this.resultId || this.previewMode || this.locked) return;
+        if (document.visibilityState === 'visible') {
+            this.quizResultsService.heartbeat(this.resultId).catch(() => {});
+        }
+    }
+
+    @HostListener('window:pagehide')
+    @HostListener('window:beforeunload')
+    onPageHide() {
+        if (!this.resultId || this.previewMode || this.locked) return;
+        if (this.isQuizCompleted) return;
+        const url = isDevMode() ? 'http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/logQuizClose' : `${environment.functionsBaseUrl}/api/logQuizClose`;
+        const payload = new Blob([JSON.stringify({ resultId: this.resultId })], { type: 'application/json' });
+        try {
+            navigator.sendBeacon(url, payload);
+        } catch {
+            // sendBeacon may be blocked in some contexts; the scheduled sweep is the safety net
+        }
+    }
+
+    private startHeartbeat() {
+        this.stopHeartbeat();
+        this.heartbeatInterval = setInterval(() => {
+            if (!this.resultId || document.visibilityState !== 'visible') return;
+            this.quizResultsService.heartbeat(this.resultId).catch(() => {});
+        }, this.HEARTBEAT_MS);
+    }
+
+    private stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = undefined;
+        }
     }
 
     // ---------------------------------------------
@@ -982,6 +1025,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
                 if (idx !== -1) this.answers[idx] = { correct: a.correct ?? null };
             });
             this.score = this.answers.filter((a) => a.correct).length;
+            if (this.resultId) {
+                this.quizResultsService.markResumed(this.resultId).catch(() => {});
+                this.startHeartbeat();
+            }
             return;
         }
 
@@ -998,6 +1045,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         }
 
         this.resultId = await this.quizResultsService.createResult(quiz.quizId.toString(), this.userId, this.totalQuestions, this.disableStats || undefined);
+        this.startHeartbeat();
     }
 
     // ---------------------------------------------
@@ -1139,6 +1187,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
             this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
             this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
             this.score = 0;
+            this.startHeartbeat();
         } catch (err) {
             console.error('Failed to reset quiz', err);
         }
@@ -1174,6 +1223,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         if (this.isQuizCompleted && this.resultId) {
             try {
                 await this.quizResultsService.completeResult(this.resultId);
+                this.stopHeartbeat();
                 this.applyStatsToAnswers();
             } catch (err) {
                 console.error('Failed to complete result', err);

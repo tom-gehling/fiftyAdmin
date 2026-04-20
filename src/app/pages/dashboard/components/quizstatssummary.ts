@@ -1,9 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuizzesService } from '@/shared/services/quizzes.service';
 import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 import { Quiz } from '@/shared/models/quiz.model';
-import { firstValueFrom } from 'rxjs';
+import { Firestore, collection, collectionData, query, where } from '@angular/fire/firestore';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ChartModule } from 'primeng/chart';
 import { SelectButtonModule } from 'primeng/selectbutton';
@@ -67,11 +68,11 @@ declare const google: any;
                 </ng-container>
             </div>
 
-            <!-- Currently Quizzing -->
+            <!-- Currently Quizzing (live) -->
             <div class="card h-full flex flex-col justify-between p-2 fiftyBorder items-center text-center">
                 <ng-container *ngIf="!loading && !refreshing; else loadingSpinner">
                     <span class="block text-surface-0 font-medium">Currently Quizzing</span>
-                    <div class="font-semibold text-3xl">{{ stats.inProgressCount }}</div>
+                    <div class="font-semibold text-3xl">{{ liveViewerCount }}</div>
                 </ng-container>
             </div>
 
@@ -215,13 +216,18 @@ declare const google: any;
 </div> -->
     `
 })
-export class QuizStatsSummaryComponent implements OnInit {
+export class QuizStatsSummaryComponent implements OnInit, OnDestroy {
     currentQuiz?: Quiz;
     selectedQuizId?: string;
     stats: any;
     loading = true;
     averageTimeHHMMSS = '';
     refreshing = false;
+
+    liveViewerCount = 0;
+    private liveSub?: Subscription;
+    private liveRefreshTimer?: ReturnType<typeof setInterval>;
+    private firestore = inject(Firestore);
 
     questionChartData: any;
     questionChartOptions: any;
@@ -286,9 +292,46 @@ export class QuizStatsSummaryComponent implements OnInit {
         this.selectedQuizId = activeQuizId || this.quizIds[0]?.value;
 
         await Promise.all([this.loadStats(this.selectedQuizId), this.loadGoogleCharts()]);
+        this.subscribeToLiveViewers(this.selectedQuizId);
 
         setTimeout(() => this.drawGeoChart(), 800);
         this.loading = false;
+    }
+
+    ngOnDestroy() {
+        this.liveSub?.unsubscribe();
+        if (this.liveRefreshTimer) clearInterval(this.liveRefreshTimer);
+    }
+
+    /**
+     * Subscribe to in-progress quizResults for this quiz and derive a live viewer count.
+     * A viewer counts as "live" when status=in_progress, closedAt is null, and
+     * lastActivityAt is within the last 3 minutes (heartbeat is every 2 min so this gives
+     * one missed tick of slack before we drop them). Re-evaluates every 30s so viewers
+     * with no writes still age out without needing a new snapshot.
+     */
+    private subscribeToLiveViewers(quizId?: string) {
+        this.liveSub?.unsubscribe();
+        if (this.liveRefreshTimer) clearInterval(this.liveRefreshTimer);
+        this.liveViewerCount = 0;
+        if (!quizId) return;
+
+        const q = query(collection(this.firestore, 'quizResults'), where('quizId', '==', quizId), where('status', '==', 'in_progress'));
+        let latest: any[] = [];
+        const recompute = () => {
+            const cutoff = Date.now() - 3 * 60 * 1000;
+            this.liveViewerCount = latest.filter((r) => {
+                if (r.closedAt) return false;
+                const last = r.lastActivityAt?.toDate ? r.lastActivityAt.toDate().getTime() : r.lastActivityAt instanceof Date ? r.lastActivityAt.getTime() : 0;
+                return last >= cutoff;
+            }).length;
+        };
+
+        this.liveSub = (collectionData(q, { idField: 'resultId' }) as any).subscribe((rows: any[]) => {
+            latest = rows || [];
+            recompute();
+        });
+        this.liveRefreshTimer = setInterval(recompute, 30 * 1000);
     }
 
     getQuizName() {
@@ -601,6 +644,7 @@ export class QuizStatsSummaryComponent implements OnInit {
         if (!this.selectedQuizId) return;
         this.refreshing = true;
 
+        this.subscribeToLiveViewers(this.selectedQuizId);
         this.loadStats(this.selectedQuizId).finally(() => {
             this.refreshing = false;
         });

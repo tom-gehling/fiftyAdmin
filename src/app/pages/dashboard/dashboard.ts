@@ -10,6 +10,7 @@ import { AuthService } from '@/shared/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { AsyncPipe } from '@angular/common';
 import { FiftyQuizzesDashboardComponent } from './components/fiftyquizzes';
+import { QuickAccessDashboardComponent } from './components/quickaccess';
 import { QuizStatsWidgetComponent } from './components/quizstatswidget';
 import { UserQuizHistoryWidget } from './components/userquizhistory';
 import { UserSummaryWidget } from './components/usersummary';
@@ -28,6 +29,7 @@ import { VenueCalendarComponent } from './components/venuecalendar';
         SubmissionsWallWidget,
         AsyncPipe,
         FiftyQuizzesDashboardComponent,
+        QuickAccessDashboardComponent,
         QuizStatsWidgetComponent,
         UserQuizHistoryWidget,
         UserSummaryWidget,
@@ -54,6 +56,7 @@ import { VenueCalendarComponent } from './components/venuecalendar';
                 <app-stats-widget class="contents" *ngIf="auth.isAdmin$ | async" />
                 <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                     <app-user-summary-widget *ngIf="auth.isMember$ | async" />
+                    <app-quick-access-dashboard />
                     <app-fifty-quizzes-dashboard />
                     <!-- <app-quiz-stats-widget *ngIf="auth.isMember$ | async" /> -->
                     <app-user-quiz-history-widget *ngIf="auth.isMember$ | async" />

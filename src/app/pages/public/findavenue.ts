@@ -13,6 +13,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { VenueService } from '@/shared/services/venue.service';
 import { GoogleMapsService } from '@/shared/services/google-maps.service';
 import { Venue, VenueSchedule } from '@/shared/models/venue.model';
+import { haversineKm } from '@/shared/utils/geo.util';
 import { PublicTopbarComponent } from './components/public-topbar';
 
 @Component({
@@ -752,6 +753,7 @@ export class FindAVenuePage implements OnInit, AfterViewInit, OnDestroy {
           this.map.setCenter(this.userLocation);
           this.map.setZoom(11);
           this.addUserLocationMarker();
+          this.filterVenues();
         },
         () => { /* Permission denied or unavailable — Melbourne default stays */ },
         { timeout: 5000, maximumAge: 60000 }
@@ -790,7 +792,7 @@ export class FindAVenuePage implements OnInit, AfterViewInit, OnDestroy {
     this.venueSub = this.venueService.getActiveVenues().subscribe({
       next: (venues) => {
         this.venues = venues;
-        this.filteredVenues = venues;
+        this.filteredVenues = this.sortVenues(venues);
         this.buildStateOptions();
         this.loading = false;
         this.addMarkers();
@@ -917,7 +919,7 @@ export class FindAVenuePage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   filterVenues(): void {
-    this.filteredVenues = this.venues.filter(venue => {
+    const filtered = this.venues.filter(venue => {
       const matchesSearch = !this.searchQuery ||
         venue.venueName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
         venue.location.city.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -932,11 +934,28 @@ export class FindAVenuePage implements OnInit, AfterViewInit, OnDestroy {
       return matchesSearch && matchesState && matchesDay;
     });
 
+    this.filteredVenues = this.sortVenues(filtered);
+
     this.addMarkers();
 
     if (this.selectedVenue && !this.filteredVenues.find(v => v.id === this.selectedVenue!.id)) {
       this.selectedVenue = null;
     }
+  }
+
+  private sortVenues(venues: Venue[]): Venue[] {
+    const sorted = [...venues];
+    if (this.userLocation) {
+      const origin = this.userLocation;
+      sorted.sort((a, b) => {
+        const da = haversineKm(origin, { lat: a.location.latitude, lng: a.location.longitude });
+        const db = haversineKm(origin, { lat: b.location.latitude, lng: b.location.longitude });
+        return da - db;
+      });
+    } else {
+      sorted.sort((a, b) => a.venueName.localeCompare(b.venueName, undefined, { sensitivity: 'base' }));
+    }
+    return sorted;
   }
 
   formatFirstSchedule(venue: Venue): string {

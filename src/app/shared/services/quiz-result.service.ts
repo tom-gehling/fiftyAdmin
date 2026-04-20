@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Firestore, collection, doc, collectionData, docData, addDoc, updateDoc, query, where } from '@angular/fire/firestore';
+import { Firestore, collection, doc, collectionData, docData, addDoc, updateDoc, query, where, serverTimestamp } from '@angular/fire/firestore';
 import { Observable, defer, firstValueFrom } from 'rxjs';
 import { QuizResult, QuizAnswer } from '../models/quizResult.model';
 import { TaggedUser } from '../models/quizSubmission.model';
@@ -11,11 +11,13 @@ export class QuizResultsService {
 
     /** Create a new result (in-progress) */
     async createResult(quizId: string, userId: string, totalQuestions: number, userHidden?: boolean): Promise<string> {
+        const now = new Date();
         const result: QuizResult = {
             quizId,
             userId,
             status: 'in_progress',
-            startedAt: new Date(),
+            startedAt: now,
+            lastActivityAt: now,
             total: totalQuestions,
             answers: [],
             ...(userHidden ? { userHidden: true } : {})
@@ -41,7 +43,10 @@ export class QuizResultsService {
             currentAnswers.push(answer);
         }
 
-        await updateDoc(resultDoc, { answers: currentAnswers });
+        await updateDoc(resultDoc, {
+            answers: currentAnswers,
+            lastActivityAt: serverTimestamp()
+        });
     }
 
     /** Complete a quiz result */
@@ -58,8 +63,22 @@ export class QuizResultsService {
         await updateDoc(resultDoc, {
             status: 'completed',
             completedAt: new Date(),
+            lastActivityAt: serverTimestamp(),
+            closedAt: null,
             score
         });
+    }
+
+    /** Bump lastActivityAt — called on periodic heartbeats and visibility changes while a quiz is open */
+    async heartbeat(resultId: string) {
+        const resultDoc = doc(this.firestore, this.collectionName, resultId);
+        await updateDoc(resultDoc, { lastActivityAt: serverTimestamp() });
+    }
+
+    /** Clear closedAt when a user returns to an in-progress session so the live viewer count picks them back up */
+    async markResumed(resultId: string) {
+        const resultDoc = doc(this.firestore, this.collectionName, resultId);
+        await updateDoc(resultDoc, { closedAt: null, lastActivityAt: serverTimestamp() });
     }
 
     /** Get all results for a user */

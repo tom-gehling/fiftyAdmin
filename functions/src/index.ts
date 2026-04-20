@@ -1,5 +1,6 @@
 import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import * as admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import express, { Request, Response } from 'express';
@@ -503,6 +504,39 @@ app.post('/api/logQuizFinish', async (req: Request, res: Response): Promise<void
     }
 });
 
+// ===============================
+// /api/logQuizClose
+// sendBeacon target fired on pagehide / beforeunload
+// ===============================
+app.post('/api/logQuizClose', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { resultId } = req.body;
+        if (!resultId) {
+            res.status(400).json({ message: 'resultId is required' });
+            return;
+        }
+
+        const resultRef = db.collection('quizResults').doc(resultId);
+        const snap = await resultRef.get();
+        if (!snap.exists) {
+            res.status(404).json({ message: 'Result not found' });
+            return;
+        }
+
+        const data = snap.data();
+        if (data?.status !== 'in_progress') {
+            res.status(200).json({ message: 'Result not in progress; ignored' });
+            return;
+        }
+
+        await resultRef.update({ closedAt: new Date() });
+        res.status(200).json({ message: 'Close recorded' });
+    } catch (error) {
+        console.error('Error logging quiz close:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 // ---- Firestore trigger ----
 export const quizStarted = onDocumentCreated('quizResults/{sessionId}', async (event) => {
     const data = event.data?.data();
@@ -582,7 +616,14 @@ export const quizFinished = onDocumentUpdated('quizResults/{sessionId}', async (
 
     // --- Update raw aggregates ---
     agg.completedCount = (agg.completedCount || 0) + 1;
-    agg.inProgressCount = (agg.inProgressCount || 0) - 1;
+    // If the sweep already flipped wasAbandoned, it also decremented inProgressCount and
+    // incremented abandonedCount — don't double-count here. Reconcile by moving this
+    // session from the abandoned bucket back into the completed column.
+    if (before?.wasAbandoned === true || after.wasAbandoned === true) {
+        agg.abandonedCount = Math.max((agg.abandonedCount || 0) - 1, 0);
+    } else {
+        agg.inProgressCount = (agg.inProgressCount || 0) - 1;
+    }
     agg.totalScore = (agg.totalScore || 0) + score;
 
     let duration = (completedAt.getTime() - startedAt.getTime()) / 1000;
@@ -1027,6 +1068,69 @@ export const api = onRequest(
         timeoutSeconds: 120
     },
     app
+);
+
+// ===============================
+// Scheduled sweep: mark stale in-progress quizzes as abandoned.
+// Runs every 5 minutes. A session is "stale" if lastActivityAt is older than
+// STALE_THRESHOLD_MINUTES and status is still 'in_progress'. This is the one
+// place that decrements inProgressCount and increments abandonedCount for
+// sessions that were never explicitly completed.
+// ===============================
+export const sweepAbandonedQuizzes = onSchedule(
+    { schedule: 'every 5 minutes', timeoutSeconds: 300 },
+    async () => {
+        const STALE_THRESHOLD_MINUTES = 15;
+        const threshold = Timestamp.fromDate(new Date(Date.now() - STALE_THRESHOLD_MINUTES * 60 * 1000));
+
+        // Firestore can't express "wasAbandoned != true" directly, so filter by
+        // status + lastActivityAt and skip already-flipped docs in the loop.
+        const staleSnap = await db.collection('quizResults').where('status', '==', 'in_progress').where('lastActivityAt', '<', threshold).limit(500).get();
+
+        if (staleSnap.empty) {
+            console.log('Sweep: no stale quizResults found');
+            return;
+        }
+
+        // Group by quizId so we make one aggregate update per quiz, not per session.
+        const perQuiz = new Map<string, string[]>();
+        for (const docSnap of staleSnap.docs) {
+            const data = docSnap.data();
+            if (data.wasAbandoned === true) continue;
+            if (data.retro === true) continue;
+            const quizId = data.quizId;
+            if (!quizId) continue;
+            const list = perQuiz.get(String(quizId)) || [];
+            list.push(docSnap.id);
+            perQuiz.set(String(quizId), list);
+        }
+
+        if (perQuiz.size === 0) {
+            console.log('Sweep: nothing to flip (all stale docs already abandoned)');
+            return;
+        }
+
+        // Flip each session in a batch, then adjust its quiz's aggregate counts.
+        for (const [quizId, resultIds] of perQuiz.entries()) {
+            const batch = db.batch();
+            for (const id of resultIds) {
+                batch.update(db.collection('quizResults').doc(id), { wasAbandoned: true });
+            }
+            await batch.commit();
+
+            const aggRef = db.collection('quizAggregates').doc(quizId);
+            await aggRef.set(
+                {
+                    abandonedCount: FieldValue.increment(resultIds.length),
+                    inProgressCount: FieldValue.increment(-resultIds.length),
+                    updatedAt: new Date()
+                },
+                { merge: true }
+            );
+
+            console.log(`Sweep: flagged ${resultIds.length} quiz ${quizId} session(s) as abandoned`);
+        }
+    }
 );
 
 // ===============================
