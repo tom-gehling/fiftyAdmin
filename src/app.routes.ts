@@ -42,7 +42,6 @@ import { AdminGuard } from '@/shared/guards/adminGuard';
 import { Notfound } from './app/pages/notfound/notfound';
 
 export const appRoutes: Routes = [
-
     // ------------------------------
     // 🏠 HOME — standalone (has own custom navbar, no layout wrapper)
     // ------------------------------
@@ -63,7 +62,7 @@ export const appRoutes: Routes = [
             { path: 'join', component: JoinPage, data: { topbarColor: 'black' } },
             { path: 'join/success', component: JoinSuccessPage, data: { topbarColor: 'black' } },
             { path: 'profile', component: ProfilePage, canActivate: [AuthGuard], data: { topbarColor: 'black' } },
-            { path: 'profile/:userId', component: ProfilePage, canActivate: [AuthGuard], data: { topbarColor: 'black' } },
+            { path: 'profile/:userId', component: ProfilePage, canActivate: [AuthGuard], data: { topbarColor: 'black' } }
         ]
     },
 
@@ -121,7 +120,7 @@ export const appRoutes: Routes = [
                     { path: 'submissionForms', component: SubmissionFormTableComponent },
                     { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
                     { path: 'users', component: UserTableComponent },
-                    { path: 'contactForms', component: ContactFormTableComponent },
+                    { path: 'contactForms', component: ContactFormTableComponent }
                 ]
             }
         ]

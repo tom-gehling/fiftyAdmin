@@ -12,12 +12,15 @@ import { AppTopbar } from './app.topbar';
             <app-topbar [showMenuToggle]="false" [bgColor]="topbarColor" />
             <router-outlet />
         </div>
-    `,
+    `
 })
 export class PublicLayout {
     topbarColor = 'var(--fifty-green)';
 
-    constructor(private router: Router, private activatedRoute: ActivatedRoute) {
+    constructor(
+        private router: Router,
+        private activatedRoute: ActivatedRoute
+    ) {
         this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
             this.topbarColor = this.resolveTopbarColor(this.activatedRoute.snapshot);
         });

@@ -1,42 +1,42 @@
 export interface TaggedUser {
-  uid: string;
-  displayName: string;
-  photoUrl?: string;
+    uid: string;
+    displayName: string;
+    photoUrl?: string;
 }
 
 export interface QuizSubmission {
-  id?: string;
-  quizId: number;
-  quizDocId: string;
-  formId: string;
+    id?: string;
+    quizId: number;
+    quizDocId: string;
+    formId: string;
 
-  submitterId: string;
-  submitterName: string;
+    submitterId: string;
+    submitterName: string;
 
-  teamName: string;
-  location: string;
-  score: number;
-  pictureUrl?: string;
+    teamName: string;
+    location: string;
+    score: number;
+    pictureUrl?: string;
 
-  taggedUsers: TaggedUser[];
-  customFields: { [fieldId: string]: any };
+    taggedUsers: TaggedUser[];
+    customFields: { [fieldId: string]: any };
 
-  submittedAt: Date;
+    submittedAt: Date;
 }
 
 export interface UserSubmissionStats {
-  uid: string;
-  totalSubmissions: number;
-  totalTagged: number;
-  totalScore: number;
-  averageScore: number;
-  quizCount: number;
-  lastSubmissionAt: Date;
+    uid: string;
+    totalSubmissions: number;
+    totalTagged: number;
+    totalScore: number;
+    averageScore: number;
+    quizCount: number;
+    lastSubmissionAt: Date;
 }
 
 export interface QuizSubmissionSummary {
-  quizId: number;
-  score: number;
-  wasTagged: boolean;
-  submittedAt: Date;
+    quizId: number;
+    score: number;
+    wasTagged: boolean;
+    submittedAt: Date;
 }

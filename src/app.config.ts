@@ -30,7 +30,7 @@ export const appConfig: ApplicationConfig = {
                 apiKey: 'AIzaSyCAXtKw-nTmIWPHDc1U4OLfGmdLH0o73Ls',
                 authDomain: 'weeklyfifty-7617b.firebaseapp.com',
                 messagingSenderId: '826354289266',
-                measurementId: 'G-G0GB39G4F3',
+                measurementId: 'G-G0GB39G4F3'
             })
         ),
         provideStorage(() => getStorage()),

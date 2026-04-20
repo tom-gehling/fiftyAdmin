@@ -1,11 +1,11 @@
 export interface Submission {
-  id?: string;
-  userId: string;
+    id?: string;
+    userId: string;
 
-  teamName: string;
-  location: string;
-  score: number;
+    teamName: string;
+    location: string;
+    score: number;
 
-  pictureUrl?: string;
-  submittedAt: Date;
+    pictureUrl?: string;
+    submittedAt: Date;
 }

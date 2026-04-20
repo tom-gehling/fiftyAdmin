@@ -6,9 +6,9 @@ import { AppMenu } from './app.menu';
     standalone: true,
     imports: [AppMenu],
     template: `
-    <div class="layout-sidebar flex flex-col p-2">
-        <app-menu></app-menu>
-    </div>
+        <div class="layout-sidebar flex flex-col p-2">
+            <app-menu></app-menu>
+        </div>
     `
 })
 export class AppSidebar {

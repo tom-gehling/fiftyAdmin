@@ -1,16 +1,16 @@
 import { onRequest, onCall, HttpsError } from 'firebase-functions/v2/https';
-import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from 'firebase-admin/firestore';
 import * as maxmind from 'maxmind';
 import * as path from 'path';
 import Stripe from 'stripe';
 import { PRICE_TIER_MAP } from './stripe-config.js';
 
-const luxon = require('luxon')
+const luxon = require('luxon');
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -23,79 +23,68 @@ app.use(express.json());
 // /api/getLatestQuiz
 // ===============================
 app.get('/api/getLatestQuiz', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const now = Timestamp.fromDate(new Date());
-    const snapshot = await db.collection('quizzes')
-      .where('quizType', '==', 1)
-      .where('deploymentDate', '<=', now)
-      .orderBy('deploymentDate', 'desc')
-      .limit(1)
-      .get();
+    try {
+        const now = Timestamp.fromDate(new Date());
+        const snapshot = await db.collection('quizzes').where('quizType', '==', 1).where('deploymentDate', '<=', now).orderBy('deploymentDate', 'desc').limit(1).get();
 
-    if (snapshot.empty) {
-      res.status(404).json({ message: 'No quiz found' });
-      return;
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No quiz found' });
+            return;
+        }
+
+        const quiz = snapshot.docs[0].data();
+        const formattedQuiz = {
+            ...quiz,
+            quiz_id: quiz.quizId,
+            questions: (quiz.questions || []).map((q: any) => ({
+                qNum: q.questionId,
+                qTitle: q.question,
+                qAnswer: q.answer
+            })),
+            deploymentDate: quiz.deploymentDate?.toDate() ?? null
+        };
+
+        res.status(200).json(formattedQuiz);
+    } catch (error) {
+        console.error('Error fetching quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const quiz = snapshot.docs[0].data();
-    const formattedQuiz = {
-      ...quiz,
-      quiz_id: quiz.quizId,
-      questions: (quiz.questions || []).map((q: any) => ({
-        qNum: q.questionId,
-        qTitle: q.question,
-        qAnswer: q.answer
-      })),
-      deploymentDate: quiz.deploymentDate?.toDate() ?? null
-    };
-
-    res.status(200).json(formattedQuiz);
-  } catch (error) {
-    console.error('Error fetching quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
 app.get('/api/getLatestCollabQuiz', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const quizCollab = req.query.collab;
+    try {
+        const quizCollab = req.query.collab;
 
-    if (!quizCollab) {
-      res.status(400).json({ error: 'Need to define a collaborator' });
-      return;
+        if (!quizCollab) {
+            res.status(400).json({ error: 'Need to define a collaborator' });
+            return;
+        }
+
+        const now = Timestamp.fromDate(new Date());
+        const snapshot = await db.collection('quizzes').where('quizType', '==', 3).where('collab', '==', quizCollab).where('deploymentDate', '<=', now).orderBy('deploymentDate', 'desc').limit(1).get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No quiz found' });
+            return;
+        }
+
+        const quiz = snapshot.docs[0].data();
+        const formattedQuiz = {
+            ...quiz,
+            quiz_id: quiz.quizId,
+            questions: (quiz.questions || []).map((q: any) => ({
+                qNum: q.questionId,
+                qTitle: q.question,
+                qAnswer: q.answer
+            })),
+            deploymentDate: quiz.deploymentDate?.toDate() ?? null
+        };
+
+        res.status(200).json(formattedQuiz);
+    } catch (error) {
+        console.error('Error fetching quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const now = Timestamp.fromDate(new Date());
-    const snapshot = await db.collection('quizzes')
-      .where('quizType', '==', 3)
-      .where('collab', '==', quizCollab)
-      .where('deploymentDate', '<=', now)
-      .orderBy('deploymentDate', 'desc')
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      res.status(404).json({ message: 'No quiz found' });
-      return;
-    }
-
-    const quiz = snapshot.docs[0].data();
-    const formattedQuiz = {
-      ...quiz,
-      quiz_id: quiz.quizId,
-      questions: (quiz.questions || []).map((q: any) => ({
-        qNum: q.questionId,
-        qTitle: q.question,
-        qAnswer: q.answer
-      })),
-      deploymentDate: quiz.deploymentDate?.toDate() ?? null
-    };
-
-    res.status(200).json(formattedQuiz);
-  } catch (error) {
-    console.error('Error fetching quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
 // ===============================
@@ -103,30 +92,25 @@ app.get('/api/getLatestCollabQuiz', async (req: Request, res: Response): Promise
 // ===============================
 
 app.get('/api/getQuizArchiveHeaders', async (req: Request, res: Response): Promise<void> => {
-  try {
+    try {
+        const now = Timestamp.fromDate(new Date());
+        const snapshot = await db.collection('quizzes').where('quizType', '==', 1).where('deploymentDate', '<=', now).orderBy('deploymentDate', 'desc').get();
 
-    const now = Timestamp.fromDate(new Date());
-    const snapshot = await db.collection('quizzes')
-      .where('quizType', '==', 1)
-      .where('deploymentDate', '<=', now)
-      .orderBy('deploymentDate', 'desc')
-      .get();
+        const quizzes = snapshot.docs.map((doc) => {
+            const q = doc.data();
 
-    const quizzes = snapshot.docs.map(doc => {
-      const q = doc.data();
+            return {
+                quizId: q.quizId,
+                quizNumber: `Quiz ${q.quizId}`,
+                deploymentDate: q.deploymentDate?.toDate() ?? null
+            };
+        });
 
-      return {
-        quizId: q.quizId,
-        quizNumber: `Quiz ${q.quizId}`,
-        deploymentDate: q.deploymentDate?.toDate() ?? null
-      };
-    });
-
-    res.status(200).json(quizzes);
-  } catch (error) {
-    console.error('Error fetching archive list:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+        res.status(200).json(quizzes);
+    } catch (error) {
+        console.error('Error fetching archive list:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // ===============================
@@ -134,405 +118,393 @@ app.get('/api/getQuizArchiveHeaders', async (req: Request, res: Response): Promi
 // ===============================
 
 app.get('/api/getQuizByQuizId', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const quizIdRaw = req.query.quizId;
-    const quizId = Number(quizIdRaw);
+    try {
+        const quizIdRaw = req.query.quizId;
+        const quizId = Number(quizIdRaw);
 
-    if (!quizIdRaw || isNaN(quizId)) {
-      res.status(400).json({ error: 'quizId must be a valid number' });
-      return;
+        if (!quizIdRaw || isNaN(quizId)) {
+            res.status(400).json({ error: 'quizId must be a valid number' });
+            return;
+        }
+
+        const snapshot = await db
+            .collection('quizzes')
+            .where('quizId', '==', quizId) // <-- now numeric
+            .limit(1)
+            .get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'Quiz not found' });
+            return;
+        }
+
+        const quiz = snapshot.docs[0].data();
+
+        const formattedQuiz = {
+            ...quiz,
+            quiz_id: quiz.quizId,
+            questions: (quiz.questions || []).map((q: any) => ({
+                qNum: q.questionId,
+                qTitle: q.question,
+                qAnswer: q.answer
+            })),
+            deploymentDate: quiz.deploymentDate?.toDate() ?? null
+        };
+
+        res.status(200).json(formattedQuiz);
+    } catch (error) {
+        console.error('Error fetching quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const snapshot = await db.collection('quizzes')
-      .where('quizId', '==', quizId)   // <-- now numeric
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      res.status(404).json({ message: 'Quiz not found' });
-      return;
-    }
-
-    const quiz = snapshot.docs[0].data();
-
-    const formattedQuiz = {
-      ...quiz,
-      quiz_id: quiz.quizId,
-      questions: (quiz.questions || []).map((q: any) => ({
-        qNum: q.questionId,
-        qTitle: q.question,
-        qAnswer: q.answer
-      })),
-      deploymentDate: quiz.deploymentDate?.toDate() ?? null
-    };
-
-    res.status(200).json(formattedQuiz);
-  } catch (error) {
-    console.error('Error fetching quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
 app.get('/api/getQuizByQuizSlug', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const quizSlug = req.query.quizSlug;
+    try {
+        const quizSlug = req.query.quizSlug;
 
-    const snapshot = await db.collection('quizzes')
-      .where('quizSlug', '==', quizSlug)   // <-- now numeric
-      .limit(1)
-      .get();
+        const snapshot = await db
+            .collection('quizzes')
+            .where('quizSlug', '==', quizSlug) // <-- now numeric
+            .limit(1)
+            .get();
 
-    if (snapshot.empty) {
-      res.status(404).json({ message: 'Quiz not found' });
-      return;
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'Quiz not found' });
+            return;
+        }
+
+        const quiz = snapshot.docs[0].data();
+
+        const formattedQuiz = {
+            ...quiz,
+            quiz_id: quiz.quizId,
+            questions: (quiz.questions || []).map((q: any) => ({
+                qNum: q.questionId,
+                qTitle: q.question,
+                qAnswer: q.answer
+            }))
+        };
+
+        res.status(200).json(formattedQuiz);
+    } catch (error) {
+        console.error('Error fetching quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const quiz = snapshot.docs[0].data();
-
-    const formattedQuiz = {
-      ...quiz,
-      quiz_id: quiz.quizId,
-      questions: (quiz.questions || []).map((q: any) => ({
-        qNum: q.questionId,
-        qTitle: q.question,
-        qAnswer: q.answer
-      }))
-    };
-
-    res.status(200).json(formattedQuiz);
-  } catch (error) {
-    console.error('Error fetching quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
-
 
 // ===============================
 // /api/quizStats/:quizId
 // ===============================
 app.get('/api/quizStats/:quizId', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const quizId = req.params.quizId;
-    const snapshot = await db.collection('quizResults')
-      .where('quizId', '==', quizId)
-      .get();
+    try {
+        const quizId = req.params.quizId;
+        const snapshot = await db.collection('quizResults').where('quizId', '==', quizId).get();
 
-    if (snapshot.empty) {
-      res.status(404).json({ message: 'No results found for this quiz' });
-      return;
-    }
+        if (snapshot.empty) {
+            res.status(404).json({ message: 'No results found for this quiz' });
+            return;
+        }
 
-    let attempts = 0;
-    let totalScore = 0;
-    let totalTime = 0;
-    let completedCount = 0;
-    const questionStats: Record<string, { correct: number; total: number }> = {};
+        let attempts = 0;
+        let totalScore = 0;
+        let totalTime = 0;
+        let completedCount = 0;
+        const questionStats: Record<string, { correct: number; total: number }> = {};
 
-    snapshot.forEach(doc => {
-      const result = doc.data() as any;
+        snapshot.forEach((doc) => {
+            const result = doc.data() as any;
 
-      // Skip retro quiz results from stats
-      if (result.retro && result.retro === true) return;
+            // Skip retro quiz results from stats
+            if (result.retro && result.retro === true) return;
 
-      attempts++;
+            attempts++;
 
-      if (result.completedAt) {
-        completedCount++;
-        totalScore += result.score ?? 0;
+            if (result.completedAt) {
+                completedCount++;
+                totalScore += result.score ?? 0;
 
-        const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
-        const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
-        if (started && completed) totalTime += (completed.getTime() - started.getTime()) / 1000;
+                const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
+                const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
+                if (started && completed) totalTime += (completed.getTime() - started.getTime()) / 1000;
 
-        (result.answers || []).forEach((a: any) => {
-          const qid = String(a.questionId);
-          if (!questionStats[qid]) questionStats[qid] = { correct: 0, total: 0 };
-          questionStats[qid].total++;
-          if (a.correct) questionStats[qid].correct++;
+                (result.answers || []).forEach((a: any) => {
+                    const qid = String(a.questionId);
+                    if (!questionStats[qid]) questionStats[qid] = { correct: 0, total: 0 };
+                    questionStats[qid].total++;
+                    if (a.correct) questionStats[qid].correct++;
+                });
+            }
         });
-      }
-    });
 
-    const averageScore = completedCount > 0 ? totalScore / completedCount : 0;
-    const averageTime = completedCount > 0 ? totalTime / completedCount : 0;
+        const averageScore = completedCount > 0 ? totalScore / completedCount : 0;
+        const averageTime = completedCount > 0 ? totalTime / completedCount : 0;
 
-    const questionAccuracy = Object.entries(questionStats).map(([id, stat]) => ({
-      questionId: id,
-      correctCount: stat.correct,
-      totalAttempts: stat.total,
-      correctRate: stat.total > 0 ? stat.correct / stat.total : 0
-    }));
+        const questionAccuracy = Object.entries(questionStats).map(([id, stat]) => ({
+            questionId: id,
+            correctCount: stat.correct,
+            totalAttempts: stat.total,
+            correctRate: stat.total > 0 ? stat.correct / stat.total : 0
+        }));
 
-    const hardestQuestions = [...questionAccuracy].sort((a, b) => a.correctRate - b.correctRate).slice(0, 5);
-    const easiestQuestions = [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
+        const hardestQuestions = [...questionAccuracy].sort((a, b) => a.correctRate - b.correctRate).slice(0, 5);
+        const easiestQuestions = [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
 
-    res.status(200).json({
-      quizId,
-      attempts,
-      completedCount,
-      averageScore,
-      averageTime,
-      questionAccuracy,
-      hardestQuestions,
-      easiestQuestions
-    });
-  } catch (error) {
-    console.error('Error generating stats:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+        res.status(200).json({
+            quizId,
+            attempts,
+            completedCount,
+            averageScore,
+            averageTime,
+            questionAccuracy,
+            hardestQuestions,
+            easiestQuestions
+        });
+    } catch (error) {
+        console.error('Error generating stats:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
-
 
 // ===============================
 // /api/quizLocationStats/:quizId
 // ===============================
 app.get('/api/quizLocationStats/:quizId', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const quizId = req.params.quizId;
-
-    // Fetch completed quiz results
-    const snapshot = await db.collection('quizResults')
-      .where('quizId', '==', quizId)
-      .where('status', '==', 'completed')
-      .get();
-
-    if (snapshot.empty) {
-      res.status(200).json({
-        quizId,
-        totalResults: 0,
-        countries: [],
-        cities: [],
-        mapData: []
-      });
-      return;
-    }
-
-    // Initialize MaxMind reader
-    let geoLookup: maxmind.Reader<maxmind.CityResponse> | null = null;
     try {
-      const geoLitePath = path.join(__dirname, '..', 'GeoLite2-City.mmdb');
-      geoLookup = await maxmind.open<maxmind.CityResponse>(geoLitePath);
+        const quizId = req.params.quizId;
+
+        // Fetch completed quiz results
+        const snapshot = await db.collection('quizResults').where('quizId', '==', quizId).where('status', '==', 'completed').get();
+
+        if (snapshot.empty) {
+            res.status(200).json({
+                quizId,
+                totalResults: 0,
+                countries: [],
+                cities: [],
+                mapData: []
+            });
+            return;
+        }
+
+        // Initialize MaxMind reader
+        let geoLookup: maxmind.Reader<maxmind.CityResponse> | null = null;
+        try {
+            const geoLitePath = path.join(__dirname, '..', 'GeoLite2-City.mmdb');
+            geoLookup = await maxmind.open<maxmind.CityResponse>(geoLitePath);
+        } catch (error) {
+            console.error('MaxMind database not found, returning without geolocation:', error);
+            res.status(500).json({ error: 'GeoLite2 database not configured' });
+            return;
+        }
+
+        interface LocationStats {
+            count: number;
+            totalScore: number;
+            totalTime: number;
+            latitude?: number;
+            longitude?: number;
+        }
+
+        const countryStats: Record<string, LocationStats> = {};
+        const cityStats: Record<string, LocationStats> = {};
+        let totalResults = 0;
+
+        snapshot.forEach((doc) => {
+            const result = doc.data() as any;
+
+            // Skip retro quiz results from location stats
+            if (result.retro && result.retro === true) return;
+
+            const ip = result.ip;
+
+            if (!ip) return;
+
+            totalResults++;
+            const geo = geoLookup!.get(ip);
+            const country = geo?.country?.names?.en || 'Unknown';
+            const city = geo?.city?.names?.en || 'Unknown';
+            const cityKey = `${city}, ${country}`;
+
+            // Calculate duration
+            const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
+            const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
+            const duration = (completed.getTime() - started.getTime()) / 1000;
+            const score = result.score ?? 0;
+
+            // Aggregate country stats
+            if (!countryStats[country]) {
+                countryStats[country] = {
+                    count: 0,
+                    totalScore: 0,
+                    totalTime: 0,
+                    latitude: geo?.location?.latitude,
+                    longitude: geo?.location?.longitude
+                };
+            }
+            countryStats[country].count++;
+            countryStats[country].totalScore += score;
+            countryStats[country].totalTime += duration;
+
+            // Aggregate city stats
+            if (!cityStats[cityKey]) {
+                cityStats[cityKey] = {
+                    count: 0,
+                    totalScore: 0,
+                    totalTime: 0,
+                    latitude: geo?.location?.latitude,
+                    longitude: geo?.location?.longitude
+                };
+            }
+            cityStats[cityKey].count++;
+            cityStats[cityKey].totalScore += score;
+            cityStats[cityKey].totalTime += duration;
+        });
+
+        // Format response
+        const countries = Object.entries(countryStats)
+            .map(([name, stats]) => ({
+                name,
+                count: stats.count,
+                averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
+                averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
+                latitude: stats.latitude,
+                longitude: stats.longitude
+            }))
+            .sort((a, b) => b.count - a.count);
+
+        const cities = Object.entries(cityStats)
+            .map(([name, stats]) => ({
+                name,
+                count: stats.count,
+                averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
+                averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
+                latitude: stats.latitude,
+                longitude: stats.longitude
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 20); // Top 20 cities
+
+        // Map data for visualization
+        const mapData = countries
+            .filter((c) => c.latitude && c.longitude)
+            .map((c) => ({
+                name: c.name,
+                latitude: c.latitude,
+                longitude: c.longitude,
+                count: c.count
+            }));
+
+        res.status(200).json({
+            quizId,
+            totalResults,
+            countries,
+            cities,
+            mapData
+        });
     } catch (error) {
-      console.error('MaxMind database not found, returning without geolocation:', error);
-      res.status(500).json({ error: 'GeoLite2 database not configured' });
-      return;
+        console.error('Error generating location stats:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    interface LocationStats {
-      count: number;
-      totalScore: number;
-      totalTime: number;
-      latitude?: number;
-      longitude?: number;
-    }
-
-    const countryStats: Record<string, LocationStats> = {};
-    const cityStats: Record<string, LocationStats> = {};
-    let totalResults = 0;
-
-    snapshot.forEach(doc => {
-      const result = doc.data() as any;
-
-      // Skip retro quiz results from location stats
-      if (result.retro && result.retro === true) return;
-
-      const ip = result.ip;
-
-      if (!ip) return;
-
-      totalResults++;
-      const geo = geoLookup!.get(ip);
-      const country = geo?.country?.names?.en || 'Unknown';
-      const city = geo?.city?.names?.en || 'Unknown';
-      const cityKey = `${city}, ${country}`;
-
-      // Calculate duration
-      const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
-      const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
-      const duration = (completed.getTime() - started.getTime()) / 1000;
-      const score = result.score ?? 0;
-
-      // Aggregate country stats
-      if (!countryStats[country]) {
-        countryStats[country] = {
-          count: 0,
-          totalScore: 0,
-          totalTime: 0,
-          latitude: geo?.location?.latitude,
-          longitude: geo?.location?.longitude
-        };
-      }
-      countryStats[country].count++;
-      countryStats[country].totalScore += score;
-      countryStats[country].totalTime += duration;
-
-      // Aggregate city stats
-      if (!cityStats[cityKey]) {
-        cityStats[cityKey] = {
-          count: 0,
-          totalScore: 0,
-          totalTime: 0,
-          latitude: geo?.location?.latitude,
-          longitude: geo?.location?.longitude
-        };
-      }
-      cityStats[cityKey].count++;
-      cityStats[cityKey].totalScore += score;
-      cityStats[cityKey].totalTime += duration;
-    });
-
-    // Format response
-    const countries = Object.entries(countryStats)
-      .map(([name, stats]) => ({
-        name,
-        count: stats.count,
-        averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
-        averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
-        latitude: stats.latitude,
-        longitude: stats.longitude
-      }))
-      .sort((a, b) => b.count - a.count);
-
-    const cities = Object.entries(cityStats)
-      .map(([name, stats]) => ({
-        name,
-        count: stats.count,
-        averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
-        averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
-        latitude: stats.latitude,
-        longitude: stats.longitude
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 20); // Top 20 cities
-
-    // Map data for visualization
-    const mapData = countries
-      .filter(c => c.latitude && c.longitude)
-      .map(c => ({
-        name: c.name,
-        latitude: c.latitude,
-        longitude: c.longitude,
-        count: c.count
-      }));
-
-    res.status(200).json({
-      quizId,
-      totalResults,
-      countries,
-      cities,
-      mapData
-    });
-  } catch (error) {
-    console.error('Error generating location stats:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
-
 
 // ===============================
 // /api/logQuizStart
 // ===============================
 app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { quizId, userId } = req.body;
+    try {
+        const { quizId, userId } = req.body;
 
-    if (!quizId) {
-      res.status(400).json({ message: 'quizId is required' });
-      return;
-    }
+        if (!quizId) {
+            res.status(400).json({ message: 'quizId is required' });
+            return;
+        }
 
-    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
+        const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
 
-    let dbUserId: string | null = null;
+        let dbUserId: string | null = null;
 
-    if (userId) {
-      const usersCol = db.collection('users');
-      const existingSnap = await usersCol
-        .where('externalQuizId', '==', userId)
-        .limit(1)
-        .get();
+        if (userId) {
+            const usersCol = db.collection('users');
+            const existingSnap = await usersCol.where('externalQuizId', '==', userId).limit(1).get();
 
-      if (!existingSnap.empty) {
-        // User already exists → reuse it
-        dbUserId = existingSnap.docs[0].id;
-      } else {
-        // No user → create placeholder
-        const placeholderRef = await usersCol.add({
-          createdAt: new Date(),
-          isAnon: true,
-          isMember: false,
-          isAdmin: false,
-          loginCount: 1,
-          followers: [],
-          following: [],
-          externalQuizId: userId,
-          email: null,
-          displayName: null,
-          photoUrl: null,
-          lastLoginAt: new Date(),
-          updatedAt: new Date()
+            if (!existingSnap.empty) {
+                // User already exists → reuse it
+                dbUserId = existingSnap.docs[0].id;
+            } else {
+                // No user → create placeholder
+                const placeholderRef = await usersCol.add({
+                    createdAt: new Date(),
+                    isAnon: true,
+                    isMember: false,
+                    isAdmin: false,
+                    loginCount: 1,
+                    followers: [],
+                    following: [],
+                    externalQuizId: userId,
+                    email: null,
+                    displayName: null,
+                    photoUrl: null,
+                    lastLoginAt: new Date(),
+                    updatedAt: new Date()
+                });
+
+                // Use doc ID as uid
+                await placeholderRef.update({ uid: placeholderRef.id });
+                dbUserId = placeholderRef.id;
+            }
+        }
+
+        // Create the quizResult session
+        const quizResultRef = await db.collection('quizResults').add({
+            quizId,
+            userId: dbUserId, // null if no userId provided
+            status: 'in_progress',
+            startedAt: new Date(),
+            completedAt: null,
+            score: null,
+            total: null,
+            answers: [],
+            ip,
+            geo: null,
+            userAgent: req.get('user-agent') || 'unknown',
+            submittedFrom: 'Weekly'
         });
 
-        // Use doc ID as uid
-        await placeholderRef.update({ uid: placeholderRef.id });
-        dbUserId = placeholderRef.id;
-      }
+        res.status(200).json({ sessionId: quizResultRef.id });
+    } catch (error) {
+        console.error('Error starting quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    // Create the quizResult session
-    const quizResultRef = await db.collection('quizResults').add({
-      quizId,
-      userId: dbUserId,  // null if no userId provided
-      status: 'in_progress',
-      startedAt: new Date(),
-      completedAt: null,
-      score: null,
-      total: null,
-      answers: [],
-      ip,
-      geo: null,
-      userAgent: req.get('user-agent') || 'unknown',
-      submittedFrom: 'Weekly'
-    });
-
-    res.status(200).json({ sessionId: quizResultRef.id });
-  } catch (error) {
-    console.error('Error starting quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
-
 
 // ===============================
 // /api/logQuizFinish
 // ===============================
 app.post('/api/logQuizFinish', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { sessionId, score, total, answers } = req.body;
-    if (!sessionId || score === undefined || !answers) {
-      res.status(400).json({ message: 'sessionId, score, and answers are required' });
-      return;
+    try {
+        const { sessionId, score, total, answers } = req.body;
+        if (!sessionId || score === undefined || !answers) {
+            res.status(400).json({ message: 'sessionId, score, and answers are required' });
+            return;
+        }
+
+        await db.collection('quizResults').doc(sessionId).update({
+            completedAt: new Date(),
+            status: 'completed',
+            score,
+            total,
+            answers
+        });
+
+        res.status(200).json({ message: 'Quiz result saved successfully' });
+    } catch (error) {
+        console.error('Error finishing quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    await db.collection('quizResults').doc(sessionId).update({
-      completedAt: new Date(),
-      status: 'completed',
-      score,
-      total,
-      answers
-    });
-
-    res.status(200).json({ message: 'Quiz result saved successfully' });
-  } catch (error) {
-    console.error('Error finishing quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
 // ---- Firestore trigger ----
-export const quizStarted = onDocumentCreated(
-  "quizResults/{sessionId}",
-  async (event) => {
+export const quizStarted = onDocumentCreated('quizResults/{sessionId}', async (event) => {
     const data = event.data?.data();
     if (!data) return;
     if (data.retro && data.retro === true) return; // Skip retro quiz results from stats
@@ -541,42 +513,37 @@ export const quizStarted = onDocumentCreated(
     if (!quizId) return;
 
     // Increment inProgressCount
-    const aggRef = db.collection("quizAggregates").doc(String(quizId));
+    const aggRef = db.collection('quizAggregates').doc(String(quizId));
     const aggDoc = await aggRef.get();
     if (!aggDoc.exists) {
-      await aggRef.set({
-        inProgressCount: 0,
-        completedCount: 0,
-        abandonedCount: 0,
-        totalScore: 0,
-        totalTime: 0,
-        hourlyCounts: {},
-        locationCounts: {},
-        questionStats: {},
-        sequentialQuestionTimes: [],
-        maxScore: 0,
-        minScore: 0,
-        validStatsCount: 0,
-        updatedAt: new Date()
-      });
-
+        await aggRef.set({
+            inProgressCount: 0,
+            completedCount: 0,
+            abandonedCount: 0,
+            totalScore: 0,
+            totalTime: 0,
+            hourlyCounts: {},
+            locationCounts: {},
+            questionStats: {},
+            sequentialQuestionTimes: [],
+            maxScore: 0,
+            minScore: 0,
+            validStatsCount: 0,
+            updatedAt: new Date()
+        });
     }
 
     // Now increment
     await aggRef.update({
-      inProgressCount: FieldValue.increment(1),
-  updatedAt: new Date(),
+        inProgressCount: FieldValue.increment(1),
+        updatedAt: new Date()
     });
 
-
     console.log(`⬆️ In-progress incremented for quiz ${quizId}`);
-  }
-);
+});
 
 // ---- Firestore trigger ----
-export const quizFinished = onDocumentUpdated(
-  "quizResults/{sessionId}",
-  async (event) => {
+export const quizFinished = onDocumentUpdated('quizResults/{sessionId}', async (event) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
     if (!after) return;
@@ -586,26 +553,26 @@ export const quizFinished = onDocumentUpdated(
     const quizId = after.quizId;
     if (!quizId) return;
 
-    const aggRef = db.collection("quizAggregates").doc(String(quizId));
+    const aggRef = db.collection('quizAggregates').doc(String(quizId));
 
     // Load existing aggregate (or initialize)
     const aggDoc = await aggRef.get();
     const agg: any = aggDoc.exists
-      ? aggDoc.data()
-      : {
-          completedCount: 0,
-          inProgressCount: 0,
-          abandonedCount: 0,
-          totalScore: 0,
-          totalTime: 0,
-          hourlyCounts: {},
-          locationCounts: {},
-          questionStats: {},
-          sequentialQuestionTimes: [],
-          maxScore: Number.NEGATIVE_INFINITY,
-          minScore: Number.POSITIVE_INFINITY,
-          validStatsCount: 0,
-        };
+        ? aggDoc.data()
+        : {
+              completedCount: 0,
+              inProgressCount: 0,
+              abandonedCount: 0,
+              totalScore: 0,
+              totalTime: 0,
+              hourlyCounts: {},
+              locationCounts: {},
+              questionStats: {},
+              sequentialQuestionTimes: [],
+              maxScore: Number.NEGATIVE_INFINITY,
+              minScore: Number.POSITIVE_INFINITY,
+              validStatsCount: 0
+          };
 
     const data = after;
     const startedAt = data.startedAt?.toDate?.() ?? new Date(data.startedAt);
@@ -623,41 +590,39 @@ export const quizFinished = onDocumentUpdated(
     agg.totalTime = (agg.totalTime || 0) + duration;
 
     // Hourly counts
-    const startedAdelaide = luxon.DateTime.fromJSDate(startedAt).setZone("Australia/Adelaide");
-    const hourKey = startedAdelaide.toFormat("yyyy-MM-dd HH");
+    const startedAdelaide = luxon.DateTime.fromJSDate(startedAt).setZone('Australia/Adelaide');
+    const hourKey = startedAdelaide.toFormat('yyyy-MM-dd HH');
     agg.hourlyCounts = agg.hourlyCounts || {};
     agg.hourlyCounts[hourKey] = (agg.hourlyCounts[hourKey] || 0) + 1;
 
     // Location counts placeholder
-    const locKey = "Unknown - Unknown";
+    const locKey = 'Unknown - Unknown';
     agg.locationCounts = agg.locationCounts || {};
     agg.locationCounts[locKey] = (agg.locationCounts[locKey] || 0) + 1;
 
     // Question stats
     agg.questionStats = agg.questionStats || {};
     for (const ans of answers) {
-      const qid = String(ans.questionId);
-      if (!agg.questionStats[qid]) agg.questionStats[qid] = { correct: 0, total: 0 };
-      agg.questionStats[qid].total++;
-      if (ans.correct) agg.questionStats[qid].correct++;
+        const qid = String(ans.questionId);
+        if (!agg.questionStats[qid]) agg.questionStats[qid] = { correct: 0, total: 0 };
+        agg.questionStats[qid].total++;
+        if (ans.correct) agg.questionStats[qid].correct++;
     }
 
     // Sequential question times
-    const sorted = [...answers]
-      .filter((a: any) => a.timestamp)
-      .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const sorted = [...answers].filter((a: any) => a.timestamp).sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     agg.sequentialQuestionTimes = agg.sequentialQuestionTimes || [];
     for (let i = 1; i < sorted.length; i++) {
-      const prev = new Date(sorted[i - 1].timestamp).getTime();
-      const curr = new Date(sorted[i].timestamp).getTime();
-      const diffSec = (curr - prev) / 1000;
-      if (diffSec > 0 && diffSec <= 10 * 60) {
-        agg.sequentialQuestionTimes.push({
-          questionId: String(sorted[i - 1].questionId),
-          diffSec,
-        });
-      }
+        const prev = new Date(sorted[i - 1].timestamp).getTime();
+        const curr = new Date(sorted[i].timestamp).getTime();
+        const diffSec = (curr - prev) / 1000;
+        if (diffSec > 0 && diffSec <= 10 * 60) {
+            agg.sequentialQuestionTimes.push({
+                questionId: String(sorted[i - 1].questionId),
+                diffSec
+            });
+        }
     }
 
     // Min/max scores
@@ -669,44 +634,31 @@ export const quizFinished = onDocumentUpdated(
 
     // --- Derived metrics ---
     // Average time between questions
-    agg.avgTimeBetweenQuestions = agg.sequentialQuestionTimes.length
-      ? agg.sequentialQuestionTimes.reduce(
-          (a: number, b: { questionId: string; diffSec: number }) => a + b.diffSec,
-          0
-        ) / agg.sequentialQuestionTimes.length
-      : 0;
+    agg.avgTimeBetweenQuestions = agg.sequentialQuestionTimes.length ? agg.sequentialQuestionTimes.reduce((a: number, b: { questionId: string; diffSec: number }) => a + b.diffSec, 0) / agg.sequentialQuestionTimes.length : 0;
 
     // Average time between by question
     const perQuestion: Record<string, { total: number; count: number }> = {};
     for (const entry of agg.sequentialQuestionTimes) {
-      if (!perQuestion[entry.questionId]) perQuestion[entry.questionId] = { total: 0, count: 0 };
-      perQuestion[entry.questionId].total += entry.diffSec;
-      perQuestion[entry.questionId].count++;
+        if (!perQuestion[entry.questionId]) perQuestion[entry.questionId] = { total: 0, count: 0 };
+        perQuestion[entry.questionId].total += entry.diffSec;
+        perQuestion[entry.questionId].count++;
     }
-    const avgTimeBetweenByQuestion = Object.entries(perQuestion).map(
-      ([qid, { total, count }]) => ({
+    const avgTimeBetweenByQuestion = Object.entries(perQuestion).map(([qid, { total, count }]) => ({
         questionId: qid,
-        avgDiffSec: total / count,
-      })
-    );
+        avgDiffSec: total / count
+    }));
 
     // Question accuracy
-    const questionAccuracy = Object.entries(agg.questionStats as Record<string, { total: number; correct: number }>).map(
-      ([qid, stat]) => ({
+    const questionAccuracy = Object.entries(agg.questionStats as Record<string, { total: number; correct: number }>).map(([qid, stat]) => ({
         questionId: qid,
         totalAttempts: stat.total,
         correctCount: stat.correct,
-        correctRate: stat.total > 0 ? stat.correct / stat.total : 0,
-      })
-    );
+        correctRate: stat.total > 0 ? stat.correct / stat.total : 0
+    }));
 
     // Hardest/easiest questions
-    const hardestQuestions = [...questionAccuracy]
-      .sort((a, b) => a.correctRate - b.correctRate)
-      .slice(0, 5);
-    const easiestQuestions = [...questionAccuracy]
-      .sort((a, b) => b.correctRate - a.correctRate)
-      .slice(0, 5);
+    const hardestQuestions = [...questionAccuracy].sort((a, b) => a.correctRate - b.correctRate).slice(0, 5);
+    const easiestQuestions = [...questionAccuracy].sort((a, b) => b.correctRate - a.correctRate).slice(0, 5);
 
     // Average score & time
     const averageScore = agg.validStatsCount > 0 ? agg.totalScore / agg.validStatsCount : 0;
@@ -714,160 +666,147 @@ export const quizFinished = onDocumentUpdated(
 
     // --- Merge into Firestore ---
     await aggRef.set(
-      {
-        ...agg,
-        averageScore,
-        averageTime,
-        questionAccuracy,
-        hardestQuestions,
-        easiestQuestions,
-        avgTimeBetweenByQuestion,
-        updatedAt: new Date(),
-      },
-      { merge: true }
+        {
+            ...agg,
+            averageScore,
+            averageTime,
+            questionAccuracy,
+            hardestQuestions,
+            easiestQuestions,
+            avgTimeBetweenByQuestion,
+            updatedAt: new Date()
+        },
+        { merge: true }
     );
 
     console.log(`✅ Aggregates incrementally updated for quiz ${quizId}`);
-  }
-);
-
-
-app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { quizId, emailAddress } = req.body;
-
-    if (!quizId) {
-      res.status(400).json({ message: 'quizId is required' });
-      return;
-    }
-
-    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
-    let dbUserId: string | null = null;
-
-    if (emailAddress) {
-      const usersCol = db.collection('users');
-      const existingSnap = await usersCol
-        .where('email', '==', emailAddress)
-        .limit(1)
-        .get();
-
-      if (!existingSnap.empty) {
-        // User exists → increment login count
-        const userDoc = existingSnap.docs[0];
-        dbUserId = userDoc.id;
-        await userDoc.ref.update({
-          loginCount: (userDoc.data().loginCount || 0) + 1,
-          lastLoginAt: new Date(),
-          updatedAt: new Date(),
-        });
-      } else {
-        // User doesn't exist → create new user
-        const newUserRef = usersCol.doc();
-        await newUserRef.set({
-          uid: newUserRef.id,
-          createdAt: new Date(),
-          isAnon: false,
-          isMember: true,
-          isAdmin: false,
-          loginCount: 1,
-          followers: [],
-          following: [],
-          email: emailAddress,
-          displayName: null,
-          photoUrl: null,
-          lastLoginAt: new Date(),
-          updatedAt: new Date(),
-        });
-        dbUserId = newUserRef.id;
-      }
-    }
-
-    // Create quiz session in quizResults
-    const quizResultRef = await db.collection('quizResults').add({
-      quizId,
-      userId: dbUserId,
-      status: 'in_progress',
-      startedAt: new Date(),
-      completedAt: null,
-      score: null,
-      total: null,
-      answers: [],
-      ip,
-      geo: null,
-      userAgent: req.get('user-agent') || 'unknown',
-      submittedFrom: 'Fifty+'
-    });
-
-    res.status(200).json({ sessionId: quizResultRef.id });
-  } catch (error) {
-    console.error('Error starting FiftyPlus quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
+app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { quizId, emailAddress } = req.body;
 
+        if (!quizId) {
+            res.status(400).json({ message: 'quizId is required' });
+            return;
+        }
+
+        const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 'unknown';
+        let dbUserId: string | null = null;
+
+        if (emailAddress) {
+            const usersCol = db.collection('users');
+            const existingSnap = await usersCol.where('email', '==', emailAddress).limit(1).get();
+
+            if (!existingSnap.empty) {
+                // User exists → increment login count
+                const userDoc = existingSnap.docs[0];
+                dbUserId = userDoc.id;
+                await userDoc.ref.update({
+                    loginCount: (userDoc.data().loginCount || 0) + 1,
+                    lastLoginAt: new Date(),
+                    updatedAt: new Date()
+                });
+            } else {
+                // User doesn't exist → create new user
+                const newUserRef = usersCol.doc();
+                await newUserRef.set({
+                    uid: newUserRef.id,
+                    createdAt: new Date(),
+                    isAnon: false,
+                    isMember: true,
+                    isAdmin: false,
+                    loginCount: 1,
+                    followers: [],
+                    following: [],
+                    email: emailAddress,
+                    displayName: null,
+                    photoUrl: null,
+                    lastLoginAt: new Date(),
+                    updatedAt: new Date()
+                });
+                dbUserId = newUserRef.id;
+            }
+        }
+
+        // Create quiz session in quizResults
+        const quizResultRef = await db.collection('quizResults').add({
+            quizId,
+            userId: dbUserId,
+            status: 'in_progress',
+            startedAt: new Date(),
+            completedAt: null,
+            score: null,
+            total: null,
+            answers: [],
+            ip,
+            geo: null,
+            userAgent: req.get('user-agent') || 'unknown',
+            submittedFrom: 'Fifty+'
+        });
+
+        res.status(200).json({ sessionId: quizResultRef.id });
+    } catch (error) {
+        console.error('Error starting FiftyPlus quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 // ===============================
 // /api/logQuizFinish
 // ===============================
 app.post('/api/logFiftyPlusQuizFinish', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { sessionId, score, total, answers } = req.body;
-    if (!sessionId || score === undefined || !answers) {
-      res.status(400).json({ message: 'sessionId, score, and answers are required' });
-      return;
+    try {
+        const { sessionId, score, total, answers } = req.body;
+        if (!sessionId || score === undefined || !answers) {
+            res.status(400).json({ message: 'sessionId, score, and answers are required' });
+            return;
+        }
+
+        await db.collection('quizResults').doc(sessionId).update({
+            completedAt: new Date(),
+            status: 'completed',
+            score,
+            total,
+            answers
+        });
+
+        res.status(200).json({ message: 'Quiz result saved successfully' });
+    } catch (error) {
+        console.error('Error finishing quiz:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    await db.collection('quizResults').doc(sessionId).update({
-      completedAt: new Date(),
-      status: 'completed',
-      score,
-      total,
-      answers
-    });
-
-    res.status(200).json({ message: 'Quiz result saved successfully' });
-  } catch (error) {
-    console.error('Error finishing quiz:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
-
 
 app.post('/api/updateUserEmail', async (req: Request, res: Response) => {
-  try {
-    const { externalQuizId, email } = req.body;
+    try {
+        const { externalQuizId, email } = req.body;
 
-    if (!externalQuizId || !email) {
-      res.status(400).json({ message: 'externalQuizId and email are required.' });
-      return;
+        if (!externalQuizId || !email) {
+            res.status(400).json({ message: 'externalQuizId and email are required.' });
+            return;
+        }
+
+        // Find the quizResult associated with the externalQuizId
+        const snapshot = await db.collection('users').where('externalQuizId', '==', externalQuizId).limit(1).get();
+
+        if (snapshot.empty) {
+            res.status(404).json({ message: `No user found for externalQuizId ${externalQuizId}.` });
+            return;
+        }
+
+        const userDoc = snapshot.docs[0];
+        await userDoc.ref.update({
+            email,
+            updatedAt: new Date()
+        });
+
+        res.status(200).json({ message: `User ${externalQuizId} updated with email ${email}.` });
+    } catch (err) {
+        console.error('Error updating user email:', err);
+        res.status(500).json({ message: 'Internal server error', error: err });
     }
-
-    // Find the quizResult associated with the externalQuizId
-    const snapshot = await db.collection('users')
-      .where('externalQuizId', '==', externalQuizId)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      res.status(404).json({ message: `No user found for externalQuizId ${externalQuizId}.` });
-      return;
-    }
-
-    const userDoc = snapshot.docs[0];
-      await userDoc.ref.update({
-        email,
-        updatedAt: new Date()
-      });
-
-    res.status(200).json({ message: `User ${externalQuizId} updated with email ${email}.` });
-
-  } catch (err) {
-    console.error('Error updating user email:', err);
-    res.status(500).json({ message: 'Internal server error', error: err });
-  }
 });
-
 
 // ===============================
 // /api/getVenues
@@ -877,169 +816,166 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 const WEEK_ORDINALS = ['', 'First', 'Second', 'Third', 'Fourth'];
 
 function formatTime12h(time: string): string {
-  const [h, m] = time.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour = h % 12 || 12;
-  return m > 0 ? `${hour}:${m.toString().padStart(2, '0')} ${period}` : `${hour}:00 ${period}`;
+    const [h, m] = time.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return m > 0 ? `${hour}:${m.toString().padStart(2, '0')} ${period}` : `${hour}:00 ${period}`;
 }
 
 function formatScheduleLabel(s: any): string {
-  const time = s.startTime ? ` at ${formatTime12h(s.startTime)}` : '';
-  switch (s.type) {
-    case 'weekly':    return `Every ${DAYS[s.dayOfWeek]}${time}`;
-    case 'biweekly':  return `Every other ${DAYS[s.dayOfWeek]}${time}`;
-    case 'monthly': {
-      const ordinal = s.weekOfMonth === -1 ? 'Last' : (WEEK_ORDINALS[s.weekOfMonth] || '');
-      return `${ordinal} ${DAYS[s.dayOfWeek]} of the month${time}`;
+    const time = s.startTime ? ` at ${formatTime12h(s.startTime)}` : '';
+    switch (s.type) {
+        case 'weekly':
+            return `Every ${DAYS[s.dayOfWeek]}${time}`;
+        case 'biweekly':
+            return `Every other ${DAYS[s.dayOfWeek]}${time}`;
+        case 'monthly': {
+            const ordinal = s.weekOfMonth === -1 ? 'Last' : WEEK_ORDINALS[s.weekOfMonth] || '';
+            return `${ordinal} ${DAYS[s.dayOfWeek]} of the month${time}`;
+        }
+        case 'custom':
+            return `Selected dates${time}`;
+        default:
+            return '';
     }
-    case 'custom':    return `Selected dates${time}`;
-    default:          return '';
-  }
 }
 
 function nextWeekdayOccurrence(from: Date, dayOfWeek: number, hours: number, minutes: number): Date {
-  const d = new Date(from);
-  let daysUntil = (dayOfWeek - d.getDay() + 7) % 7;
-  if (daysUntil === 0) {
-    d.setHours(hours, minutes, 0, 0);
-    daysUntil = d <= from ? 7 : 0;
-  }
-  if (daysUntil > 0) {
-    d.setDate(d.getDate() + daysUntil);
-    d.setHours(hours, minutes, 0, 0);
-  }
-  return d;
+    const d = new Date(from);
+    let daysUntil = (dayOfWeek - d.getDay() + 7) % 7;
+    if (daysUntil === 0) {
+        d.setHours(hours, minutes, 0, 0);
+        daysUntil = d <= from ? 7 : 0;
+    }
+    if (daysUntil > 0) {
+        d.setDate(d.getDate() + daysUntil);
+        d.setHours(hours, minutes, 0, 0);
+    }
+    return d;
 }
 
 function nextLastWeekdayOfMonth(from: Date, dayOfWeek: number, hours: number, minutes: number): Date | null {
-  for (let offset = 0; offset <= 2; offset++) {
-    const month = from.getMonth() + offset;
-    const year = from.getFullYear() + Math.floor(month / 12);
-    const actualMonth = month % 12;
-    const lastDay = new Date(year, actualMonth + 1, 0);
-    const diff = (lastDay.getDay() - dayOfWeek + 7) % 7;
-    const candidate = new Date(year, actualMonth, lastDay.getDate() - diff, hours, minutes, 0, 0);
-    if (candidate > from) return candidate;
-  }
-  return null;
+    for (let offset = 0; offset <= 2; offset++) {
+        const month = from.getMonth() + offset;
+        const year = from.getFullYear() + Math.floor(month / 12);
+        const actualMonth = month % 12;
+        const lastDay = new Date(year, actualMonth + 1, 0);
+        const diff = (lastDay.getDay() - dayOfWeek + 7) % 7;
+        const candidate = new Date(year, actualMonth, lastDay.getDate() - diff, hours, minutes, 0, 0);
+        if (candidate > from) return candidate;
+    }
+    return null;
 }
 
 function nextNthWeekdayOfMonth(from: Date, weekOfMonth: number, dayOfWeek: number, hours: number, minutes: number): Date | null {
-  for (let offset = 0; offset <= 2; offset++) {
-    const cur = new Date(from.getFullYear(), from.getMonth() + offset, 1);
-    const targetMonth = cur.getMonth();
-    let count = 0;
-    while (cur.getMonth() === targetMonth) {
-      if (cur.getDay() === dayOfWeek) {
-        count++;
-        if (count === weekOfMonth) {
-          cur.setHours(hours, minutes, 0, 0);
-          if (cur > from) return cur;
-          break;
+    for (let offset = 0; offset <= 2; offset++) {
+        const cur = new Date(from.getFullYear(), from.getMonth() + offset, 1);
+        const targetMonth = cur.getMonth();
+        let count = 0;
+        while (cur.getMonth() === targetMonth) {
+            if (cur.getDay() === dayOfWeek) {
+                count++;
+                if (count === weekOfMonth) {
+                    cur.setHours(hours, minutes, 0, 0);
+                    if (cur > from) return cur;
+                    break;
+                }
+            }
+            cur.setDate(cur.getDate() + 1);
         }
-      }
-      cur.setDate(cur.getDate() + 1);
     }
-  }
-  return null;
+    return null;
 }
 
 function isExcludedDate(date: Date, exclusionDates?: any[]): boolean {
-  if (!exclusionDates?.length) return false;
-  const ds = date.toDateString();
-  return exclusionDates.some((d: any) => {
-    const excl = d?.seconds ? new Date(d.seconds * 1000) : new Date(d);
-    return excl.toDateString() === ds;
-  });
+    if (!exclusionDates?.length) return false;
+    const ds = date.toDateString();
+    return exclusionDates.some((d: any) => {
+        const excl = d?.seconds ? new Date(d.seconds * 1000) : new Date(d);
+        return excl.toDateString() === ds;
+    });
 }
 
 function getNextQuizOccurrence(schedules: any[]): Date | null {
-  const now = new Date();
-  const candidates: Date[] = [];
+    const now = new Date();
+    const candidates: Date[] = [];
 
-  for (const s of schedules) {
-    if (!s.isActive) continue;
-    const [hours, minutes] = (s.startTime || '19:00').split(':').map(Number);
+    for (const s of schedules) {
+        if (!s.isActive) continue;
+        const [hours, minutes] = (s.startTime || '19:00').split(':').map(Number);
 
-    if ((s.type === 'weekly' || s.type === 'biweekly') && s.dayOfWeek !== undefined) {
-      const next = nextWeekdayOccurrence(now, s.dayOfWeek, hours, minutes);
-      if (!isExcludedDate(next, s.exclusionDates)) candidates.push(next);
-    } else if (s.type === 'monthly' && s.weekOfMonth !== undefined && s.dayOfWeek !== undefined) {
-      const next = s.weekOfMonth === -1
-        ? nextLastWeekdayOfMonth(now, s.dayOfWeek, hours, minutes)
-        : nextNthWeekdayOfMonth(now, s.weekOfMonth, s.dayOfWeek, hours, minutes);
-      if (next && !isExcludedDate(next, s.exclusionDates)) candidates.push(next);
-    } else if (s.type === 'custom' && Array.isArray(s.customDates)) {
-      const future = (s.customDates as any[])
-        .map((d: any) => d?.seconds ? new Date(d.seconds * 1000) : new Date(d))
-        .filter((d: Date) => d > now)
-        .sort((a: Date, b: Date) => a.getTime() - b.getTime());
-      if (future.length > 0) candidates.push(future[0]);
+        if ((s.type === 'weekly' || s.type === 'biweekly') && s.dayOfWeek !== undefined) {
+            const next = nextWeekdayOccurrence(now, s.dayOfWeek, hours, minutes);
+            if (!isExcludedDate(next, s.exclusionDates)) candidates.push(next);
+        } else if (s.type === 'monthly' && s.weekOfMonth !== undefined && s.dayOfWeek !== undefined) {
+            const next = s.weekOfMonth === -1 ? nextLastWeekdayOfMonth(now, s.dayOfWeek, hours, minutes) : nextNthWeekdayOfMonth(now, s.weekOfMonth, s.dayOfWeek, hours, minutes);
+            if (next && !isExcludedDate(next, s.exclusionDates)) candidates.push(next);
+        } else if (s.type === 'custom' && Array.isArray(s.customDates)) {
+            const future = (s.customDates as any[])
+                .map((d: any) => (d?.seconds ? new Date(d.seconds * 1000) : new Date(d)))
+                .filter((d: Date) => d > now)
+                .sort((a: Date, b: Date) => a.getTime() - b.getTime());
+            if (future.length > 0) candidates.push(future[0]);
+        }
     }
-  }
 
-  return candidates.length > 0
-    ? candidates.sort((a, b) => a.getTime() - b.getTime())[0]
-    : null;
+    return candidates.length > 0 ? candidates.sort((a, b) => a.getTime() - b.getTime())[0] : null;
 }
 
 function buildVenueDescription(schedules: any[], nextQuiz: Date | null, address: string): string {
-  const activeSchedules = (schedules || []).filter((s: any) => s.isActive);
-  const scheduleLines = activeSchedules.map(formatScheduleLabel).filter(Boolean).join('<br>');
-  const scheduleSection = scheduleLines || 'See venue for details';
+    const activeSchedules = (schedules || []).filter((s: any) => s.isActive);
+    const scheduleLines = activeSchedules.map(formatScheduleLabel).filter(Boolean).join('<br>');
+    const scheduleSection = scheduleLines || 'See venue for details';
 
-  let nextQuizText: string;
-  if (!nextQuiz) {
-    nextQuizText = 'No upcoming quiz scheduled';
-  } else {
-    const dateStr = nextQuiz.toLocaleDateString('en-AU', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    });
-    const timeStr = nextQuiz.getHours()
-      ? ` at ${formatTime12h(`${nextQuiz.getHours()}:${nextQuiz.getMinutes().toString().padStart(2, '0')}`)}`
-      : '';
-    nextQuizText = dateStr + timeStr;
-  }
+    let nextQuizText: string;
+    if (!nextQuiz) {
+        nextQuizText = 'No upcoming quiz scheduled';
+    } else {
+        const dateStr = nextQuiz.toLocaleDateString('en-AU', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+        const timeStr = nextQuiz.getHours() ? ` at ${formatTime12h(`${nextQuiz.getHours()}:${nextQuiz.getMinutes().toString().padStart(2, '0')}`)}` : '';
+        nextQuizText = dateStr + timeStr;
+    }
 
-  const addressSection = address ? `${address}<br><br>` : '';
-  return `${addressSection}${scheduleSection}<br><br><strong>Next Quiz</strong><br>${nextQuizText}`;
+    const addressSection = address ? `${address}<br><br>` : '';
+    return `${addressSection}${scheduleSection}<br><br><strong>Next Quiz</strong><br>${nextQuizText}`;
 }
 
 app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const snapshot = await db.collection('venues').where('isActive', '==', true).get();
+    try {
+        const snapshot = await db.collection('venues').where('isActive', '==', true).get();
 
-    const venues = snapshot.docs
-      .map(doc => ({ id: doc.id, ...(doc.data() as any) }))
-      .filter(v => !v.deletedAt);
+        const venues = snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as any) })).filter((v) => !v.deletedAt);
 
-    const result = venues.map(venue => {
-      const loc = venue.location || {};
-      const address = loc.address;
-      const nextQuiz = getNextQuizOccurrence(venue.quizSchedules || []);
+        const result = venues.map((venue) => {
+            const loc = venue.location || {};
+            const address = loc.address;
+            const nextQuiz = getNextQuizOccurrence(venue.quizSchedules || []);
 
-      const primarySchedule = (venue.quizSchedules || []).find(
-        (s: any) => s.isActive && s.dayOfWeek != null
-      );
+            const primarySchedule = (venue.quizSchedules || []).find((s: any) => s.isActive && s.dayOfWeek != null);
 
-      return {
-        id: venue.id,
-        title: venue.venueName || '',
-        address,
-        lat: String(loc.latitude ?? 0),
-        lng: String(loc.longitude ?? 0),
-        description: buildVenueDescription(venue.quizSchedules || [], nextQuiz, address),
-        link: venue.websiteUrl || '',
-        pic: venue.imageUrl || '',
-        dayOfWeek: primarySchedule?.dayOfWeek ?? null,
-      };
-    });
+            return {
+                id: venue.id,
+                title: venue.venueName || '',
+                address,
+                lat: String(loc.latitude ?? 0),
+                lng: String(loc.longitude ?? 0),
+                description: buildVenueDescription(venue.quizSchedules || [], nextQuiz, address),
+                link: venue.websiteUrl || '',
+                pic: venue.imageUrl || '',
+                dayOfWeek: primarySchedule?.dayOfWeek ?? null
+            };
+        });
 
-    res.status(200).json(result);
-  } catch (error) {
-    console.error('Error fetching venues:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error fetching venues:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
 // ===============================
@@ -1047,53 +983,50 @@ app.get('/api/getVenues', async (req: Request, res: Response): Promise<void> => 
 // Server-side spam protection: IP rate limit (max 3 per hour)
 // ===============================
 app.post('/api/submitContactForm', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { name, email, mobile, message } = req.body as { name?: string; email?: string; mobile?: string; message?: string };
+    try {
+        const { name, email, mobile, message } = req.body as { name?: string; email?: string; mobile?: string; message?: string };
 
-    if (!name?.trim() || !message?.trim()) {
-      res.status(400).json({ error: 'Name, email and message are required.' });
-      return;
+        if (!name?.trim() || !message?.trim()) {
+            res.status(400).json({ error: 'Name, email and message are required.' });
+            return;
+        }
+
+        const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.ip || 'unknown';
+
+        const oneHourAgo = Timestamp.fromDate(new Date(Date.now() - 60 * 60 * 1000));
+        const recentSnap = await db.collection('contactFormSubmissions').where('ip', '==', ip).where('submittedAt', '>=', oneHourAgo).get();
+
+        if (recentSnap.size >= 5) {
+            res.status(429).json({ error: 'Too many submissions. Please try again later.' });
+            return;
+        }
+
+        await db.collection('contactFormSubmissions').add({
+            name: name.trim(),
+            email: email?.trim() || '',
+            mobile: mobile?.trim() || '',
+            message: message.trim(),
+            ip,
+            submittedAt: Timestamp.now(),
+            read: false
+        });
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error submitting contact form:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || req.ip || 'unknown';
-
-    const oneHourAgo = Timestamp.fromDate(new Date(Date.now() - 60 * 60 * 1000));
-    const recentSnap = await db.collection('contactFormSubmissions')
-      .where('ip', '==', ip)
-      .where('submittedAt', '>=', oneHourAgo)
-      .get();
-
-    if (recentSnap.size >= 5) {
-      res.status(429).json({ error: 'Too many submissions. Please try again later.' });
-      return;
-    }
-
-    await db.collection('contactFormSubmissions').add({
-      name: name.trim(),
-      email: email?.trim() || '',
-      mobile: mobile?.trim() || '',
-      message: message.trim(),
-      ip,
-      submittedAt: Timestamp.now(),
-      read: false,
-    });
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Error submitting contact form:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
 // ===============================
 // Export Firebase Function
 // ===============================
 export const api = onRequest(
-  {
-    memory: '512MiB',
-    timeoutSeconds: 120
-  },
-  app
+    {
+        memory: '512MiB',
+        timeoutSeconds: 120
+    },
+    app
 );
 
 // ===============================
@@ -1116,50 +1049,46 @@ const getStripe = (): InstanceType<typeof Stripe> => {
 // Creates a Stripe Subscription and returns a client_secret for
 // the embedded Stripe Payment Element to confirm payment on the frontend.
 // -----------------------------------------------
-export const createSubscriptionIntent = onCall(
-    { secrets: ['STRIPE_SECRET_KEY'] },
-    async (req) => {
-        if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
-        const { priceId } = req.data as { priceId: string };
-        if (!priceId) throw new HttpsError('invalid-argument', 'priceId is required');
+export const createSubscriptionIntent = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+    const { priceId } = req.data as { priceId: string };
+    if (!priceId) throw new HttpsError('invalid-argument', 'priceId is required');
 
-        const stripe = getStripe();
-        const uid = req.auth.uid;
-        const userDoc = await db.collection('users').doc(uid).get();
-        const userData = userDoc.data() ?? {};
+    const stripe = getStripe();
+    const uid = req.auth.uid;
+    const userDoc = await db.collection('users').doc(uid).get();
+    const userData = userDoc.data() ?? {};
 
-        // Retrieve or create Stripe Customer
-        let customerId: string = userData['stripeCustomerId'] ?? '';
-        if (!customerId) {
-            const customer = await stripe.customers.create({
-                email: userData['email'] ?? undefined,
-                name: userData['displayName'] ?? undefined,
-                metadata: { uid },
-            });
-            customerId = customer.id;
-            await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
-        }
-
-        // Create subscription with incomplete payment — returns a client_secret for frontend confirmation
-        const subscription = await stripe.subscriptions.create({
-            customer: customerId,
-            items: [{ price: priceId }],
-            payment_behavior: 'default_incomplete',
-            payment_settings: { save_default_payment_method: 'on_subscription' },
-            expand: ['latest_invoice.payment_intent'],
-            metadata: { uid },
+    // Retrieve or create Stripe Customer
+    let customerId: string = userData['stripeCustomerId'] ?? '';
+    if (!customerId) {
+        const customer = await stripe.customers.create({
+            email: userData['email'] ?? undefined,
+            name: userData['displayName'] ?? undefined,
+            metadata: { uid }
         });
-
-        const invoice = subscription.latest_invoice as any;
-        const paymentIntent = invoice?.payment_intent as any;
-
-        return {
-            clientSecret: paymentIntent?.client_secret ?? null,
-            subscriptionId: subscription.id,
-        };
+        customerId = customer.id;
+        await db.collection('users').doc(uid).set({ stripeCustomerId: customerId }, { merge: true });
     }
-);
 
+    // Create subscription with incomplete payment — returns a client_secret for frontend confirmation
+    const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: priceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+        metadata: { uid }
+    });
+
+    const invoice = subscription.latest_invoice as any;
+    const paymentIntent = invoice?.payment_intent as any;
+
+    return {
+        clientSecret: paymentIntent?.client_secret ?? null,
+        subscriptionId: subscription.id
+    };
+});
 
 // const GUEST_PASS_PRICE_ID = process.env['STRIPE_GUEST_PASS_PRICE_ID'] ?? 'price_guest_pass';
 
@@ -1258,27 +1187,24 @@ export const createSubscriptionIntent = onCall(
 // Callable: createPortalSession
 // Opens the Stripe Customer Portal for self-service
 // -----------------------------------------------
-export const createPortalSession = onCall(
-    { secrets: ['STRIPE_SECRET_KEY'] },
-    async (req) => {
-        if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
+export const createPortalSession = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Must be logged in');
 
-        const { returnUrl } = req.data as { returnUrl: string };
-        const stripe = getStripe();
-        const uid = req.auth.uid;
-        const userDoc = await db.collection('users').doc(uid).get();
-        const customerId: string = userDoc.data()?.['stripeCustomerId'] ?? '';
+    const { returnUrl } = req.data as { returnUrl: string };
+    const stripe = getStripe();
+    const uid = req.auth.uid;
+    const userDoc = await db.collection('users').doc(uid).get();
+    const customerId: string = userDoc.data()?.['stripeCustomerId'] ?? '';
 
-        if (!customerId) throw new HttpsError('not-found', 'No Stripe customer found for this user');
+    if (!customerId) throw new HttpsError('not-found', 'No Stripe customer found for this user');
 
-        const session = await stripe.billingPortal.sessions.create({
-            customer: customerId,
-            return_url: returnUrl,
-        });
+    const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl
+    });
 
-        return { url: session.url };
-    }
-);
+    return { url: session.url };
+});
 
 // // -----------------------------------------------
 // // Callable: getSubscriptionPlanNames
@@ -1307,48 +1233,48 @@ export const createPortalSession = onCall(
 // HTTP: stripeWebhook
 // Handles Stripe events and writes to Firestore
 // -----------------------------------------------
-export const stripeWebhook = onRequest(
-    { secrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] },
-    async (req, res) => {
-        const sig = req.headers['stripe-signature'] as string;
-        const secret = process.env['STRIPE_WEBHOOK_SECRET'];
-        if (!secret) { res.status(500).send('Webhook secret not configured'); return; }
-
-        const stripe = getStripe();
-        let event: any;
-
-        try {
-            event = stripe.webhooks.constructEvent(req.rawBody, sig, secret);
-        } catch (err: any) {
-            console.error('Webhook signature verification failed:', err.message);
-            res.status(400).send(`Webhook Error: ${err.message}`);
-            return;
-        }
-
-        try {
-            switch (event.type) {
-                case 'customer.subscription.updated':
-                case 'customer.subscription.deleted':
-                    await handleSubscriptionChange(event.data.object);
-                    break;
-                case 'invoice.payment_succeeded':
-                    await handleInvoicePaid(event.data.object, stripe);
-                    break;
-                case 'invoice.payment_failed':
-                    await handleInvoiceFailed(event.data.object);
-                    break;
-                default:
-                    // Unhandled event type — ignore
-            }
-        } catch (err) {
-            console.error('Error handling Stripe event:', err);
-            res.status(500).send('Internal error handling webhook');
-            return;
-        }
-
-        res.json({ received: true });
+export const stripeWebhook = onRequest({ secrets: ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'] }, async (req, res) => {
+    const sig = req.headers['stripe-signature'] as string;
+    const secret = process.env['STRIPE_WEBHOOK_SECRET'];
+    if (!secret) {
+        res.status(500).send('Webhook secret not configured');
+        return;
     }
-);
+
+    const stripe = getStripe();
+    let event: any;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.rawBody, sig, secret);
+    } catch (err: any) {
+        console.error('Webhook signature verification failed:', err.message);
+        res.status(400).send(`Webhook Error: ${err.message}`);
+        return;
+    }
+
+    try {
+        switch (event.type) {
+            case 'customer.subscription.updated':
+            case 'customer.subscription.deleted':
+                await handleSubscriptionChange(event.data.object);
+                break;
+            case 'invoice.payment_succeeded':
+                await handleInvoicePaid(event.data.object, stripe);
+                break;
+            case 'invoice.payment_failed':
+                await handleInvoiceFailed(event.data.object);
+                break;
+            default:
+            // Unhandled event type — ignore
+        }
+    } catch (err) {
+        console.error('Error handling Stripe event:', err);
+        res.status(500).send('Internal error handling webhook');
+        return;
+    }
+
+    res.json({ received: true });
+});
 
 async function findUidByCustomerId(customerId: string): Promise<string | null> {
     const snap = await db.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
@@ -1416,28 +1342,37 @@ async function handleSubscriptionChange(sub: any) {
     const isActive = status === 'active' || status === 'trialing';
 
     const writes: Promise<unknown>[] = [
-        db.collection('users').doc(uid).set({
-            subscriptionId: sub.id,
-            subscriptionStatus: status,
-            subscriptionTier: PRICE_TIER_MAP[priceId] ?? null,
-            subscriptionCurrentPeriodEnd: Timestamp.fromMillis(sub.current_period_end * 1000),
-            cancelAtPeriodEnd: sub.cancel_at_period_end,
-            stripePriceId: priceId,
-            billingInterval: stripeIntervalToBillingInterval(price?.recurring ?? null),
-            billingAmountCents: price?.unit_amount ?? 0,
-            isMember: isActive,
-            ...(status === 'canceled' ? { canceledAt: Timestamp.now() } : {}),
-        }, { merge: true }),
+        db
+            .collection('users')
+            .doc(uid)
+            .set(
+                {
+                    subscriptionId: sub.id,
+                    subscriptionStatus: status,
+                    subscriptionTier: PRICE_TIER_MAP[priceId] ?? null,
+                    subscriptionCurrentPeriodEnd: Timestamp.fromMillis(sub.current_period_end * 1000),
+                    cancelAtPeriodEnd: sub.cancel_at_period_end,
+                    stripePriceId: priceId,
+                    billingInterval: stripeIntervalToBillingInterval(price?.recurring ?? null),
+                    billingAmountCents: price?.unit_amount ?? 0,
+                    isMember: isActive,
+                    ...(status === 'canceled' ? { canceledAt: Timestamp.now() } : {})
+                },
+                { merge: true }
+            )
     ];
 
     if (status === 'canceled') {
         writes.push(
-            db.collection('userEvents').doc(`subscription_cancelled_${sub.id}`).set({
-                type: 'subscription_cancelled',
-                uid,
-                tier: PRICE_TIER_MAP[priceId] ?? null,
-                timestamp: Timestamp.now(),
-            })
+            db
+                .collection('userEvents')
+                .doc(`subscription_cancelled_${sub.id}`)
+                .set({
+                    type: 'subscription_cancelled',
+                    uid,
+                    tier: PRICE_TIER_MAP[priceId] ?? null,
+                    timestamp: Timestamp.now()
+                })
         );
     }
 
@@ -1445,7 +1380,7 @@ async function handleSubscriptionChange(sub: any) {
 }
 
 async function handleInvoicePaid(invoice: any, stripe: InstanceType<typeof Stripe>) {
-    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : (invoice.customer?.id ?? '');
     const uid = await findUidByCustomerId(customerId);
     if (!uid) return;
 
@@ -1466,7 +1401,7 @@ async function handleInvoicePaid(invoice: any, stripe: InstanceType<typeof Strip
         description: invoice.description ?? `Subscription — ${tier ?? 'unknown'}`,
         stripeInvoiceId: invoice.id,
         stripePaymentIntentId: typeof invoice.payment_intent === 'string' ? invoice.payment_intent : '',
-        createdAt: Timestamp.now(),
+        createdAt: Timestamp.now()
     });
 
     // suppress unused variable warning — stripe param kept for API consistency
@@ -1474,7 +1409,7 @@ async function handleInvoicePaid(invoice: any, stripe: InstanceType<typeof Strip
 }
 
 async function handleInvoiceFailed(invoice: any) {
-    const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? '';
+    const customerId = typeof invoice.customer === 'string' ? invoice.customer : (invoice.customer?.id ?? '');
     const uid = await findUidByCustomerId(customerId);
     if (!uid) return;
 
@@ -1483,10 +1418,13 @@ async function handleInvoiceFailed(invoice: any) {
     const priceId = (invoice.lines?.data?.[0] as any)?.price?.id ?? '';
     const tier = PRICE_TIER_MAP[priceId] ?? null;
 
-    await db.collection('users').doc(uid).set({
-        subscriptionStatus: 'past_due',
-        isMember: false,
-    }, { merge: true });
+    await db.collection('users').doc(uid).set(
+        {
+            subscriptionStatus: 'past_due',
+            isMember: false
+        },
+        { merge: true }
+    );
 
     await db.collection('payments').add({
         uid,
@@ -1499,50 +1437,48 @@ async function handleInvoiceFailed(invoice: any) {
         tier,
         description: `Failed payment — ${tier ?? 'unknown'}`,
         stripeInvoiceId: invoice.id,
-        createdAt: Timestamp.now(),
+        createdAt: Timestamp.now()
     });
 }
 
 // -----------------------------------------------
 // Admin Callable: adminCancelSubscription
 // -----------------------------------------------
-export const adminCancelSubscription = onCall(
-    { secrets: ['STRIPE_SECRET_KEY'] },
-    async (req) => {
-        await assertAdmin(req.auth?.uid);
-        const { subscriptionId } = req.data as { uid: string; subscriptionId: string };
-        if (!subscriptionId) throw new HttpsError('invalid-argument', 'subscriptionId required');
+export const adminCancelSubscription = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
+    await assertAdmin(req.auth?.uid);
+    const { subscriptionId } = req.data as { uid: string; subscriptionId: string };
+    if (!subscriptionId) throw new HttpsError('invalid-argument', 'subscriptionId required');
 
-        const stripe = getStripe();
-        await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
-        return { success: true };
-    }
-);
+    const stripe = getStripe();
+    await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
+    return { success: true };
+});
 
 // -----------------------------------------------
 // Admin Callable: adminRefundPayment
 // -----------------------------------------------
-export const adminRefundPayment = onCall(
-    { secrets: ['STRIPE_SECRET_KEY'] },
-    async (req) => {
-        await assertAdmin(req.auth?.uid);
-        const { paymentId, paymentIntentId } = req.data as {
-            paymentId: string; paymentIntentId: string;
-        };
-        if (!paymentIntentId) throw new HttpsError('invalid-argument', 'paymentIntentId required');
+export const adminRefundPayment = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
+    await assertAdmin(req.auth?.uid);
+    const { paymentId, paymentIntentId } = req.data as {
+        paymentId: string;
+        paymentIntentId: string;
+    };
+    if (!paymentIntentId) throw new HttpsError('invalid-argument', 'paymentIntentId required');
 
-        const stripe = getStripe();
-        const refund = await stripe.refunds.create({ payment_intent: paymentIntentId });
+    const stripe = getStripe();
+    const refund = await stripe.refunds.create({ payment_intent: paymentIntentId });
 
-        await db.collection('payments').doc(paymentId).set({
+    await db.collection('payments').doc(paymentId).set(
+        {
             status: 'refunded',
             refundedAt: Timestamp.now(),
-            refundAmount: refund.amount,
-        }, { merge: true });
+            refundAmount: refund.amount
+        },
+        { merge: true }
+    );
 
-        return { success: true, refundId: refund.id };
-    }
-);
+    return { success: true, refundId: refund.id };
+});
 
 // -----------------------------------------------
 // Admin Callable: adminGrantGuestAccess
@@ -1554,13 +1490,12 @@ export const adminGrantGuestAccess = onCall(async (req) => {
     if (!uid) throw new HttpsError('invalid-argument', 'uid required');
     if (!quizId) throw new HttpsError('invalid-argument', 'quizId required');
 
-    await db.collection('users').doc(uid)
-        .collection('quizAccess').doc(quizId).set({
-            quizId,
-            paidAt: Timestamp.now(),
-            paymentIntentId: 'admin_granted',
-            amount: 0,
-        });
+    await db.collection('users').doc(uid).collection('quizAccess').doc(quizId).set({
+        quizId,
+        paidAt: Timestamp.now(),
+        paymentIntentId: 'admin_granted',
+        amount: 0
+    });
 
     return { success: true };
 });

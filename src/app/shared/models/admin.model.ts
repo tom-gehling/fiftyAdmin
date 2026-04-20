@@ -1,5 +1,5 @@
 export interface Admin {
-  id?: string;        // Firestore doc ID (could be sanitized email or random ID)
-  emailAddress: string;
-  addedAt: Date;
+    id?: string; // Firestore doc ID (could be sanitized email or random ID)
+    emailAddress: string;
+    addedAt: Date;
 }

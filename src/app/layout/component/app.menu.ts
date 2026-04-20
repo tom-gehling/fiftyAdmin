@@ -25,7 +25,7 @@ export class AppMenu implements OnInit {
     constructor(private auth: AuthService) {}
 
     ngOnInit() {
-        this.auth.user$.pipe(filter(u => u !== undefined)).subscribe(() => this.buildMenu());
+        this.auth.user$.pipe(filter((u) => u !== undefined)).subscribe(() => this.buildMenu());
         this.auth.isMember$.subscribe(() => this.buildMenu());
         this.auth.isAdmin$.subscribe(() => this.buildMenu());
     }
@@ -38,11 +38,11 @@ export class AppMenu implements OnInit {
         const homeMenu: MenuItem = {
             label: 'The Weekly Fifty',
             items: [
-                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/fiftyPlus'] },
-                    { label: 'This Week\'s Quiz', icon: 'pi pi-fw pi-question-circle', routerLink: ['/weekly-quiz'] },
-                    { label: 'Fifty Shop', icon: 'pi pi-fw pi-shopping-cart', url: 'https://theweeklyfifty.com.au/pshop', target: '_blank' },
-                    { label: 'Find A Venue', icon: 'pi pi-fw pi-map-marker', routerLink: ['/find-a-venue'] }
-                ]
+                { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/fiftyPlus'] },
+                { label: "This Week's Quiz", icon: 'pi pi-fw pi-question-circle', routerLink: ['/weekly-quiz'] },
+                { label: 'Fifty Shop', icon: 'pi pi-fw pi-shopping-cart', url: 'https://theweeklyfifty.com.au/pshop', target: '_blank' },
+                { label: 'Find A Venue', icon: 'pi pi-fw pi-map-marker', routerLink: ['/find-a-venue'] }
+            ]
         };
 
         // Admin section

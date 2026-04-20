@@ -54,9 +54,7 @@ async function uploadLogoToStorage(localPath, quizId, filename) {
         }
     });
 
-    const downloadUrl =
-        `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/` +
-        `${encodeURIComponent(storagePath)}?alt=media&token=${token}`;
+    const downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/` + `${encodeURIComponent(storagePath)}?alt=media&token=${token}`;
 
     return downloadUrl;
 }

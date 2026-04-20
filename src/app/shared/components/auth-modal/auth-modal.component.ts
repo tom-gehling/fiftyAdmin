@@ -27,7 +27,6 @@ import { firstValueFrom } from 'rxjs';
             (onHide)="onHide()"
         >
             <div class="bg-surface-0 dark:bg-surface-900 py-10 px-8 sm:px-12" style="border-radius: 53px">
-
                 <!-- Logo -->
                 <div class="text-center mb-6">
                     <img src="/assets/logos/logo.png" alt="Fifty+" class="mx-auto mb-3" style="width: 50%; height: auto;" />
@@ -65,7 +64,7 @@ import { firstValueFrom } from 'rxjs';
 
                         <p class="text-center text-surface-300 text-xl font-bold">
                             New to The Weekly Fifty?
-                            <a class="text-primary cursor-pointer font-medium" (click)="switchMode('register')">  Create an account</a>
+                            <a class="text-primary cursor-pointer font-medium" (click)="switchMode('register')"> Create an account</a>
                         </p>
                     </div>
                 }
@@ -104,7 +103,7 @@ import { firstValueFrom } from 'rxjs';
                 }
             </div>
         </p-dialog>
-    `,
+    `
 })
 export class AuthModalComponent implements OnInit {
     visible = false;

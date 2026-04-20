@@ -1,9 +1,9 @@
 import { TaggedUser } from './quizSubmission.model';
 
 export interface QuizAnswer {
-    questionId: number;         // matches QuizQuestion.questionId
-    correct?: boolean;          // undefined until user marks correct/incorrect
-    clickedAt?: Date;           // when user clicked correct/incorrect
+    questionId: number; // matches QuizQuestion.questionId
+    correct?: boolean; // undefined until user marks correct/incorrect
+    clickedAt?: Date; // when user clicked correct/incorrect
 }
 
 export interface GeoLocation {
@@ -14,18 +14,18 @@ export interface GeoLocation {
 }
 
 export interface QuizResult {
-    resultId?: string;          // Firestore doc ID
-    quizId: string;              // reference to Quiz.id
-    userId: string;              // reference to AppUser.uid
+    resultId?: string; // Firestore doc ID
+    quizId: string; // reference to Quiz.id
+    userId: string; // reference to AppUser.uid
     status: 'in_progress' | 'completed';
     startedAt: Date;
     completedAt?: Date;
     answers: QuizAnswer[];
-    score?: number;              // count of correct answers, set when completed
-    total: number;               // total number of questions in the quiz
-    ip?: string;                 // IP address of the user
-    geo?: GeoLocation;           // Geolocation data from IP lookup
-    retro?: boolean;             // true if manually recorded (backwards compatibility)
-    taggedUsers?: TaggedUser[];  // users who took the quiz together
-    userHidden?: boolean;        // true when user has opted out of stats tracking; result still stored for admin use
+    score?: number; // count of correct answers, set when completed
+    total: number; // total number of questions in the quiz
+    ip?: string; // IP address of the user
+    geo?: GeoLocation; // Geolocation data from IP lookup
+    retro?: boolean; // true if manually recorded (backwards compatibility)
+    taggedUsers?: TaggedUser[]; // users who took the quiz together
+    userHidden?: boolean; // true when user has opted out of stats tracking; result still stored for admin use
 }

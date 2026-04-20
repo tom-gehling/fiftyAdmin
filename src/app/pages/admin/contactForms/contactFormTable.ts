@@ -17,14 +17,7 @@ import { ContactFormService, ContactFormSubmission } from '@/shared/services/con
         <p-card>
             <div class="flex flex-col sm:flex-row justify-between items-start md:items-center mb-4 gap-2">
                 <h2>Form Submissions</h2>
-                <input
-                    pInputText
-                    type="text"
-                    placeholder="Search submissions..."
-                    class="flex-1 min-w-0 max-w-md"
-                    [(ngModel)]="searchText"
-                    (input)="applyFilter()"
-                />
+                <input pInputText type="text" placeholder="Search submissions..." class="flex-1 min-w-0 max-w-md" [(ngModel)]="searchText" (input)="applyFilter()" />
             </div>
 
             <!-- Loading -->
@@ -63,11 +56,7 @@ import { ContactFormService, ContactFormSubmission } from '@/shared/services/con
                                 </td>
                                 <td class="hidden sm:table-cell p-3 text-center text-sm opacity-70">{{ formatDate(row.submittedAt) }}</td>
                                 <td class="p-3 text-center">
-                                    <p-tag
-                                        [value]="row.read ? 'Read' : 'New'"
-                                        [severity]="row.read ? 'secondary' : 'success'"
-                                        style="font-size: 0.75rem;"
-                                    ></p-tag>
+                                    <p-tag [value]="row.read ? 'Read' : 'New'" [severity]="row.read ? 'secondary' : 'success'" style="font-size: 0.75rem;"></p-tag>
                                 </td>
                             </tr>
 
@@ -97,9 +86,7 @@ import { ContactFormService, ContactFormSubmission } from '@/shared/services/con
             </div>
 
             <!-- Empty -->
-            <div *ngIf="!loading && !filtered.length" class="text-center opacity-60 py-8">
-                No submissions found.
-            </div>
+            <div *ngIf="!loading && !filtered.length" class="text-center opacity-60 py-8">No submissions found.</div>
         </p-card>
     `
 })
@@ -114,7 +101,7 @@ export class ContactFormTableComponent implements OnInit, OnDestroy {
     constructor(private contactFormService: ContactFormService) {}
 
     ngOnInit() {
-        this.sub = this.contactFormService.getAll().subscribe(data => {
+        this.sub = this.contactFormService.getAll().subscribe((data) => {
             this.all = data.sort((a, b) => {
                 const aTime = a.submittedAt?.toMillis?.() ?? 0;
                 const bTime = b.submittedAt?.toMillis?.() ?? 0;
@@ -131,14 +118,7 @@ export class ContactFormTableComponent implements OnInit, OnDestroy {
 
     applyFilter() {
         const q = this.searchText.toLowerCase();
-        this.filtered = q
-            ? this.all.filter(r =>
-                  r.name?.toLowerCase().includes(q) ||
-                  r.email?.toLowerCase().includes(q) ||
-                  r.mobile?.toLowerCase().includes(q) ||
-                  r.message?.toLowerCase().includes(q)
-              )
-            : [...this.all];
+        this.filtered = q ? this.all.filter((r) => r.name?.toLowerCase().includes(q) || r.email?.toLowerCase().includes(q) || r.mobile?.toLowerCase().includes(q) || r.message?.toLowerCase().includes(q)) : [...this.all];
     }
 
     toggleExpand(row: ContactFormSubmission) {

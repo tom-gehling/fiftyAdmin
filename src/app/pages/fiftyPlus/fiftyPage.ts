@@ -26,7 +26,7 @@ import { AuthService } from '@/shared/services/auth.service';
                 </div>
             }
         </div>
-    `,
+    `
 })
 export class FiftyPageComponent implements OnInit {
     quizType!: 'archives' | 'exclusives' | 'collaborations' | 'questions';
@@ -44,7 +44,7 @@ export class FiftyPageComponent implements OnInit {
             1: 'archives',
             2: 'exclusives',
             3: 'collaborations',
-            4: 'questions',
+            4: 'questions'
         };
 
         const typeNum = this.route.snapshot.data['type'];
@@ -64,7 +64,7 @@ export class FiftyPageComponent implements OnInit {
             1: 'Archives',
             2: 'Exclusives',
             3: 'Collaborations',
-            4: 'Question Quizzes',
+            4: 'Question Quizzes'
         };
         return titles[typeNum] || 'Quizzes';
     }
