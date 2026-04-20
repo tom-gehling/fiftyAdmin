@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm start          # Dev server (ng serve)
 npm run build      # Production build
-npm test           # Unit tests (Karma/Jasmine)
+npm test           # Unit tests (Karma/Jasmine) — no spec files exist yet
 npm run format     # Prettier format all files
 ```
 
@@ -27,11 +27,13 @@ All authenticated routes live under `AppLayout`. Key prefixes:
 - `/fiftyPlus/admin/*` — admin-only (stats, quizzes, venues, users, games)
 - Games are lazy-loaded under `/fiftyPlus/games/*` (makeTen, chainGame, movieEmoji, rushHour, countryJumble, tileRun)
 
-Guards: `authGuard` (requires authenticated non-anon user), `adminGuard` (requires `isAdmin`).
+Guards: `authGuard` (requires authenticated non-anon user), `adminGuard` (requires `isAdmin`). Both use a `filter + take + switchMap` pattern to wait for Firebase initialization before evaluating. No interceptors or resolvers exist.
 
 ### State Management
 
 No NgRx — service-based reactive pattern using **RxJS BehaviorSubjects**. Services hold state and expose observables; components subscribe and react. `AuthService` is the root source of truth for user state (`user$`, `isMember$`, `isAdmin$`, `initialized$`).
+
+**LayoutService** is the exception — it uses Angular **signals** (`signal()`, `computed()`, `effect()`) to manage dark mode (with View Transitions API), sidebar state, and theme customization. Don't mix BehaviorSubject patterns into LayoutService.
 
 ### Firestore Access Pattern
 
@@ -39,6 +41,17 @@ Use `@angular/fire` (`collectionData`, `docData`) for real-time streams. Rules e
 - `isAdmin()` — checks `users/{uid}.isAdmin == true`
 - `isMember(uid)` — checks `users/{uid}.isMember == true`
 - Write access on sensitive collections (payments, userEvents, quizAccess) is Cloud Functions only.
+
+**Subcollections in use**:
+- `users/{uid}/following/{followedUid}`, `users/{uid}/followers/{followerUid}`
+- `users/{uid}/quizSessions/{sessionId}/events/{eventId}`
+- `admins/{sanitized_email}` — admin email with `.` and `@` replaced by `_`
+
+**Soft-delete pattern**: Venues, tags use `isActive`/`deletionTime`/`deletionUser` fields rather than hard deletes.
+
+**Batch limits**: Firestore `in` queries are capped at 30 items; `UserSearchService` handles batching.
+
+**Timestamp handling**: Always call `.toDate()` on Firestore Timestamps before use; services handle conversion before emitting.
 
 ### Key Models
 
@@ -51,12 +64,52 @@ Use `@angular/fire` (`collectionData`, `docData`) for real-time streams. Rules e
 | `PuzzleResult` | puzzleId, gameType, userId, dateKey, isCorrect, timeTaken |
 | `Venue` | location, quizSchedules[], isActive |
 
+### Key Services
+
+| Service | Responsibility |
+|---------|---------------|
+| `AuthService` | User state source of truth |
+| `LayoutService` | Dark mode, sidebar, theme (signals-based) |
+| `QuizzesService` | Quiz CRUD, filtering, lazy-loading via `defer()` |
+| `QuizResultsService` | User attempts, retro results, tagged teammates |
+| `QuizSessionsService` | Per-question session state, subcollection events |
+| `QuizStatsService` | Aggregates from both Cloud Functions API and Firestore |
+| `SubscriptionService` | Stripe via Cloud Functions callables only |
+| `StorageService` | Firebase Storage uploads for quiz/venue images |
+| `GoogleMapsService` | Dynamic script loading, Places Autocomplete, geocoding |
+| `QuizPdfService` | Multi-page PDF generation via jsPDF |
+| `NotifyService` | Wraps PrimeNG MessageService for toasts |
+| `AuthModalService` | BehaviorSubject modal state (`visible$`, `mode$`) |
+| `VenueService` | Venue CRUD with schedule types (weekly/biweekly/monthly/custom) |
+| `UserSearchService` | Search within followers/following networks |
+| `AdminService` | Admin management; sanitizes emails for `admins/` collection |
+| `ContactFormService` | Uses `isDevMode()` to switch emulator vs. production endpoint |
+
+### Stripe / Payment Flow
+
+All payment logic lives in Cloud Functions — never replicate client-side:
+- `createSubscriptionIntent(priceId)` → returns `clientSecret` + `subscriptionId` for Stripe Payment Element
+- `createPortalSession(returnUrl)` → Stripe Customer Portal URL
+- `adminCancelSubscription`, `adminRefundPayment`, `adminGrantGuestAccess` — admin overrides
+- Price tiers (basic/standard/gold, quarterly/yearly) defined in `functions/src/stripe-config.ts`
+
+### Cloud Functions API Routes
+
+The Express app exported as `api` exposes these HTTP endpoints (all under `/api/`):
+- `getLatestQuiz`, `getLatestCollabQuiz`, `getQuizArchiveHeaders`, `getQuizByQuizId`, `getQuizByQuizSlug`
+- `quizStats/:quizId`, `quizLocationStats/:quizId`
+- `logQuizStart`, `logQuizFinish`, `logFiftyPlusQuizStart`, `logFiftyPlusQuizFinish`
+- `updateUserEmail`, `getVenues`, `submitContactForm`
+
+Firestore triggers: `quizStarted` (`onDocumentCreated`), `quizFinished` (`onDocumentUpdated`).
+
 ### Angular Patterns
 
 - **Standalone components only** — no NgModules.
 - **Control flow**: use `@if`/`@for`/`@switch` (not `*ngIf`/`*ngFor`).
 - Lazy loading via `loadComponent` on game and admin-game routes.
 - OnPush change detection used in performance-sensitive components (games-hub, etc.).
+- Use `firstValueFrom()` to convert Observables to Promises when calling Cloud Functions.
 
 ## Code Style
 
@@ -69,5 +122,7 @@ Run `npm run format` before committing to avoid lint noise.
 ## Firebase
 
 Project ID: `weeklyfifty-7617b`. Config lives in `src/app/app.config.ts`.
+
+Environment files are in `src/environments/` (`environment.ts` is gitignored; use `environment.example.ts` as template). Key env vars: `googleMapsApiKey`, `stripePublishableKey`, `functionsBaseUrl`.
 
 Cloud Functions (`functions/src/index.ts`) handle: Stripe payments, IP geolocation (MaxMind GeoLite2), quiz access grants, and event logging. Do not replicate this logic client-side.
