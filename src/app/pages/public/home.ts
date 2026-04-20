@@ -27,7 +27,7 @@ const LOGOS = [
   'aussie.png', 'boomer.png', 'chrissy.png', 'footy.png', 'loser.png',
   'movie2.png', 'olympic.png', 'people50.png', 'peoples.png', 'reality.png',
   'specialsLogo.png', 'spooky.png', 'weekly-hundred.png', 'yearly-22022.png',
-  'yeswequiz.png', 'twf.png', 'archivesLogo.png', 'EURO.png', 'Movie.png',
+  'yeswequiz.png', 'archivesLogo.png', 'EURO.png', 'Movie.png',
   'SA.png', 'Yearl-2023.png', 'fiftyplus.png', '2010s-clear-1.png',
   'HOTTEST-20 (1).png', 'swifty (1).png'
 ];
@@ -165,9 +165,9 @@ const LOGOS = [
           <div class="menu-wrapper">
             <div class="menu-buttons">
               <button routerLink="/weekly-quiz" class="menu-btn">THIS WEEK'S QUIZ</button>
-              <button routerLink="/login" class="menu-btn">FIFTY+</button>
+              <button routerLink="/fiftyPlus" class="menu-btn">FIFTY+</button>
               <button routerLink="/find-a-venue" class="menu-btn">FIND A VENUE</button>
-              <button routerLink="https://theweeklyfifty.com.au/pshop/" class="menu-btn">FIFTY SHOP</button>
+              <button routerLink="/fiftyshop" class="menu-btn">FIFTY SHOP</button>
               <button routerLink="/contact-us" class="menu-btn">CONTACT US</button>
       </div>
           </div>
@@ -809,8 +809,8 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   readonly benefits = [
     { label: 'Full Quiz Archives', desc: 'Every quiz ever run' },
     { label: 'Exclusive Quizzes', desc: 'Premium content for members' },
-    { label: 'Collaborations', desc: 'Special events & team content' },
-    { label: 'Stats & Leaderboards', desc: 'Track your performance' },
+    { label: 'Collaboration Content', desc: 'Special events & team content' },
+    { label: 'User Quiz Stats', desc: 'Track your performance' },
     { label: 'Question Quizzes', desc: 'Unique question-based challenges' },
   ];
 
