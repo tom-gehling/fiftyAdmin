@@ -8,6 +8,7 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
+    "deploy:bq": "tsx scripts/deploy-bq.ts",
     "logs": "firebase functions:log"
   },
   "engines": {
@@ -15,6 +16,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@google-cloud/bigquery": "^8.1.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "firebase-admin": "^12.6.0",
@@ -30,6 +32,7 @@
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.25.4",
     "firebase-functions-test": "^3.1.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3"
   },
   "private": true

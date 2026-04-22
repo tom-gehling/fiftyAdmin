@@ -43,7 +43,8 @@
       "Bash(tee /tmp/build.log)",
       "Bash(npx prettier *)",
       "Bash(echo \"exit=$?\")",
-      "Bash(echo \"---EXIT=$?\")"
+      "Bash(echo \"---EXIT=$?\")",
+      "Bash(xargs basename *)"
     ]
   }
 }

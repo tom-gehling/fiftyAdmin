@@ -8,6 +8,7 @@ import cors from 'cors';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as maxmind from 'maxmind';
 import * as path from 'path';
+import { BigQuery } from '@google-cloud/bigquery';
 // Stripe (deprecated — replaced by RevenueCat Web Billing)
 // import Stripe from 'stripe';
 // import { PRICE_TIER_MAP } from './stripe-config.js';
@@ -20,6 +21,61 @@ const db = admin.firestore();
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
+
+// ===============================
+// MaxMind geo lookup (shared, lazy singleton)
+// ===============================
+interface GeoLocation {
+    country: string | null;
+    city: string | null;
+    latitude: number | null;
+    longitude: number | null;
+}
+
+let geoReaderPromise: Promise<maxmind.Reader<maxmind.CityResponse> | null> | null = null;
+
+function getGeoReader(): Promise<maxmind.Reader<maxmind.CityResponse> | null> {
+    if (!geoReaderPromise) {
+        const dbPath = path.join(__dirname, '..', 'GeoLite2-City.mmdb');
+        geoReaderPromise = maxmind.open<maxmind.CityResponse>(dbPath).catch((err) => {
+            console.error('MaxMind database failed to load:', err);
+            geoReaderPromise = null; // allow retry on next call
+            return null;
+        });
+    }
+    return geoReaderPromise;
+}
+
+// ===============================
+// BigQuery client (shared, lazy singleton)
+// ===============================
+const BQ_LOCATION = 'australia-southeast1';
+const BQ_DATASET = 'weeklyfifty_analytics';
+let bqClient: BigQuery | null = null;
+
+function getBigQuery(): BigQuery {
+    if (!bqClient) bqClient = new BigQuery({ location: BQ_LOCATION });
+    return bqClient;
+}
+
+async function lookupGeoFromIp(ip: string | null | undefined): Promise<GeoLocation | null> {
+    if (!ip || ip === 'unknown') return null;
+    const reader = await getGeoReader();
+    if (!reader) return null;
+    try {
+        const geo = reader.get(ip);
+        if (!geo) return null;
+        return {
+            country: geo.country?.names?.en ?? null,
+            city: geo.city?.names?.en ?? null,
+            latitude: geo.location?.latitude ?? null,
+            longitude: geo.location?.longitude ?? null
+        };
+    } catch (err) {
+        console.warn(`Geo lookup failed for IP ${ip}:`, err);
+        return null;
+    }
+}
 
 // ===============================
 // /api/getLatestQuiz
@@ -196,56 +252,41 @@ app.get('/api/getQuizByQuizSlug', async (req: Request, res: Response): Promise<v
 
 // ===============================
 // /api/quizStats/:quizId
+// Backed by BigQuery procedures sp_quiz_summary + sp_quiz_question_accuracy.
+// Response shape is kept identical to the previous Firestore-scanning version
+// so the admin UI does not need to change.
 // ===============================
 app.get('/api/quizStats/:quizId', async (req: Request, res: Response): Promise<void> => {
     try {
         const quizId = req.params.quizId;
-        const snapshot = await db.collection('quizResults').where('quizId', '==', quizId).get();
+        const bq = getBigQuery();
 
-        if (snapshot.empty) {
+        const [[summaryRows], [questionRows]] = await Promise.all([
+            bq.query({
+                query: `CALL \`${BQ_DATASET}.sp_quiz_summary\`(@quiz_id)`,
+                params: { quiz_id: quizId },
+                location: BQ_LOCATION
+            }),
+            bq.query({
+                query: `CALL \`${BQ_DATASET}.sp_quiz_question_accuracy\`(@quiz_id)`,
+                params: { quiz_id: quizId },
+                location: BQ_LOCATION
+            })
+        ]);
+
+        const summary = (summaryRows[0] ?? {}) as Record<string, unknown>;
+        const attempts = Number(summary.attempts ?? 0);
+
+        if (attempts === 0) {
             res.status(404).json({ message: 'No results found for this quiz' });
             return;
         }
 
-        let attempts = 0;
-        let totalScore = 0;
-        let totalTime = 0;
-        let completedCount = 0;
-        const questionStats: Record<string, { correct: number; total: number }> = {};
-
-        snapshot.forEach((doc) => {
-            const result = doc.data() as any;
-
-            // Skip retro quiz results from stats
-            if (result.retro && result.retro === true) return;
-
-            attempts++;
-
-            if (result.completedAt) {
-                completedCount++;
-                totalScore += result.score ?? 0;
-
-                const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
-                const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
-                if (started && completed) totalTime += (completed.getTime() - started.getTime()) / 1000;
-
-                (result.answers || []).forEach((a: any) => {
-                    const qid = String(a.questionId);
-                    if (!questionStats[qid]) questionStats[qid] = { correct: 0, total: 0 };
-                    questionStats[qid].total++;
-                    if (a.correct) questionStats[qid].correct++;
-                });
-            }
-        });
-
-        const averageScore = completedCount > 0 ? totalScore / completedCount : 0;
-        const averageTime = completedCount > 0 ? totalTime / completedCount : 0;
-
-        const questionAccuracy = Object.entries(questionStats).map(([id, stat]) => ({
-            questionId: id,
-            correctCount: stat.correct,
-            totalAttempts: stat.total,
-            correctRate: stat.total > 0 ? stat.correct / stat.total : 0
+        const questionAccuracy = questionRows.map((r: Record<string, unknown>) => ({
+            questionId: String(r.question_id),
+            correctCount: Number(r.correct_count ?? 0),
+            totalAttempts: Number(r.total_attempts ?? 0),
+            correctRate: Number(r.correct_rate ?? 0)
         }));
 
         const hardestQuestions = [...questionAccuracy].sort((a, b) => a.correctRate - b.correctRate).slice(0, 5);
@@ -254,9 +295,9 @@ app.get('/api/quizStats/:quizId', async (req: Request, res: Response): Promise<v
         res.status(200).json({
             quizId,
             attempts,
-            completedCount,
-            averageScore,
-            averageTime,
+            completedCount: Number(summary.completed_count ?? 0),
+            averageScore: Number(summary.avg_score ?? 0),
+            averageTime: Number(summary.avg_time_seconds ?? 0),
             questionAccuracy,
             hardestQuestions,
             easiestQuestions
@@ -269,142 +310,128 @@ app.get('/api/quizStats/:quizId', async (req: Request, res: Response): Promise<v
 
 // ===============================
 // /api/quizLocationStats/:quizId
+// Backed by BigQuery procedure sp_quiz_location_stats. Geo enrichment now happens
+// at write time inside logQuizStart / logFiftyPlusQuizStart (see lookupGeoFromIp),
+// so there's no per-request MaxMind lookup here any more.
 // ===============================
 app.get('/api/quizLocationStats/:quizId', async (req: Request, res: Response): Promise<void> => {
     try {
         const quizId = req.params.quizId;
+        const bq = getBigQuery();
 
-        // Fetch completed quiz results
-        const snapshot = await db.collection('quizResults').where('quizId', '==', quizId).where('status', '==', 'completed').get();
-
-        if (snapshot.empty) {
-            res.status(200).json({
-                quizId,
-                totalResults: 0,
-                countries: [],
-                cities: [],
-                mapData: []
-            });
-            return;
-        }
-
-        // Initialize MaxMind reader
-        let geoLookup: maxmind.Reader<maxmind.CityResponse> | null = null;
-        try {
-            const geoLitePath = path.join(__dirname, '..', 'GeoLite2-City.mmdb');
-            geoLookup = await maxmind.open<maxmind.CityResponse>(geoLitePath);
-        } catch (error) {
-            console.error('MaxMind database not found, returning without geolocation:', error);
-            res.status(500).json({ error: 'GeoLite2 database not configured' });
-            return;
-        }
-
-        interface LocationStats {
-            count: number;
-            totalScore: number;
-            totalTime: number;
-            latitude?: number;
-            longitude?: number;
-        }
-
-        const countryStats: Record<string, LocationStats> = {};
-        const cityStats: Record<string, LocationStats> = {};
-        let totalResults = 0;
-
-        snapshot.forEach((doc) => {
-            const result = doc.data() as any;
-
-            // Skip retro quiz results from location stats
-            if (result.retro && result.retro === true) return;
-
-            const ip = result.ip;
-
-            if (!ip) return;
-
-            totalResults++;
-            const geo = geoLookup!.get(ip);
-            const country = geo?.country?.names?.en || 'Unknown';
-            const city = geo?.city?.names?.en || 'Unknown';
-            const cityKey = `${city}, ${country}`;
-
-            // Calculate duration
-            const started = result.startedAt?.toDate?.() ?? new Date(result.startedAt);
-            const completed = result.completedAt?.toDate?.() ?? new Date(result.completedAt);
-            const duration = (completed.getTime() - started.getTime()) / 1000;
-            const score = result.score ?? 0;
-
-            // Aggregate country stats
-            if (!countryStats[country]) {
-                countryStats[country] = {
-                    count: 0,
-                    totalScore: 0,
-                    totalTime: 0,
-                    latitude: geo?.location?.latitude,
-                    longitude: geo?.location?.longitude
-                };
-            }
-            countryStats[country].count++;
-            countryStats[country].totalScore += score;
-            countryStats[country].totalTime += duration;
-
-            // Aggregate city stats
-            if (!cityStats[cityKey]) {
-                cityStats[cityKey] = {
-                    count: 0,
-                    totalScore: 0,
-                    totalTime: 0,
-                    latitude: geo?.location?.latitude,
-                    longitude: geo?.location?.longitude
-                };
-            }
-            cityStats[cityKey].count++;
-            cityStats[cityKey].totalScore += score;
-            cityStats[cityKey].totalTime += duration;
+        const [rows] = await bq.query({
+            query: `CALL \`${BQ_DATASET}.sp_quiz_location_stats\`(@quiz_id)`,
+            params: { quiz_id: quizId },
+            location: BQ_LOCATION
         });
 
-        // Format response
-        const countries = Object.entries(countryStats)
-            .map(([name, stats]) => ({
-                name,
-                count: stats.count,
-                averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
-                averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
-                latitude: stats.latitude,
-                longitude: stats.longitude
-            }))
-            .sort((a, b) => b.count - a.count);
+        type Row = Record<string, unknown>;
+        const shapeRow = (r: Row) => ({
+            name: String(r.name ?? ''),
+            count: Number(r.count ?? 0),
+            averageScore: Number(r.average_score ?? 0),
+            averageTime: Number(r.average_time ?? 0),
+            latitude: r.latitude != null ? Number(r.latitude) : undefined,
+            longitude: r.longitude != null ? Number(r.longitude) : undefined
+        });
 
-        const cities = Object.entries(cityStats)
-            .map(([name, stats]) => ({
-                name,
-                count: stats.count,
-                averageScore: stats.count > 0 ? stats.totalScore / stats.count : 0,
-                averageTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
-                latitude: stats.latitude,
-                longitude: stats.longitude
-            }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 20); // Top 20 cities
+        const countries = rows.filter((r: Row) => r.level === 'country').map(shapeRow);
+        const cities = rows
+            .filter((r: Row) => r.level === 'city')
+            .map(shapeRow)
+            .slice(0, 20);
 
-        // Map data for visualization
+        const totalResults = countries.reduce((sum, c) => sum + c.count, 0);
         const mapData = countries
-            .filter((c) => c.latitude && c.longitude)
-            .map((c) => ({
-                name: c.name,
-                latitude: c.latitude,
-                longitude: c.longitude,
-                count: c.count
-            }));
+            .filter((c) => c.latitude !== undefined && c.longitude !== undefined)
+            .map((c) => ({ name: c.name, latitude: c.latitude, longitude: c.longitude, count: c.count }));
 
-        res.status(200).json({
-            quizId,
-            totalResults,
-            countries,
-            cities,
-            mapData
-        });
+        res.status(200).json({ quizId, totalResults, countries, cities, mapData });
     } catch (error) {
         console.error('Error generating location stats:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ===============================
+// /api/quizHourlyCounts/:quizId
+// Hourly completion buckets (Australia/Adelaide), replaces the hourlyCounts map
+// that used to live on quizAggregates/{quizId}.
+// ===============================
+app.get('/api/quizHourlyCounts/:quizId', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const quizId = req.params.quizId;
+        const [rows] = await getBigQuery().query({
+            query: `CALL \`${BQ_DATASET}.sp_quiz_hourly_counts\`(@quiz_id)`,
+            params: { quiz_id: quizId },
+            location: BQ_LOCATION
+        });
+
+        const buckets = rows.map((r: Record<string, unknown>) => ({
+            hourKey: String(r.hour_key),
+            completions: Number(r.completions ?? 0)
+        }));
+        res.status(200).json({ quizId, buckets });
+    } catch (error) {
+        console.error('Error generating hourly counts:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ===============================
+// /api/quizThinkingTimes/:quizId
+// Average seconds between consecutive question clicks, per question. Replaces
+// avgTimeBetweenByQuestion on quizAggregates.
+// ===============================
+app.get('/api/quizThinkingTimes/:quizId', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const quizId = req.params.quizId;
+        const [rows] = await getBigQuery().query({
+            query: `CALL \`${BQ_DATASET}.sp_quiz_thinking_times\`(@quiz_id)`,
+            params: { quiz_id: quizId },
+            location: BQ_LOCATION
+        });
+
+        const perQuestion = rows.map((r: Record<string, unknown>) => ({
+            questionId: String(r.question_id),
+            avgDiffSec: Number(r.avg_diff_sec ?? 0),
+            sampleCount: Number(r.sample_count ?? 0)
+        }));
+
+        const overallAvg = perQuestion.length > 0 ? perQuestion.reduce((s, q) => s + q.avgDiffSec, 0) / perQuestion.length : 0;
+
+        res.status(200).json({ quizId, avgTimeBetweenQuestions: overallAvg, perQuestion });
+    } catch (error) {
+        console.error('Error generating thinking times:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ===============================
+// /api/allQuizSummaries
+// One row per quiz_id with attempt and score aggregates. Powers the
+// "last N quizzes" chart; frontend joins rows to Firestore quiz metadata.
+// ===============================
+app.get('/api/allQuizSummaries', async (_req: Request, res: Response): Promise<void> => {
+    try {
+        const [rows] = await getBigQuery().query({
+            query: `CALL \`${BQ_DATASET}.sp_all_quiz_summaries\`()`,
+            location: BQ_LOCATION
+        });
+
+        const summaries = rows.map((r: Record<string, unknown>) => ({
+            quizId: String(r.quiz_id),
+            completedCount: Number(r.completed_count ?? 0),
+            abandonedCount: Number(r.abandoned_count ?? 0),
+            averageScore: Number(r.avg_score ?? 0),
+            maxScore: Number(r.max_score ?? 0),
+            minScore: Number(r.min_score ?? 0),
+            latestCompletionAt: r.latest_completion_at ? new Date((r.latest_completion_at as { value: string }).value ?? String(r.latest_completion_at)).toISOString() : null
+        }));
+
+        res.status(200).json({ summaries });
+    } catch (error) {
+        console.error('Error generating all quiz summaries:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -456,6 +483,8 @@ app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void>
             }
         }
 
+        const geo = await lookupGeoFromIp(ip);
+
         // Create the quizResult session
         const quizResultRef = await db.collection('quizResults').add({
             quizId,
@@ -467,7 +496,7 @@ app.post('/api/logQuizStart', async (req: Request, res: Response): Promise<void>
             total: null,
             answers: [],
             ip,
-            geo: null,
+            geo,
             userAgent: req.get('user-agent') || 'unknown',
             submittedFrom: 'Weekly'
         });
@@ -771,6 +800,8 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
             }
         }
 
+        const geo = await lookupGeoFromIp(ip);
+
         // Create quiz session in quizResults
         const quizResultRef = await db.collection('quizResults').add({
             quizId,
@@ -782,7 +813,7 @@ app.post('/api/logFiftyPlusQuizStart', async (req: Request, res: Response): Prom
             total: null,
             answers: [],
             ip,
-            geo: null,
+            geo,
             userAgent: req.get('user-agent') || 'unknown',
             submittedFrom: 'Fifty+'
         });

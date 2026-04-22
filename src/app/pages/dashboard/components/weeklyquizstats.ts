@@ -171,39 +171,21 @@ export class WeeklyQuizStatsComponent implements OnInit {
     async loadWeeklyQuizStats() {
         this.loading = true;
         try {
-            // Get all weekly quiz aggregate IDs (quizId < 1000 and > 100)
-            const quizIds = await this.quizStatsService.getAllQuizAggregateIds();
+            const summaries = await this.quizStatsService.getAllQuizSummaries();
 
-            // Sort by quizId descending to show most recent first
-            const sortedIds = quizIds
-                .map((id) => parseInt(id, 10))
-                .filter((id) => !isNaN(id))
-                .sort((a, b) => b - a);
+            this.weeklyStats = summaries
+                .filter((s) => {
+                    const n = parseInt(s.quizId, 10);
+                    return !isNaN(n) && n > 100 && n < 1000 && s.completedCount > 0;
+                })
+                .sort((a, b) => parseInt(b.quizId, 10) - parseInt(a.quizId, 10))
+                .slice(0, 20)
+                .map((s) => ({
+                    quizId: s.quizId,
+                    completedCount: s.completedCount,
+                    averageScore: s.averageScore
+                }));
 
-            // Fetch aggregate data for each quiz
-            const statsPromises = sortedIds.map(async (quizId) => {
-                const aggregate = await this.quizStatsService.getQuizAggregatesFirestore(String(quizId));
-                if (aggregate) {
-                    const completedCount = aggregate.completedCount || 0;
-                    const totalScore = aggregate.totalScore || 0;
-                    const averageScore = completedCount > 0 ? totalScore / completedCount : 0;
-
-                    return {
-                        quizId: String(quizId),
-                        completedCount,
-                        averageScore
-                    };
-                }
-                return null;
-            });
-
-            const results = await Promise.all(statsPromises);
-            this.weeklyStats = results.filter((stat): stat is WeeklyQuizStat => stat !== null && stat.completedCount > 0);
-
-            // Limit to last 20 quizzes for better readability
-            this.weeklyStats = this.weeklyStats.slice(0, 20);
-
-            // Populate quiz options for dropdown
             this.quizOptions = this.weeklyStats.map((stat) => ({
                 label: `Quiz #${stat.quizId}`,
                 value: stat.quizId
