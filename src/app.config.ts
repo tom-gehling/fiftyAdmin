@@ -13,7 +13,8 @@ import { appRoutes } from './app.routes';
 import { DialogService } from 'primeng/dynamicdialog';
 import { MessageService } from 'primeng/api';
 import { getStorage, provideStorage } from '@angular/fire/storage';
-import { provideNgxStripe } from 'ngx-stripe';
+// Stripe (deprecated — replaced by RevenueCat Web Billing, configured in AuthService)
+// import { provideNgxStripe } from 'ngx-stripe';
 import { environment } from './environments/environment';
 
 export const appConfig: ApplicationConfig = {
@@ -38,7 +39,7 @@ export const appConfig: ApplicationConfig = {
         provideAuth(() => getAuth()),
         provideFirestore(() => getFirestore()),
         provideFunctions(() => getFunctions()),
-        provideNgxStripe(environment.stripePublishableKey),
+        // provideNgxStripe(environment.stripePublishableKey),
         DialogService,
         MessageService
     ]

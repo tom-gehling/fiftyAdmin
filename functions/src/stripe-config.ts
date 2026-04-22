@@ -1,4 +1,12 @@
 // ================================================================
+// DEPRECATED: pricing is now managed in the RevenueCat dashboard.
+// Kept here for reference (historical Stripe Price IDs) and for any
+// in-flight Stripe subscriptions still being referenced at the time
+// of the RevenueCat migration. Safe to delete once the legacy Stripe
+// Cloud Functions (index.ts, inside the /* DEPRECATED … */ block) are removed.
+// ================================================================
+//
+// Original notes follow:
 // STRIPE PRICE CONFIGURATION — single source of truth
 //
 // Update the `id` fields here once you have created products/prices

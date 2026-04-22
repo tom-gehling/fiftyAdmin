@@ -4,6 +4,8 @@ import { GoogleAuthProvider, OAuthProvider } from 'firebase/auth';
 import { Firestore, doc, getDoc, setDoc, collection, query, where, getDocs, increment, serverTimestamp } from '@angular/fire/firestore';
 import { browserLocalPersistence, browserSessionPersistence, setPersistence } from 'firebase/auth';
 import { BehaviorSubject } from 'rxjs';
+import { Purchases, CustomerInfo } from '@revenuecat/purchases-js';
+import { environment } from '../../../environments/environment';
 
 export interface AppUser {
     uid: string;
@@ -30,17 +32,55 @@ export class AuthService {
     public initialized$ = new BehaviorSubject(false);
 
     constructor() {
+        if (!environment.production) (window as any).Purchases = Purchases;
         onAuthStateChanged(this.auth, async (user) => {
             if (user) {
                 const appUser = await this.ensureUserDocument(user);
                 this.user$.next(appUser);
             } else {
+                await this.resetRevenueCatIdentity();
                 this.user$.next(null);
                 this.isMember$.next(false);
                 this.isAdmin$.next(false);
             }
             this.initialized$.next(true);
         });
+    }
+
+    /**
+     * Ensures RevenueCat is configured and its identity matches the given Firebase uid.
+     * First call configures the SDK; subsequent calls use `changeUser` to switch identity.
+     */
+    private async syncRevenueCatIdentity(uid: string): Promise<CustomerInfo | null> {
+        try {
+            if (!Purchases.isConfigured()) {
+                Purchases.configure({ apiKey: environment.revenueCatPublicApiKey, appUserId: uid });
+            } else if (Purchases.getSharedInstance().getAppUserId() !== uid) {
+                await Purchases.getSharedInstance().changeUser(uid);
+            }
+            return await Purchases.getSharedInstance().getCustomerInfo();
+        } catch (err) {
+            console.error('[RevenueCat] identity sync failed', err);
+            return null;
+        }
+    }
+
+    /** Switch RevenueCat back to an anonymous app user on sign-out. */
+    private async resetRevenueCatIdentity(): Promise<void> {
+        try {
+            if (Purchases.isConfigured()) {
+                const anonId = Purchases.generateRevenueCatAnonymousAppUserId();
+                await Purchases.getSharedInstance().changeUser(anonId);
+            }
+        } catch (err) {
+            console.error('[RevenueCat] anonymous reset failed', err);
+        }
+    }
+
+    /** True when the RevenueCat customer info has the configured Fifty+ entitlement active. */
+    private hasFiftyPlusEntitlement(info: CustomerInfo | null): boolean {
+        if (!info) return false;
+        return info.entitlements.active[environment.revenueCatEntitlementId] !== undefined;
     }
 
     /** Email/password login */
@@ -137,10 +177,26 @@ export class AuthService {
     }
 
     async logout() {
+        await this.resetRevenueCatIdentity();
         await signOut(this.auth);
         this.user$.next(null);
         this.isAdmin$.next(false);
         this.isMember$.next(false);
+    }
+
+    /**
+     * Re-fetches RevenueCat customer info for the current user and refreshes `isMember$`.
+     * Call after a successful purchase or from UI that needs to re-verify entitlements.
+     */
+    async refreshMembership(): Promise<boolean> {
+        const uid = this.currentUserId;
+        if (!uid) return false;
+        const info = await this.syncRevenueCatIdentity(uid);
+        const currentUser = this.user$.value;
+        const isMember = (currentUser?.isAdmin ?? false) || this.hasFiftyPlusEntitlement(info);
+        this.isMember$.next(isMember);
+        if (currentUser) this.user$.next({ ...currentUser, isMember });
+        return isMember;
     }
 
     get currentUserId(): string | null {
@@ -152,7 +208,8 @@ export class AuthService {
     // }
 
     /**
-     * Ensures the Firestore user document exists and returns AppUser
+     * Ensures the Firestore user document exists and returns AppUser.
+     * Also syncs RevenueCat identity and derives `isMember` from the Fifty+ entitlement.
      */
     private async ensureUserDocument(user: FirebaseUser, isAnon = false): Promise<AppUser> {
         const userRef = doc(this.firestore, 'users', user.uid);
@@ -169,6 +226,9 @@ export class AuthService {
         const now = new Date();
         const loginCount = snapshot.exists() ? (snapshot.data()?.['loginCount'] ?? 0) : 0;
 
+        const rcInfo = await this.syncRevenueCatIdentity(user.uid);
+        const isMember = isAdmin || this.hasFiftyPlusEntitlement(rcInfo);
+
         const appUser: AppUser = {
             uid: user.uid,
             email: user.email ?? '',
@@ -176,7 +236,7 @@ export class AuthService {
             photoUrl: user.photoURL ?? '',
             createdAt: snapshot.exists() ? snapshot.data()?.['createdAt'].toDate() : now,
             isAdmin,
-            isMember: isAdmin ? true : snapshot.exists() ? (snapshot.data()?.['isMember'] ?? false) : false,
+            isMember,
             isAnon,
             followers: snapshot.exists() ? (snapshot.data()?.['followers'] ?? []) : [],
             following: snapshot.exists() ? (snapshot.data()?.['following'] ?? []) : [],

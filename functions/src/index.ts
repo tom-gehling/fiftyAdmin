@@ -8,8 +8,9 @@ import cors from 'cors';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as maxmind from 'maxmind';
 import * as path from 'path';
-import Stripe from 'stripe';
-import { PRICE_TIER_MAP } from './stripe-config.js';
+// Stripe (deprecated — replaced by RevenueCat Web Billing)
+// import Stripe from 'stripe';
+// import { PRICE_TIER_MAP } from './stripe-config.js';
 
 const luxon = require('luxon');
 
@@ -1142,6 +1143,11 @@ export const sweepAbandonedQuizzes = onSchedule(
 // Non-sensitive config (functions/.env, git-ignored):
 //   STRIPE_GUEST_PASS_PRICE_ID=price_1XYZ...
 // ===============================
+/* ================================================================
+ * DEPRECATED — Stripe billing implementation.
+ * Replaced by RevenueCat Web Billing on the client. Kept here as reference
+ * until the migration is validated in production.
+ * ================================================================
 const getStripe = (): InstanceType<typeof Stripe> => {
     const key = process.env['STRIPE_SECRET_KEY'];
     if (!key) throw new Error('STRIPE_SECRET_KEY not configured');
@@ -1546,9 +1552,9 @@ async function handleInvoiceFailed(invoice: any) {
 }
 
 // -----------------------------------------------
-// Admin Callable: adminCancelSubscription
+// Admin Callable: adminCancelSubscription (original Stripe impl)
 // -----------------------------------------------
-export const adminCancelSubscription = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
+export const adminCancelSubscriptionLegacy = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
     await assertAdmin(req.auth?.uid);
     const { subscriptionId } = req.data as { uid: string; subscriptionId: string };
     if (!subscriptionId) throw new HttpsError('invalid-argument', 'subscriptionId required');
@@ -1559,9 +1565,9 @@ export const adminCancelSubscription = onCall({ secrets: ['STRIPE_SECRET_KEY'] }
 });
 
 // -----------------------------------------------
-// Admin Callable: adminRefundPayment
+// Admin Callable: adminRefundPayment (original Stripe impl)
 // -----------------------------------------------
-export const adminRefundPayment = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
+export const adminRefundPaymentLegacy = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, async (req) => {
     await assertAdmin(req.auth?.uid);
     const { paymentId, paymentIntentId } = req.data as {
         paymentId: string;
@@ -1582,6 +1588,26 @@ export const adminRefundPayment = onCall({ secrets: ['STRIPE_SECRET_KEY'] }, asy
     );
 
     return { success: true, refundId: refund.id };
+});
+ * END DEPRECATED STRIPE BLOCK
+ * ================================================================ */
+
+// -----------------------------------------------
+// Admin Callable: adminCancelSubscription
+// TODO: re-wire to RevenueCat REST API (revoke subscription / promotional entitlement)
+// -----------------------------------------------
+export const adminCancelSubscription = onCall(async (req) => {
+    await assertAdmin(req.auth?.uid);
+    throw new HttpsError('unimplemented', 'Admin subscription cancellation not yet wired to RevenueCat. Cancel manually in the RevenueCat dashboard for now.');
+});
+
+// -----------------------------------------------
+// Admin Callable: adminRefundPayment
+// TODO: re-wire to RevenueCat REST API (refund / grant promotional entitlement)
+// -----------------------------------------------
+export const adminRefundPayment = onCall(async (req) => {
+    await assertAdmin(req.auth?.uid);
+    throw new HttpsError('unimplemented', 'Admin refunds not yet wired to RevenueCat. Refund manually in the RevenueCat dashboard for now.');
 });
 
 // -----------------------------------------------
