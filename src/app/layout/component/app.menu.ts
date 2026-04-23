@@ -88,11 +88,11 @@ export class AppMenu implements OnInit {
             label: 'Daily Puzzles',
             items: [
                 { label: 'Puzzle Hub', icon: 'pi pi-fw pi-compass', routerLink: ['/fiftyPlus/games'] },
-                { label: 'Make10', icon: 'pi pi-fw pi-calculator', routerLink: ['/fiftyPlus/games/make-ten'] },
+                { label: 'Make 10', icon: 'pi pi-fw pi-calculator', routerLink: ['/fiftyPlus/games/make-ten'] },
                 { label: 'Word Chain', icon: 'pi pi-fw pi-link', routerLink: ['/fiftyPlus/games/chain-game'] },
                 { label: 'Country Jumble', icon: 'pi pi-fw pi-globe', routerLink: ['/fiftyPlus/games/country-jumble'] },
                 { label: 'Movie Emoji', icon: 'pi pi-fw pi-video', routerLink: ['/fiftyPlus/games/movie-emoji'] },
-                { label: 'Puzzle Slide', icon: 'pi pi-fw pi-th-large', routerLink: ['/fiftyPlus/games/puzzle-slide'] },
+                { label: 'Puzzle Slide', icon: 'pi pi-fw pi-th-large', routerLink: ['/fiftyPlus/games/rush-hour'] },
                 { label: 'Tile Run', icon: 'pi pi-fw pi-forward', routerLink: ['/fiftyPlus/games/tile-run'] }
             ]
         };
@@ -102,5 +102,7 @@ export class AppMenu implements OnInit {
 
         if (isAdmin) this.model.push(adminMenu);
         if (isMember || isAdmin) this.model.push(fiftyPlusMenu);
+
+        this.model.push(gamesMenu);
     }
 }

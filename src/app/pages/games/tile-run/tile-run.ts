@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef, ChangeDetectionStrategy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef, ChangeDetectionStrategy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -200,7 +200,7 @@ function generatePuzzle(
     template: `
         <app-game-shell title="Tile Run" [gameType]="'tileRun'" [loading]="loading" [alreadyPlayed]="alreadyPlayed" [pastResult]="pastResult" [showCompletion]="showCompletion" [completionResult]="completionResult" [completionModalDelayMs]="1800" (shareCopied)="onShareCopied()">
             @if (!loading) {
-                <div class="flex flex-col gap-4 items-center" [class]="alreadyPlayed || showCompletion ? 'pointer-events-none opacity-60 select-none' : ''">
+                <div class="flex flex-col gap-4 items-center" [class]="alreadyPlayed || showCompletion ? 'pointer-events-none opacity-60 select-none' : failing ? 'pointer-events-none select-none' : ''">
                     <p class="text-surface-500 text-base m-0 text-center">Step through every tile <strong>exactly once</strong> to reach the <span class="text-orange-500 font-semibold">end</span>.</p>
 
                     <!-- Stats -->
@@ -242,7 +242,7 @@ function generatePuzzle(
                         <div></div>
                     </div>
 
-                    @if (isStuck) {
+                    @if (isStuck && !failing) {
                         <div class="text-center">
                             <p class="text-red-500 text-base m-0 mb-2"><i class="pi pi-times-circle mr-1"></i>No valid moves left — restart and try a different path!</p>
                         </div>
@@ -254,7 +254,7 @@ function generatePuzzle(
         </app-game-shell>
     `
 })
-export class TileRunComponent implements OnInit {
+export class TileRunComponent implements OnInit, OnDestroy {
     private seedSvc = inject(DailySeedService);
     private puzzleResult = inject(PuzzleResultService);
     private auth = inject(AuthService);
@@ -276,6 +276,8 @@ export class TileRunComponent implements OnInit {
     visited = new Set<string>();
     visitOrder = new Map<string, number>();
     restarts = 0;
+    failing = false;
+    private failTimer: ReturnType<typeof setTimeout> | null = null;
 
     private dateKey = '';
 
@@ -341,6 +343,7 @@ export class TileRunComponent implements OnInit {
 
     getTileClass(r: number, c: number): string {
         if (this.isWall(r, c)) return 'bg-surface-800 dark:bg-surface-950';
+        if (this.failing && this.isVisited(r, c)) return this.isCurrent(r, c) ? 'bg-red-400 dark:bg-red-600 scale-95 shadow-md' : 'bg-red-400 dark:bg-red-600';
         if (this.isCurrent(r, c)) return 'bg-primary scale-95 shadow-md';
         if (this.isEnd(r, c) && !this.isVisited(r, c)) return 'bg-orange-100 dark:bg-orange-950 border-2 border-orange-400';
         if (this.isStart(r, c) && this.isVisited(r, c) && !this.isCurrent(r, c)) return 'bg-primary-200 dark:bg-primary-900';
@@ -350,10 +353,10 @@ export class TileRunComponent implements OnInit {
 
     canStep(dir: Direction): boolean {
         if (!this.current) return false;
+        if (this.failing) return false;
         const next = this.getNext(dir);
         if (!next) return false;
         if (this.walls.has(key(next.row, next.col))) return false;
-        if (this.visited.has(key(next.row, next.col))) return false;
         // End tile locked unless it's the last unvisited tile
         if (this.isEnd(next.row, next.col) && this.visited.size < this.totalTiles - 1) return false;
         return true;
@@ -363,7 +366,7 @@ export class TileRunComponent implements OnInit {
     private readonly SWIPE_THRESHOLD = 24;
 
     onGridPointerDown(ev: PointerEvent): void {
-        if (this.alreadyPlayed || this.showCompletion) return;
+        if (this.alreadyPlayed || this.showCompletion || this.failing) return;
         this.swipeStart = { x: ev.clientX, y: ev.clientY };
     }
 
@@ -379,7 +382,7 @@ export class TileRunComponent implements OnInit {
 
     @HostListener('window:keydown', ['$event'])
     onKeydown(ev: KeyboardEvent): void {
-        if (this.loading || this.alreadyPlayed || this.showCompletion) return;
+        if (this.loading || this.alreadyPlayed || this.showCompletion || this.failing) return;
         const map: Record<string, Direction> = {
             ArrowUp: 'up',
             ArrowDown: 'down',
@@ -393,8 +396,20 @@ export class TileRunComponent implements OnInit {
     }
 
     async step(dir: Direction): Promise<void> {
-        if (!this.canStep(dir)) return;
-        const next = this.getNext(dir)!;
+        if (this.failing) return;
+        if (!this.current) return;
+        const next = this.getNext(dir);
+        if (!next) return;
+        if (this.walls.has(key(next.row, next.col))) return;
+        if (this.isEnd(next.row, next.col) && this.visited.size < this.totalTiles - 1) return;
+
+        if (this.visited.has(key(next.row, next.col))) {
+            this.failing = true;
+            this.failTimer = setTimeout(() => this.failRestart(), 2000);
+            this.cdr.markForCheck();
+            return;
+        }
+
         this.current = next;
         const k = key(next.row, next.col);
         this.visited.add(k);
@@ -407,9 +422,29 @@ export class TileRunComponent implements OnInit {
     }
 
     restart(): void {
+        if (this.failTimer) {
+            clearTimeout(this.failTimer);
+            this.failTimer = null;
+        }
+        this.failing = false;
         this.restarts++;
         this.resetPosition();
         this.cdr.markForCheck();
+    }
+
+    private failRestart(): void {
+        this.failTimer = null;
+        this.failing = false;
+        this.restarts++;
+        this.resetPosition();
+        this.cdr.markForCheck();
+    }
+
+    ngOnDestroy(): void {
+        if (this.failTimer) {
+            clearTimeout(this.failTimer);
+            this.failTimer = null;
+        }
     }
 
     onShareCopied(): void {
