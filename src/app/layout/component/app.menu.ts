@@ -64,12 +64,12 @@ export class AppMenu implements OnInit {
                 { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/admin/users'] },
                 { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] },
                 { label: 'Form Submissions', icon: 'pi pi-fw pi-envelope', routerLink: ['/fiftyPlus/admin/contactForms'] },
-                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] },
-                {
-                    label: 'Puzzles',
-                    icon: 'pi pi-fw pi-bolt',
-                    items: [{ label: 'Puzzle Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/games/stats'] }]
-                }
+                { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] }
+                // {
+                //     label: 'Puzzles',
+                //     icon: 'pi pi-fw pi-bolt',
+                //     items: [{ label: 'Puzzle Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/games/stats'] }]
+                // }
             ]
         };
 
@@ -80,21 +80,20 @@ export class AppMenu implements OnInit {
                 { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/archives'] },
                 { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
                 { label: 'Collaborations', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/collabs'] },
-                { label: 'Question Quizzes', icon: 'pi pi-fw pi-list', routerLink: ['/fiftyPlus/questionQuizzes'] },
-                { label: 'Daily Games', icon: 'pi pi-fw pi-bolt', routerLink: ['/fiftyPlus/games'] }
+                { label: 'Question Quizzes', icon: 'pi pi-fw pi-list', routerLink: ['/fiftyPlus/questionQuizzes'] }
             ]
         };
 
         const gamesMenu: MenuItem = {
             label: 'Daily Puzzles',
             items: [
-                { label: 'Puzzle Hub', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games'] },
-                { label: 'Make10', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/make-ten'] },
-                { label: 'Word Chain', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/chain-game'] },
-                { label: 'Country Jumble', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/country-jumble'] },
-                { label: 'Movie Emoji', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/movie-emoji'] },
-                { label: 'Puzzle Slide', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/puzzle-slide'] },
-                { label: 'Tile Run', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/tile-run'] }
+                { label: 'Puzzle Hub', icon: 'pi pi-fw pi-compass', routerLink: ['/fiftyPlus/games'] },
+                { label: 'Make10', icon: 'pi pi-fw pi-calculator', routerLink: ['/fiftyPlus/games/make-ten'] },
+                { label: 'Word Chain', icon: 'pi pi-fw pi-link', routerLink: ['/fiftyPlus/games/chain-game'] },
+                { label: 'Country Jumble', icon: 'pi pi-fw pi-globe', routerLink: ['/fiftyPlus/games/country-jumble'] },
+                { label: 'Movie Emoji', icon: 'pi pi-fw pi-video', routerLink: ['/fiftyPlus/games/movie-emoji'] },
+                { label: 'Puzzle Slide', icon: 'pi pi-fw pi-th-large', routerLink: ['/fiftyPlus/games/puzzle-slide'] },
+                { label: 'Tile Run', icon: 'pi pi-fw pi-forward', routerLink: ['/fiftyPlus/games/tile-run'] }
             ]
         };
 
