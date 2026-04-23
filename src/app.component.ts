@@ -8,9 +8,9 @@ import { AuthModalComponent } from '@/shared/components/auth-modal/auth-modal.co
     standalone: true,
     imports: [RouterModule, ToastModule, AuthModalComponent],
     template: `
-    <p-toast position="bottom-right"></p-toast>
-    <app-auth-modal />
-    <router-outlet></router-outlet>
+        <p-toast position="bottom-right"></p-toast>
+        <app-auth-modal />
+        <router-outlet></router-outlet>
     `
 })
 export class AppComponent {}

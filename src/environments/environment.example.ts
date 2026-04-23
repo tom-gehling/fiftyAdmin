@@ -3,6 +3,6 @@
 // DO NOT commit environment.ts with real API keys
 
 export const environment = {
-  production: false,
-  googleMapsApiKey: 'YOUR_GOOGLE_MAPS_API_KEY'
+    production: false,
+    googleMapsApiKey: 'YOUR_GOOGLE_MAPS_API_KEY'
 };

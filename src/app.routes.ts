@@ -42,7 +42,6 @@ import { AdminGuard } from '@/shared/guards/adminGuard';
 import { Notfound } from './app/pages/notfound/notfound';
 
 export const appRoutes: Routes = [
-
     // ------------------------------
     // 🏠 HOME — standalone (has own custom navbar, no layout wrapper)
     // ------------------------------
@@ -63,7 +62,7 @@ export const appRoutes: Routes = [
             { path: 'join', component: JoinPage, data: { topbarColor: 'black' } },
             { path: 'join/success', component: JoinSuccessPage, data: { topbarColor: 'black' } },
             { path: 'profile', component: ProfilePage, canActivate: [AuthGuard], data: { topbarColor: 'black' } },
-            { path: 'profile/:userId', component: ProfilePage, canActivate: [AuthGuard], data: { topbarColor: 'black' } },
+            { path: 'profile/:userId', component: ProfilePage, canActivate: [AuthGuard], data: { topbarColor: 'black' } }
         ]
     },
 
@@ -97,17 +96,17 @@ export const appRoutes: Routes = [
 
             { path: 'fiftyPlus/questionQuizzes', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes', topbarColor: 'black' } },
             { path: 'fiftyPlus/questionQuizzes/:quizid', component: FiftyPageComponent, data: { type: 4, topbarColor: 'black' } },
-      { path: 'fiftyPlus/questionQuizzes', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes' } },
-      { path: 'fiftyPlus/questionQuizzes/:quizid', component: FiftyPageComponent, data: { type: 4 } },
+            { path: 'fiftyPlus/questionQuizzes', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes' } },
+            { path: 'fiftyPlus/questionQuizzes/:quizid', component: FiftyPageComponent, data: { type: 4 } },
 
-      // Daily Games
-      { path: 'fiftyPlus/games', loadComponent: () => import('@/pages/games/games-hub/games-hub').then(m => m.GamesHubComponent) },
-      { path: 'fiftyPlus/games/make-ten', loadComponent: () => import('@/pages/games/make-ten/make-ten').then(m => m.MakeTenComponent) },
-      { path: 'fiftyPlus/games/chain-game', loadComponent: () => import('@/pages/games/chain-game/chain-game').then(m => m.ChainGameComponent) },
-      { path: 'fiftyPlus/games/movie-emoji', loadComponent: () => import('@/pages/games/movie-emoji/movie-emoji').then(m => m.MovieEmojiComponent) },
-      { path: 'fiftyPlus/games/rush-hour', loadComponent: () => import('@/pages/games/rush-hour/rush-hour').then(m => m.RushHourComponent) },
-      { path: 'fiftyPlus/games/country-jumble', loadComponent: () => import('@/pages/games/country-jumble/country-jumble').then(m => m.CountryJumbleComponent) },
-      { path: 'fiftyPlus/games/tile-run', loadComponent: () => import('@/pages/games/tile-run/tile-run').then(m => m.TileRunComponent) },
+            // Daily Games
+            { path: 'fiftyPlus/games', loadComponent: () => import('@/pages/games/games-hub/games-hub').then((m) => m.GamesHubComponent) },
+            { path: 'fiftyPlus/games/make-ten', loadComponent: () => import('@/pages/games/make-ten/make-ten').then((m) => m.MakeTenComponent) },
+            { path: 'fiftyPlus/games/chain-game', loadComponent: () => import('@/pages/games/chain-game/chain-game').then((m) => m.ChainGameComponent) },
+            { path: 'fiftyPlus/games/movie-emoji', loadComponent: () => import('@/pages/games/movie-emoji/movie-emoji').then((m) => m.MovieEmojiComponent) },
+            { path: 'fiftyPlus/games/rush-hour', loadComponent: () => import('@/pages/games/rush-hour/rush-hour').then((m) => m.RushHourComponent) },
+            { path: 'fiftyPlus/games/country-jumble', loadComponent: () => import('@/pages/games/country-jumble/country-jumble').then((m) => m.CountryJumbleComponent) },
+            { path: 'fiftyPlus/games/tile-run', loadComponent: () => import('@/pages/games/tile-run/tile-run').then((m) => m.TileRunComponent) },
 
             // ------------------------------
             // 🛠 ADMIN ROUTES
@@ -132,46 +131,45 @@ export const appRoutes: Routes = [
                     { path: 'submissionForms', component: SubmissionFormTableComponent },
                     { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
                     { path: 'users', component: UserTableComponent },
-                    { path: 'contactForms', component: ContactFormTableComponent },
+                    { path: 'contactForms', component: ContactFormTableComponent }
                 ]
             }
         ]
     },
-      // ------------------------------
-      // 🛠 ADMIN ROUTES
-      // ------------------------------
-      {
+    // ------------------------------
+    // 🛠 ADMIN ROUTES
+    // ------------------------------
+    {
         path: 'fiftyPlus/admin',
         canActivate: [AdminGuard],
         children: [
-          {
-            path: 'stats',
-            children: [
-              { path: 'total', component: TotalStats },
-              { path: 'weekly', component: WeeklyStats },
-              { path: '', redirectTo: 'total', pathMatch: 'full' }
-            ]
-          },
-          { path: 'quizzes', component: QuizTableComponent },
-          { path: 'quizzes/:id', component: QuizDetailComponent },
-          { path: 'quizTags', component: QuizTagsComponent },
-          { path: 'venues', component: VenuesComponent },
-          { path: 'submissionForms', component: SubmissionFormTableComponent },
-          { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
-          { path: 'users', component: UserTableComponent },
-          {
-            path: 'games',
-            children: [
-              { path: 'stats', loadComponent: () => import('@/pages/admin/games/game-stats/game-stats').then(m => m.GameStatsComponent) },
-              { path: 'movie-emoji', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-list').then(m => m.MovieEmojiListComponent) },
-              { path: 'movie-emoji/:id', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-detail').then(m => m.MovieEmojiDetailComponent) },
-              { path: 'rush-hour', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-list').then(m => m.RushHourListComponent) },
-              { path: 'rush-hour/:id', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-detail').then(m => m.RushHourDetailComponent) },
-            ]
-          },
+            {
+                path: 'stats',
+                children: [
+                    { path: 'total', component: TotalStats },
+                    { path: 'weekly', component: WeeklyStats },
+                    { path: '', redirectTo: 'total', pathMatch: 'full' }
+                ]
+            },
+            { path: 'quizzes', component: QuizTableComponent },
+            { path: 'quizzes/:id', component: QuizDetailComponent },
+            { path: 'quizTags', component: QuizTagsComponent },
+            { path: 'venues', component: VenuesComponent },
+            { path: 'submissionForms', component: SubmissionFormTableComponent },
+            { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
+            { path: 'users', component: UserTableComponent },
+            {
+                path: 'games',
+                children: [
+                    { path: 'stats', loadComponent: () => import('@/pages/admin/games/game-stats/game-stats').then((m) => m.GameStatsComponent) },
+                    { path: 'movie-emoji', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-list').then((m) => m.MovieEmojiListComponent) },
+                    { path: 'movie-emoji/:id', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-detail').then((m) => m.MovieEmojiDetailComponent) },
+                    { path: 'rush-hour', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-list').then((m) => m.RushHourListComponent) },
+                    { path: 'rush-hour/:id', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-detail').then((m) => m.RushHourDetailComponent) }
+                ]
+            }
         ]
-      },
-
+    },
 
     // ------------------------------
     // ❌ NOT FOUND

@@ -13,6 +13,4 @@ import { WeeklyQuizStatsComponent } from './components/weeklyquizstats';
         </div>
     `
 })
-export class TotalStats {
-    
-}
+export class TotalStats {}

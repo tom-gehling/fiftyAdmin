@@ -14,64 +14,71 @@ import { AuthModalService } from '@/shared/services/auth-modal.service';
     standalone: true,
     imports: [CommonModule, AsyncPipe, RouterModule, MenuModule, ButtonModule],
     template: `<div class="layout-topbar flex items-center p-2 fiftyBorderBottom relative" [style.background-color]="bgColor || null">
-            @if (showMenuToggle) {
-                <div class="flex items-center">
-                    <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
-                        <i class="pi pi-bars"></i>
-                    </button>
-                </div>
-            
+        @if (showMenuToggle) {
+            <div class="flex items-center">
+                <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
+                    <i class="pi pi-bars"></i>
+                </button>
+            </div>
 
             <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center">
                 <a class="flex items-center" routerLink="/">
                     <img [src]="(auth.isAdmin$ | async) ? 'assets/logos/fiftyAdminLogo.png' : 'assets/logos/fiftyplus.png'" alt="Logo" class="h-8 sm:h-10 md:h-12 lg:h-14 w-auto object-contain" />
                 </a>
             </div>
-            } @else {
+        } @else {
             <button class="sm:hidden flex items-center justify-center w-10 h-10 rounded-lg text-xl" style="color: var(--fifty-pink)" (click)="mobileMenuOpen = !mobileMenuOpen" aria-label="Open menu">
                 <i [class]="mobileMenuOpen ? 'pi pi-times' : 'pi pi-bars'"></i>
             </button>
             <nav class="hidden sm:flex items-center gap-1 sm:gap-3">
                 @for (link of publicNavLinks; track link.label) {
-                    <a [routerLink]="link.route"
-                       routerLinkActive
-                       #rla="routerLinkActive"
-                       [routerLinkActiveOptions]="{ exact: true }"
-                       [class]="rla.isActive ? 'font-bold -translate-y-0.5 drop-shadow-sm px-8 gap-8 py-0.5 rounded-full bg-white/10' : 'font-medium hover:font-semibold hover:-translate-y-px'"
-                       class="text-lg transition-all duration-150 no-underline"
-                       style="color: var(--fifty-pink)">{{ link.label }}</a>
+                    <a
+                        [routerLink]="link.route"
+                        routerLinkActive
+                        #rla="routerLinkActive"
+                        [routerLinkActiveOptions]="{ exact: true }"
+                        [class]="rla.isActive ? 'font-bold -translate-y-0.5 drop-shadow-sm px-8 gap-8 py-0.5 rounded-full bg-white/10' : 'font-medium hover:font-semibold hover:-translate-y-px'"
+                        class="text-lg transition-all duration-150 no-underline"
+                        style="color: var(--fifty-pink)"
+                        >{{ link.label }}</a
+                    >
                 }
             </nav>
-            <div class="sm:hidden absolute top-full left-0 w-full z-50 flex flex-col shadow-lg overflow-hidden"
-                 style="transition: max-height 0.3s ease, opacity 0.3s ease;"
-                 [style.background-color]="bgColor || null"
-                 [style.max-height]="mobileMenuOpen ? '500px' : '0'"
-                 [style.opacity]="mobileMenuOpen ? '1' : '0'">
+            <div
+                class="sm:hidden absolute top-full left-0 w-full z-50 flex flex-col shadow-lg overflow-hidden"
+                style="transition: max-height 0.3s ease, opacity 0.3s ease;"
+                [style.background-color]="bgColor || null"
+                [style.max-height]="mobileMenuOpen ? '500px' : '0'"
+                [style.opacity]="mobileMenuOpen ? '1' : '0'"
+            >
                 <div class="py-2">
                     @for (link of publicNavLinks; track link.label) {
-                        <a [routerLink]="link.route"
-                           routerLinkActive
-                           #rla="routerLinkActive"
-                           [routerLinkActiveOptions]="{ exact: true }"
-                           [class]="rla.isActive ? 'font-bold bg-white/10' : 'font-medium hover:font-semibold hover:bg-white/5'"
-                           class="text-lg transition-all duration-150 no-underline px-6 py-3 block"
-                           style="color: var(--fifty-pink)"
-                           (click)="mobileMenuOpen = false">{{ link.label }}</a>
+                        <a
+                            [routerLink]="link.route"
+                            routerLinkActive
+                            #rla="routerLinkActive"
+                            [routerLinkActiveOptions]="{ exact: true }"
+                            [class]="rla.isActive ? 'font-bold bg-white/10' : 'font-medium hover:font-semibold hover:bg-white/5'"
+                            class="text-lg transition-all duration-150 no-underline px-6 py-3 block"
+                            style="color: var(--fifty-pink)"
+                            (click)="mobileMenuOpen = false"
+                            >{{ link.label }}</a
+                        >
                     }
                 </div>
             </div>
-            }
+        }
 
-            <div class="ml-auto flex items-center gap-3">
-                @if (auth.initialized$ | async) {
-                    @if (!(auth.user$ | async) || (auth.user$ | async)?.isAnon) {
-                        <p-button label="Sign In" [outlined]="false" size="large" (click)="authModal.open('login')"></p-button>
-                    } @else {
-                        @if (!(auth.isMember$ | async) && !(auth.isAdmin$ | async)) {
-                            <p-button label="Become a Fifty+ Member" icon="pi pi-star" size="large" [outlined]="true" [routerLink]="['/join']" [queryParams]="{ returnUrl: router.url }"></p-button>
-                        }
-                        <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>
-                        <div class="relative">
+        <div class="ml-auto flex items-center gap-3">
+            @if (auth.initialized$ | async) {
+                @if (!(auth.user$ | async) || (auth.user$ | async)?.isAnon) {
+                    <p-button label="Sign In" [outlined]="false" size="large" (click)="authModal.open('login')"></p-button>
+                } @else {
+                    @if (!(auth.isMember$ | async) && !(auth.isAdmin$ | async)) {
+                        <p-button label="Become a Fifty+ Member" icon="pi pi-star" size="large" [outlined]="true" [routerLink]="['/join']" [queryParams]="{ returnUrl: router.url }"></p-button>
+                    }
+                    <p-menu #profileMenu [popup]="true" [model]="profileItems"></p-menu>
+                    <div class="relative">
                         <button
                             type="button"
                             class="flex items-center justify-center rounded-full font-bold text-sm cursor-pointer border-0"
@@ -99,10 +106,10 @@ import { AuthModalService } from '@/shared/services/auth-modal.service';
                             </div>
                         }
                     </div>
-                    }
                 }
-            </div>
-        </div>`,
+            }
+        </div>
+    </div>`
 })
 export class AppTopbar implements OnInit {
     @Input() showMenuToggle = true;
@@ -117,7 +124,7 @@ export class AppTopbar implements OnInit {
         { label: 'Fifty+', route: '/fiftyPlus' },
         { label: 'Find a Venue', route: '/find-a-venue' },
         { label: 'Shop', route: '/fiftyshop' },
-        { label: 'Contact Us', route: '/contact-us' },
+        { label: 'Contact Us', route: '/contact-us' }
     ];
 
     constructor(
@@ -130,7 +137,7 @@ export class AppTopbar implements OnInit {
     ngOnInit(): void {
         this.profileItems = [
             { label: 'Update Profile', icon: 'pi pi-user-edit', command: () => this.router.navigate(['/profile']) },
-            { label: 'Logout', icon: 'pi pi-sign-out', command: () => this.auth.logout() },
+            { label: 'Logout', icon: 'pi pi-sign-out', command: () => this.auth.logout() }
         ];
     }
 

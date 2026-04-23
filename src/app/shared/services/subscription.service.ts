@@ -15,10 +15,7 @@ export class SubscriptionService {
      * embedded Stripe Payment Element to confirm payment.
      */
     async createSubscriptionIntent(priceId: string): Promise<{ clientSecret: string; subscriptionId: string }> {
-        const fn = httpsCallable<{ priceId: string }, { clientSecret: string; subscriptionId: string }>(
-            this.functions,
-            'createSubscriptionIntent'
-        );
+        const fn = httpsCallable<{ priceId: string }, { clientSecret: string; subscriptionId: string }>(this.functions, 'createSubscriptionIntent');
         const result = await fn({ priceId });
         return result.data;
     }
@@ -28,10 +25,7 @@ export class SubscriptionService {
      * Returns the portal session URL.
      */
     async createPortalSession(returnUrl: string): Promise<string> {
-        const fn = httpsCallable<{ returnUrl: string }, { url: string }>(
-            this.functions,
-            'createPortalSession'
-        );
+        const fn = httpsCallable<{ returnUrl: string }, { url: string }>(this.functions, 'createPortalSession');
         const result = await fn({ returnUrl });
         return result.data.url;
     }

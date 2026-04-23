@@ -450,7 +450,7 @@
                 incorrectClicked.length = 0;
                 dotStatus.length = 0;
                 // Clear answer timestamps for new quiz
-                Object.keys(answerTimestamps).forEach(key => delete answerTimestamps[key]);
+                Object.keys(answerTimestamps).forEach((key) => delete answerTimestamps[key]);
 
                 // Quiz title
                 const title = document.createElement('h2');

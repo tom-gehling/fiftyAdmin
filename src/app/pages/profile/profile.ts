@@ -19,19 +19,16 @@ import { NotifyService } from '@/shared/services/notify.service';
     template: `
         <div class="flex items-center justify-center py-16 px-4" style="min-height: calc(100vh - 4rem)">
             <div class="w-full max-w-2xl rounded-xl" style="background: #111; border: 1px solid rgba(255,255,255,0.08)">
-
                 <!-- Header -->
                 <div class="px-8 pt-8 pb-6" style="border-bottom: 1px solid rgba(255,255,255,0.08)">
                     <div class="flex items-center gap-4 mb-5">
-                        <div class="flex items-center justify-center rounded-full font-bold text-xl flex-shrink-0"
-                            style="width: 56px; height: 56px; background: var(--primary-color); color: #1a1a1a">
+                        <div class="flex items-center justify-center rounded-full font-bold text-xl flex-shrink-0" style="width: 56px; height: 56px; background: var(--primary-color); color: #1a1a1a">
                             {{ initials }}
                         </div>
                         <div>
                             <h2 class="text-2xl font-semibold m-0">{{ displayName || 'Your Profile' }}</h2>
                             @if (isMember) {
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1"
-                                    style="background: rgba(76,251,171,0.15); color: var(--primary-color); border: 1px solid var(--primary-color)">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1" style="background: rgba(76,251,171,0.15); color: var(--primary-color); border: 1px solid var(--primary-color)">
                                     <i class="pi pi-check-circle text-xs"></i> Fifty+ Member
                                 </span>
                             }
@@ -55,7 +52,6 @@ import { NotifyService } from '@/shared/services/notify.service';
 
                 <!-- Form fields -->
                 <div class="px-8 py-6 flex flex-col gap-6">
-
                     <!-- Display Name -->
                     <div>
                         <label class="block text-sm font-medium mb-2" style="color: rgba(255,255,255,0.65)">Display Name</label>
@@ -66,10 +62,12 @@ import { NotifyService } from '@/shared/services/notify.service';
                     <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem">
                         <h3 class="text-base font-semibold mb-4 m-0">Account</h3>
                         <div class="flex flex-col gap-2">
-                            <p class="text-sm m-0" style="color: rgba(255,255,255,0.5)">Forgot your password? Send a reset link to <strong style="color: rgba(255,255,255,0.75)">{{ email }}</strong>.</p>
+                            <p class="text-sm m-0" style="color: rgba(255,255,255,0.5)">
+                                Forgot your password? Send a reset link to <strong style="color: rgba(255,255,255,0.75)">{{ email }}</strong
+                                >.
+                            </p>
                             <div class="flex items-center gap-3">
-                                <p-button label="Send Password Reset Email" icon="pi pi-envelope" [outlined]="true"
-                                    [loading]="sendingReset" (click)="onSendReset()"></p-button>
+                                <p-button label="Send Password Reset Email" icon="pi pi-envelope" [outlined]="true" [loading]="sendingReset" (click)="onSendReset()"></p-button>
                                 @if (resetSuccess) {
                                     <span class="text-sm" style="color: var(--primary-color)">{{ resetSuccess }}</span>
                                 }
@@ -86,8 +84,7 @@ import { NotifyService } from '@/shared/services/notify.service';
                             <h3 class="text-base font-semibold mb-1 m-0">Fifty+ Membership</h3>
                             <p class="text-sm mb-4 m-0" style="color: rgba(255,255,255,0.5)">Manage your subscription, update payment details, or cancel.</p>
                             <div class="flex items-center gap-3">
-                                <p-button label="Manage Billing" icon="pi pi-credit-card" [outlined]="true"
-                                    [loading]="loadingPortal" (click)="onManageBilling()"></p-button>
+                                <p-button label="Manage Billing" icon="pi pi-credit-card" [outlined]="true" [loading]="loadingPortal" (click)="onManageBilling()"></p-button>
                                 @if (portalError) {
                                     <span class="text-sm text-red-400">{{ portalError }}</span>
                                 }
@@ -100,9 +97,7 @@ import { NotifyService } from '@/shared/services/notify.service';
                         <h3 class="text-base font-semibold mb-4 m-0">Preferences</h3>
                         <div class="flex items-center gap-3">
                             <p-checkbox [(ngModel)]="disableStats" [binary]="true" inputId="disableStats"></p-checkbox>
-                            <label for="disableStats" class="text-sm cursor-pointer" style="color: rgba(255,255,255,0.75)">
-                                Don't record my quiz stats
-                            </label>
+                            <label for="disableStats" class="text-sm cursor-pointer" style="color: rgba(255,255,255,0.75)"> Don't record my quiz stats </label>
                         </div>
                     </div>
 
@@ -121,11 +116,6 @@ import { NotifyService } from '@/shared/services/notify.service';
                             </div>
                         </div>
                     </div>
-
-                    
-
-                    
-
                 </div>
 
                 <!-- Footer: Cancel / Save -->
@@ -139,7 +129,6 @@ import { NotifyService } from '@/shared/services/notify.service';
                     <p-button label="Cancel" [outlined]="true" (click)="onCancel()"></p-button>
                     <p-button label="Save" icon="pi pi-check" [loading]="saving" (click)="onSave()"></p-button>
                 </div>
-
             </div>
         </div>
     `
@@ -182,14 +171,14 @@ export class ProfilePage implements OnInit {
     }
 
     async ngOnInit() {
-        onAuthStateChanged(this.auth, async user => {
+        onAuthStateChanged(this.auth, async (user) => {
             if (!user) return;
 
             this.uid = user.uid;
             this.displayName = user.displayName || '';
             this.email = user.email || '';
 
-            this.authService.isMember$.subscribe(val => {
+            this.authService.isMember$.subscribe((val) => {
                 this.isMember = !!val;
             });
 
@@ -210,7 +199,7 @@ export class ProfilePage implements OnInit {
             displayName: this.displayName,
             defaultTeamName: this.defaultTeamName,
             defaultTeamMembersText: this.defaultTeamMembersText,
-            disableStats: this.disableStats,
+            disableStats: this.disableStats
         };
     }
 
@@ -231,13 +220,13 @@ export class ProfilePage implements OnInit {
         try {
             const defaultTeamMembers = this.defaultTeamMembersText
                 .split(',')
-                .map(s => s.trim())
-                .filter(s => s.length > 0);
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0);
 
             const patch: any = {
                 defaultTeamName: this.defaultTeamName,
                 defaultTeamMembers,
-                disableStats: this.disableStats,
+                disableStats: this.disableStats
             };
 
             await this.userService.updateUser(this.uid, patch);

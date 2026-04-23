@@ -49,608 +49,630 @@ import { Collaborator } from '@/shared/models/collaborator.model';
 import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
-  selector: 'quiz-detail',
-  standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    QuillModule,
-    CardModule,
-    ButtonModule,
-    InputTextModule,
-    CheckboxModule,
-    TabsModule,
-    DialogModule,
-    DragDropModule,
-    SelectModule,
-    ColorPickerModule,
-    DatePickerModule,
-    DynamicDialogModule,
-    MultiSelectModule,
-    ToastModule,
-    ProgressSpinnerModule,
-    FloatLabelModule,
-    FormsModule,
-    SpeedDialModule,
-    MenuModule,
-    DividerModule,
-    TooltipModule,
-    QuizDisplayComponent
-  ],
-  templateUrl: './quizDetail.html'
+    selector: 'quiz-detail',
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        QuillModule,
+        CardModule,
+        ButtonModule,
+        InputTextModule,
+        CheckboxModule,
+        TabsModule,
+        DialogModule,
+        DragDropModule,
+        SelectModule,
+        ColorPickerModule,
+        DatePickerModule,
+        DynamicDialogModule,
+        MultiSelectModule,
+        ToastModule,
+        ProgressSpinnerModule,
+        FloatLabelModule,
+        FormsModule,
+        SpeedDialModule,
+        MenuModule,
+        DividerModule,
+        TooltipModule,
+        QuizDisplayComponent
+    ],
+    templateUrl: './quizDetail.html'
 })
 export class QuizDetailComponent implements OnInit, OnDestroy {
-  id!: string;
-  quiz!: Quiz;
-  form!: FormGroup;
-  quizImagePreview: string | null = null;
-  availableTags: QuizTag[] = [];
-  selectedTags: QuizTag[] = [];
-  availableSubmissionForms: { label: string; value: string }[] = [];
-  tabSelected: string = '0';
-  QuizTypeEnum = QuizTypeEnum;
-  saving: boolean = false;
-  selectedImageFile?: File;
-  existingImages: string[] = [];
-  loadingImages = false;
-  availableCollaborators: Collaborator[] = [];
-  addCollabVisible = false;
-  newCollabName = '';
+    id!: string;
+    quiz!: Quiz;
+    form!: FormGroup;
+    quizImagePreview: string | null = null;
+    availableTags: QuizTag[] = [];
+    selectedTags: QuizTag[] = [];
+    availableSubmissionForms: { label: string; value: string }[] = [];
+    tabSelected: string = '0';
+    QuizTypeEnum = QuizTypeEnum;
+    saving: boolean = false;
+    selectedImageFile?: File;
+    existingImages: string[] = [];
+    loadingImages = false;
+    availableCollaborators: Collaborator[] = [];
+    addCollabVisible = false;
+    newCollabName = '';
 
-  // NEW: Holds the SpeedDial menu for each question
-  questionMenus: MenuItem[][] = [];
+    // NEW: Holds the SpeedDial menu for each question
+    questionMenus: MenuItem[][] = [];
 
-  quizType = [
-    { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
-    { value: QuizTypeEnum.FiftyPlus, viewValue: 'Fifty+' },
-    { value: QuizTypeEnum.Collab, viewValue: 'Collaboration' },
-    { value: QuizTypeEnum.QuestionType, viewValue: 'Question-Type' }
-  ];
-
-  quillModules = {
-    toolbar: [
-      ['bold', 'italic', 'underline'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      [{ align: [] }],
-    ],
-  };
-
-  logos: string[] = [
-    '2010s-clear-1.png','aussie.png','boomer.png','chrissy.png','EURO.png',
-    'footy.png','HOTTEST-20 (1).png','logo.png','loser.png','Movie.png',
-    'movie2.png','olympic.png','peoples.png','reality.png','SA.png',
-    'spooky.png','swifty (1).png','weekly-hundred.png','Yearl-2023.png',
-    'yearly-22022.png','yeswequiz.png'
-  ];
-
-  extraMenuItems: MenuItem[] = [];
-
-  themePreviewQuiz: Quiz | null = null;
-  private themePreviewSub?: Subscription;
-
-  private removedQuestionsBackup: any[] = [];
-  logoDialogVisible: boolean = false;
-  pendingImageUrl: string = '';
-  uploadPreview: string | null = null;
-  pendingUploadFile: File | null = null;
-  savingLogo = false;
-
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private quizzesService: QuizzesService,
-    private authService: AuthService,
-    private ngZone: NgZone,
-    private route: ActivatedRoute,
-    private dialogService: DialogService,
-    private quizTagService: QuizTagsService,
-    private notify: NotifyService,
-    private storageService: StorageService,
-    private submissionFormService: SubmissionFormService,
-    private collaboratorsService: CollaboratorsService
-  ) {}
-
-  ngOnInit(): void {
-     this.extraMenuItems = [
-      {
-        label: 'Export Detailed JSON',
-        icon: 'pi pi-file',
-        command: () => this.exportJson()
-      },
-      {
-        label: 'Export Simple JSON',
-        icon: 'pi pi-file',
-        command: () => this.exportJson(true)
-      }
+    quizType = [
+        { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
+        { value: QuizTypeEnum.FiftyPlus, viewValue: 'Fifty+' },
+        { value: QuizTypeEnum.Collab, viewValue: 'Collaboration' },
+        { value: QuizTypeEnum.QuestionType, viewValue: 'Question-Type' }
     ];
-    // Load collaborators
-    this.collaboratorsService.getAll().subscribe(c => this.availableCollaborators = c);
 
-    // Load tags
-    this.quizTagService.getAllTags().subscribe(tags => {
-      this.availableTags = tags;
-    });
-
-    // Load submission forms
-    this.submissionFormService.getActiveFormsForDropdown().subscribe(forms => {
-      this.availableSubmissionForms = forms;
-    });
-
-    this.loadExistingImages();   
-
-    // Load quiz
-    this.route.paramMap.subscribe(async params => {
-      this.id = params.get('id') || '0';
-      if (this.id && this.id !== '0') {
-        await this.loadQuiz(this.id);
-      } else {
-        await this.initializeEmptyQuiz();
-      }
-    });
-  }
-
-  async loadExistingImages() {
-  this.loadingImages = true;
-  this.existingImages = await this.storageService.getExistingImages();
-  this.loadingImages = false;
-}
-
-uploadNewImage(event: any) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  this.pendingUploadFile = file;
-  this.pendingImageUrl = '';
-
-  const reader = new FileReader();
-  reader.onload = () => this.uploadPreview = reader.result as string;
-  reader.readAsDataURL(file);
-}
-
-  private getDefaultDeploymentDate(): Date {
-    const d = new Date();
-    d.setHours(9, 0, 0, 0);
-    return d;
-  }
-
-  private async initializeEmptyQuiz(): Promise<void> {
-    const emptyQuestions = Array.from({ length: 50 }, (_, i) => ({
-      questionId: i + 1,
-      question: '',
-      answer: '',
-      category: '',
-      timeless: false,
-    }));
-
-    const nextQuizId = await this.quizzesService.getNextQuizId(QuizTypeEnum.Weekly);
-    this.quiz = {
-      quizId: nextQuizId,
-      isPremium: false,
-      isActive: true,
-      quizType: QuizTypeEnum.Weekly,
-      questions: emptyQuestions,
-      deploymentDate: this.getDefaultDeploymentDate() as any,
-      theme: {
-        fontColor: '#fbe2df',
-        backgroundColor: '#677c73',
-        tertiaryColor: '#4cfbab',
-      },
+    quillModules = {
+        toolbar: [['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], [{ align: [] }]]
     };
-    this.buildForm(this.quiz);
-  }
 
-  private buildForm(quiz: Quiz): void {
-    let deploymentDate: Date | null = null;
-    if (quiz.deploymentDate) {
-      const ts = quiz.deploymentDate;
-      if (ts instanceof Date) deploymentDate = ts;
-      else if ('toDate' in ts && typeof ts.toDate === 'function') deploymentDate = ts.toDate();
-      else deploymentDate = new Date(ts as any);
-    } else {
-      deploymentDate = this.getDefaultDeploymentDate();
-    }
-
-    this.form = this.fb.group({
-      quizId: [quiz.quizId || null],
-      quizTitle: [quiz.quizTitle || ''],
-      quizSlug: [quiz.quizSlug || ''],
-      quizType: [quiz.quizType || 0],
-      isActive: [quiz.isActive ?? true],
-      isPremium: [quiz.isPremium || false],
-      questionCount: [quiz.questions?.length || 50],
-      deploymentDate: [deploymentDate],
-      collabId: [quiz.collabId || null],
-      theme: this.fb.group({
-        fontColor: [quiz.theme?.fontColor || '#fbe2df'],
-        backgroundColor: [quiz.theme?.backgroundColor || '#677c73'],
-        tertiaryColor: [quiz.theme?.tertiaryColor || '#4cfbab'],
-      }),
-      questions: this.fb.array(
-        (quiz.questions || []).map((q) =>
-          this.fb.group({
-            questionId: [q.questionId],
-            question: [q.question],
-            answer: [q.answer],
-            category: [q.category || ''],
-            timeless: [q.timeless || false],
-          })
-        )
-      ),
-      notesAbove: [quiz.notesAbove || ''],
-      notesBelow: [quiz.notesBelow || ''],
-      imageUrl: [quiz.imageUrl || ''],
-      submissionFormId: [quiz.submissionFormId || null],
-    });
-
-    // Sync SpeedDial menus initially
-    this.syncQuestionMenus();
-
-    this.form.get('quizType')?.valueChanges.subscribe(async (newType: QuizTypeEnum) => {
-      // if (!this.id || this.id === '0') { // only for new quizzes
-        const nextId = await this.quizzesService.getNextQuizId(newType);
-        this.form.get('quizId')?.setValue(nextId);
-      // }
-
-      if (newType !== QuizTypeEnum.Collab) this.tabSelected = '0';
-    });
-
-    this.form.get('questionCount')?.valueChanges.subscribe((count) => {
-      this.setQuestionCount(count);
-      this.syncQuestionMenus();
-    });
-
-    this.setupThemePreview();
-  }
-
-  private setupThemePreview(): void {
-    this.themePreviewSub?.unsubscribe();
-    this.themePreviewQuiz = { ...this.form.value, questions: this.questions.value, theme: { ...this.form.get('theme')?.value } };
-    this.themePreviewSub = this.form.get('theme')!.valueChanges.pipe(debounceTime(150)).subscribe(() => {
-      this.themePreviewQuiz = { ...this.form.value, questions: this.questions.value, theme: { ...this.form.get('theme')?.value } };
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.themePreviewSub?.unsubscribe();
-  }
-
-  get questions(): FormArray {
-    return this.form.get('questions') as FormArray;
-  }
-
-  private syncQuestionMenus(): void {
-    const count = this.questions.length;
-    this.questionMenus = Array.from({ length: count }, (_, i) => this.createQuestionMenu(i));
-  }
-
-  private createQuestionMenu(index: number): MenuItem[] {
-    return [
-      { icon: 'pi pi-pencil', command: () => this.notify.info('Commenting on Quiz Coming Soon!') },
-      { icon: 'pi pi-flag', command: () => this.toggleFlag(index) }
+    logos: string[] = [
+        '2010s-clear-1.png',
+        'aussie.png',
+        'boomer.png',
+        'chrissy.png',
+        'EURO.png',
+        'footy.png',
+        'HOTTEST-20 (1).png',
+        'logo.png',
+        'loser.png',
+        'Movie.png',
+        'movie2.png',
+        'olympic.png',
+        'peoples.png',
+        'reality.png',
+        'SA.png',
+        'spooky.png',
+        'swifty (1).png',
+        'weekly-hundred.png',
+        'Yearl-2023.png',
+        'yearly-22022.png',
+        'yeswequiz.png'
     ];
-  }
 
-  onImageSelected(event: any) {
-    const file = event.target.files?.[0];
-    if (file) {
-      this.selectedImageFile = file;
+    extraMenuItems: MenuItem[] = [];
+
+    themePreviewQuiz: Quiz | null = null;
+    private themePreviewSub?: Subscription;
+
+    private removedQuestionsBackup: any[] = [];
+    logoDialogVisible: boolean = false;
+    pendingImageUrl: string = '';
+    uploadPreview: string | null = null;
+    pendingUploadFile: File | null = null;
+    savingLogo = false;
+
+    constructor(
+        private fb: FormBuilder,
+        private router: Router,
+        private quizzesService: QuizzesService,
+        private authService: AuthService,
+        private ngZone: NgZone,
+        private route: ActivatedRoute,
+        private dialogService: DialogService,
+        private quizTagService: QuizTagsService,
+        private notify: NotifyService,
+        private storageService: StorageService,
+        private submissionFormService: SubmissionFormService,
+        private collaboratorsService: CollaboratorsService
+    ) {}
+
+    ngOnInit(): void {
+        this.extraMenuItems = [
+            {
+                label: 'Export Detailed JSON',
+                icon: 'pi pi-file',
+                command: () => this.exportJson()
+            },
+            {
+                label: 'Export Simple JSON',
+                icon: 'pi pi-file',
+                command: () => this.exportJson(true)
+            }
+        ];
+        // Load collaborators
+        this.collaboratorsService.getAll().subscribe((c) => (this.availableCollaborators = c));
+
+        // Load tags
+        this.quizTagService.getAllTags().subscribe((tags) => {
+            this.availableTags = tags;
+        });
+
+        // Load submission forms
+        this.submissionFormService.getActiveFormsForDropdown().subscribe((forms) => {
+            this.availableSubmissionForms = forms;
+        });
+
+        this.loadExistingImages();
+
+        // Load quiz
+        this.route.paramMap.subscribe(async (params) => {
+            this.id = params.get('id') || '0';
+            if (this.id && this.id !== '0') {
+                await this.loadQuiz(this.id);
+            } else {
+                await this.initializeEmptyQuiz();
+            }
+        });
     }
-  }
 
-  setQuestionCount(count: number): void {
-    if (count == null || isNaN(count)) return;
-    const current = this.questions.length;
+    async loadExistingImages() {
+        this.loadingImages = true;
+        this.existingImages = await this.storageService.getExistingImages();
+        this.loadingImages = false;
+    }
 
-    if (count > current) {
-      const toRestore = this.removedQuestionsBackup.splice(0, count - current);
-      toRestore.forEach(q => this.questions.push(this.fb.group(q)));
-      for (let i = this.questions.length; i < count; i++) {
-        this.questions.push(this.fb.group({
-          questionId: [i + 1],
-          question: [''],
-          answer: [''],
-          category: [''],
-          timeless: [false],
+    uploadNewImage(event: any) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        this.pendingUploadFile = file;
+        this.pendingImageUrl = '';
+
+        const reader = new FileReader();
+        reader.onload = () => (this.uploadPreview = reader.result as string);
+        reader.readAsDataURL(file);
+    }
+
+    private getDefaultDeploymentDate(): Date {
+        const d = new Date();
+        d.setHours(9, 0, 0, 0);
+        return d;
+    }
+
+    private async initializeEmptyQuiz(): Promise<void> {
+        const emptyQuestions = Array.from({ length: 50 }, (_, i) => ({
+            questionId: i + 1,
+            question: '',
+            answer: '',
+            category: '',
+            timeless: false
         }));
-      }
-    } else if (count < current) {
-      this.removedQuestionsBackup = this.questions.controls
-        .slice(count)
-        .map(c => c.value)
-        .concat(this.removedQuestionsBackup);
-      for (let i = current - 1; i >= count; i--) this.questions.removeAt(i);
-    }
 
-    this.questions.controls.forEach((q, i) => q.get('questionId')?.setValue(i + 1));
-  }
-
-  drop(event: CdkDragDrop<FormGroup[]>): void {
-    moveItemInArray(this.questions.controls as FormGroup[], event.previousIndex, event.currentIndex);
-  }
-
-  toPickerHex(value: string): string {
-    return value ? value.replace('#', '') : '';
-  }
-
-  fromPickerHex(value: string): string {
-    if (!value) return '';
-    return value.startsWith('#') ? value : '#' + value;
-  }
-
-  normalizeHtml(html: string): string {
-    if (!html) return '';
-    return html.replace(/&nbsp;/g, ' ').replace(/<p>\s*<\/p>/g, '').replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
-  }
-
-  private stripHtml(html: string): string {
-    if (!html) return '';
-    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-  }
-
-  private validateQuiz(): string[] {
-    const errors: string[] = [];
-    const formValue = this.form.value;
-
-    if (formValue.quizType !== QuizTypeEnum.Weekly && !formValue.quizTitle?.trim()) {
-      errors.push('Quiz name is required for non-weekly quizzes.');
-    }
-
-    if (!formValue.deploymentDate) {
-      errors.push('Deployment date is required.');
-    }
-
-    const questionCount: number = formValue.questionCount || 0;
-    const questions: any[] = formValue.questions || [];
-    const emptyNums: number[] = [];
-
-    for (let i = 0; i < Math.min(questionCount, questions.length); i++) {
-      const q = questions[i];
-      if (!this.stripHtml(q.question) || !this.stripHtml(q.answer)) {
-        emptyNums.push(i + 1);
-      }
-    }
-
-    if (emptyNums.length > 0) {
-      const preview = emptyNums.slice(0, 5).join(', ');
-      const extra = emptyNums.length > 5 ? ` (+${emptyNums.length - 5} more)` : '';
-      errors.push(`Questions missing question or answer: ${preview}${extra}`);
-    }
-
-    return errors;
-  }
-
-  async saveQuiz(): Promise<void> {
-    if (this.form.invalid) return;
-
-    const errors = this.validateQuiz();
-    if (errors.length > 0) {
-      errors.forEach(err => this.notify.error(err));
-      if (errors.some(e => e.includes('Questions'))) this.tabSelected = '0';
-      return;
-    }
-
-    this.saving = true;
-
-    try {
-      const formValue = this.form.value;
-      formValue.questions.forEach((q: any) => {
-        q.question = this.normalizeHtml(q.question);
-        q.answer = this.normalizeHtml(q.answer);
-      });
-      formValue.notesAbove = this.normalizeHtml(formValue.notesAbove);
-      formValue.notesBelow = this.normalizeHtml(formValue.notesBelow);
-
-      let imageUrl = this.form.value.imageUrl;
-
-      if (this.selectedImageFile) {
-        imageUrl = await this.storageService.uploadQuizImage(
-          this.selectedImageFile,
-          this.form.value.quizId
-        );
-      }
-
-      if (!formValue.deploymentDate) formValue.deploymentDate = serverTimestamp();
-      else if (!(formValue.deploymentDate instanceof Date)) formValue.deploymentDate = new Date(formValue.deploymentDate);
-
-      const quizData: Quiz = { ...this.quiz, ...formValue };
-      if (quizData.quizType == QuizTypeEnum.Weekly){
-        quizData.quizTitle = 'Quiz ' + String(quizData.quizId);
-      } 
-
-      if (quizData.quizSlug == null || quizData.quizSlug == ''){
-        quizData.quizSlug = quizData.quizId.toString();
-      } 
-
-      // console.log(quizData)
-      if (this.id && this.id !== '0') {
-        await this.quizzesService.updateQuiz(this.id, quizData);
-      } else {
-        const currentUserId = this.authService.currentUserId;
-        this.id = await this.quizzesService.createQuiz(quizData, currentUserId);
-      }
-
-      this.notify.success('Quiz saved successfully');
-      this.router.navigate(['/fiftyPlus/admin/quizzes']);
-    } catch (error) {
-      console.error('Error saving quiz:', error);
-      this.notify.error('Error saving quiz');
-    } finally {
-      this.saving = false;
-    }
-  }
-
-  showAddCollabDialog(): void {
-    this.newCollabName = '';
-    this.addCollabVisible = true;
-  }
-
-  async addCollaborator(): Promise<void> {
-    if (!this.newCollabName.trim()) return;
-    const collab = await this.collaboratorsService.create(this.newCollabName);
-    this.form.get('collabId')?.setValue(collab.id);
-    this.addCollabVisible = false;
-  }
-
-  cancel(): void {
-    this.router.navigate(['/fiftyPlus/admin/quizzes']);
-  }
-
-  private async loadQuiz(id: string): Promise<void> {
-    const quiz = await firstValueFrom(this.quizzesService.getQuizById(id));
-    this.ngZone.run(async () => {
-      if (!quiz) await this.initializeEmptyQuiz();
-      else {
-        this.quiz = quiz;
+        const nextQuizId = await this.quizzesService.getNextQuizId(QuizTypeEnum.Weekly);
+        this.quiz = {
+            quizId: nextQuizId,
+            isPremium: false,
+            isActive: true,
+            quizType: QuizTypeEnum.Weekly,
+            questions: emptyQuestions,
+            deploymentDate: this.getDefaultDeploymentDate() as any,
+            theme: {
+                fontColor: '#fbe2df',
+                backgroundColor: '#677c73',
+                tertiaryColor: '#4cfbab'
+            }
+        };
         this.buildForm(this.quiz);
-      }
-    });
-  }
+    }
 
-  openImportDialog(): void {
-    const ref: DynamicDialogRef = this.dialogService.open(QuizExtractComponent, {
-      header: 'Import Questions',
-      width: '50%',
-      modal: true,
-      dismissableMask: true,
-      contentStyle: { 'max-height': '80vh', overflow: 'auto' },
-      data: { questions: this.questions.value, quizNum: this.form.get('quizId')?.value }
-    });
+    private buildForm(quiz: Quiz): void {
+        let deploymentDate: Date | null = null;
+        if (quiz.deploymentDate) {
+            const ts = quiz.deploymentDate;
+            if (ts instanceof Date) deploymentDate = ts;
+            else if ('toDate' in ts && typeof ts.toDate === 'function') deploymentDate = ts.toDate();
+            else deploymentDate = new Date(ts as any);
+        } else {
+            deploymentDate = this.getDefaultDeploymentDate();
+        }
 
-    ref.onClose.subscribe((result: { questions: any[], quizNum: string } | null) => {
-      if (result) {
-        this.questions.clear();
-        result.questions.forEach(q => this.questions.push(this.fb.group({
-          questionId: [q.questionId || null],
-          question: [q.question || ''],
-          answer: [q.answer || ''],
-          category: [q.category || ''],
-          timeless: [q.timeless || false]
-        })));
-        this.form.patchValue({ quizId: result.quizNum, questionCount: result.questions.length });
+        this.form = this.fb.group({
+            quizId: [quiz.quizId || null],
+            quizTitle: [quiz.quizTitle || ''],
+            quizSlug: [quiz.quizSlug || ''],
+            quizType: [quiz.quizType || 0],
+            isActive: [quiz.isActive ?? true],
+            isPremium: [quiz.isPremium || false],
+            questionCount: [quiz.questions?.length || 50],
+            deploymentDate: [deploymentDate],
+            collabId: [quiz.collabId || null],
+            theme: this.fb.group({
+                fontColor: [quiz.theme?.fontColor || '#fbe2df'],
+                backgroundColor: [quiz.theme?.backgroundColor || '#677c73'],
+                tertiaryColor: [quiz.theme?.tertiaryColor || '#4cfbab']
+            }),
+            questions: this.fb.array(
+                (quiz.questions || []).map((q) =>
+                    this.fb.group({
+                        questionId: [q.questionId],
+                        question: [q.question],
+                        answer: [q.answer],
+                        category: [q.category || ''],
+                        timeless: [q.timeless || false]
+                    })
+                )
+            ),
+            notesAbove: [quiz.notesAbove || ''],
+            notesBelow: [quiz.notesBelow || ''],
+            imageUrl: [quiz.imageUrl || ''],
+            submissionFormId: [quiz.submissionFormId || null]
+        });
+
+        // Sync SpeedDial menus initially
         this.syncQuestionMenus();
-      }
-    });
-  }
 
-  toggleFlag(index: number): void {
-    const control = this.questions.at(index);
-    control.get('timeless')?.setValue(!control.get('timeless')?.value);
-  }
+        this.form.get('quizType')?.valueChanges.subscribe(async (newType: QuizTypeEnum) => {
+            // if (!this.id || this.id === '0') { // only for new quizzes
+            const nextId = await this.quizzesService.getNextQuizId(newType);
+            this.form.get('quizId')?.setValue(nextId);
+            // }
 
-  previewQuiz(): void {
-  if (!this.form) return;
+            if (newType !== QuizTypeEnum.Collab) this.tabSelected = '0';
+        });
 
-  // Build a preview quiz object from the form
-  const previewQuiz: Quiz = {
-    ...this.form.value,
-    questions: this.questions.value,
-    theme: { ...this.form.get('theme')?.value }
-  };
+        this.form.get('questionCount')?.valueChanges.subscribe((count) => {
+            this.setQuestionCount(count);
+            this.syncQuestionMenus();
+        });
 
-  // console.log(previewQuiz)
-
-  const ref: DynamicDialogRef = this.dialogService.open(QuizDisplayComponent, {
-   showHeader: false,           // no title
-    width: '85%',              // fill entire modal
-    height: '100%',
-    modal: true,
-    dismissableMask: true,
-    contentStyle: { 
-      padding: '0',            // remove inner padding
-      height: '100%',
-      overflow: 'auto',
-      'scrollbar-width': 'none', // Firefox
-      // padding: '0.5rem',        // leave a little space inside for the rounded corners      // scroll inside this inner container
-    borderRadius: '1rem',
-    backgroundColor: previewQuiz.theme?.backgroundColor,   
-    },
-    baseZIndex: 10000,          // make sure it’s on top
-    data: { quiz: previewQuiz, previewMode: true, locked: false },
-    focusTrap: false
-  });
-
-ref.onClose.subscribe((result) => {
-  // optional: handle anything after dialog closes
-});
-}
-
-exportJson(simple: boolean = false): void {
-  if (!this.form) return;
-
-  // Build the quiz object from the form
-  let quizData: any = {
-    ...this.form.value,
-    questions: this.questions.value,
-    theme: { ...this.form.get('theme')?.value }
-  };
-
-  if (simple) {
-    // Map to simplified structure
-    quizData = {
-      quizId: quizData.quizId,
-      questions: (quizData.questions || []).map((q: any) => ({
-        qNum: q.questionId,
-        qTitle: q.question,
-        qAnswer: q.answer
-      }))
-    };
-  }
-
-  const jsonString = JSON.stringify(quizData, null, 2); // pretty print
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = window.URL.createObjectURL(blob);
-
-  // Create a temporary link and click it to download
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Quiz-${quizData.quizId}.json`;
-  a.click();
-
-  // Cleanup
-  window.URL.revokeObjectURL(url);
-}
-
-
-
-  onNotesEditorCreated(editor: any): void {
-    if (!editor.getText().trim()) {
-      editor.format('align', 'center');
+        this.setupThemePreview();
     }
-  }
 
-  showLogoDialog(): void {
-    this.pendingImageUrl = this.form.get('imageUrl')?.value || '';
-    this.uploadPreview = null;
-    this.pendingUploadFile = null;
-    this.logoDialogVisible = true;
-  }
+    private setupThemePreview(): void {
+        this.themePreviewSub?.unsubscribe();
+        this.themePreviewQuiz = { ...this.form.value, questions: this.questions.value, theme: { ...this.form.get('theme')?.value } };
+        this.themePreviewSub = this.form
+            .get('theme')!
+            .valueChanges.pipe(debounceTime(150))
+            .subscribe(() => {
+                this.themePreviewQuiz = { ...this.form.value, questions: this.questions.value, theme: { ...this.form.get('theme')?.value } };
+            });
+    }
 
-  selectLogoFromDialog(img: string): void {
-    this.pendingImageUrl = img;
-    this.uploadPreview = null;
-    this.pendingUploadFile = null;
-  }
+    ngOnDestroy(): void {
+        this.themePreviewSub?.unsubscribe();
+    }
 
-  async saveLogoDialog(): Promise<void> {
-    if (this.savingLogo) return;
-    this.savingLogo = true;
-    try {
-      if (this.pendingUploadFile) {
-        const url = await this.storageService.uploadQuizImage(this.pendingUploadFile, this.form.value.quizId);
-        this.form.get('imageUrl')?.setValue(url);
-        this.pendingUploadFile = null;
+    get questions(): FormArray {
+        return this.form.get('questions') as FormArray;
+    }
+
+    private syncQuestionMenus(): void {
+        const count = this.questions.length;
+        this.questionMenus = Array.from({ length: count }, (_, i) => this.createQuestionMenu(i));
+    }
+
+    private createQuestionMenu(index: number): MenuItem[] {
+        return [
+            { icon: 'pi pi-pencil', command: () => this.notify.info('Commenting on Quiz Coming Soon!') },
+            { icon: 'pi pi-flag', command: () => this.toggleFlag(index) }
+        ];
+    }
+
+    onImageSelected(event: any) {
+        const file = event.target.files?.[0];
+        if (file) {
+            this.selectedImageFile = file;
+        }
+    }
+
+    setQuestionCount(count: number): void {
+        if (count == null || isNaN(count)) return;
+        const current = this.questions.length;
+
+        if (count > current) {
+            const toRestore = this.removedQuestionsBackup.splice(0, count - current);
+            toRestore.forEach((q) => this.questions.push(this.fb.group(q)));
+            for (let i = this.questions.length; i < count; i++) {
+                this.questions.push(
+                    this.fb.group({
+                        questionId: [i + 1],
+                        question: [''],
+                        answer: [''],
+                        category: [''],
+                        timeless: [false]
+                    })
+                );
+            }
+        } else if (count < current) {
+            this.removedQuestionsBackup = this.questions.controls
+                .slice(count)
+                .map((c) => c.value)
+                .concat(this.removedQuestionsBackup);
+            for (let i = current - 1; i >= count; i--) this.questions.removeAt(i);
+        }
+
+        this.questions.controls.forEach((q, i) => q.get('questionId')?.setValue(i + 1));
+    }
+
+    drop(event: CdkDragDrop<FormGroup[]>): void {
+        moveItemInArray(this.questions.controls as FormGroup[], event.previousIndex, event.currentIndex);
+    }
+
+    toPickerHex(value: string): string {
+        return value ? value.replace('#', '') : '';
+    }
+
+    fromPickerHex(value: string): string {
+        if (!value) return '';
+        return value.startsWith('#') ? value : '#' + value;
+    }
+
+    normalizeHtml(html: string): string {
+        if (!html) return '';
+        return html
+            .replace(/&nbsp;/g, ' ')
+            .replace(/<p>\s*<\/p>/g, '')
+            .replace(/<p>\s*(.*?)\s*<\/p>/g, '<p>$1</p>');
+    }
+
+    private stripHtml(html: string): string {
+        if (!html) return '';
+        return html
+            .replace(/<[^>]*>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .trim();
+    }
+
+    private validateQuiz(): string[] {
+        const errors: string[] = [];
+        const formValue = this.form.value;
+
+        if (formValue.quizType !== QuizTypeEnum.Weekly && !formValue.quizTitle?.trim()) {
+            errors.push('Quiz name is required for non-weekly quizzes.');
+        }
+
+        if (!formValue.deploymentDate) {
+            errors.push('Deployment date is required.');
+        }
+
+        const questionCount: number = formValue.questionCount || 0;
+        const questions: any[] = formValue.questions || [];
+        const emptyNums: number[] = [];
+
+        for (let i = 0; i < Math.min(questionCount, questions.length); i++) {
+            const q = questions[i];
+            if (!this.stripHtml(q.question) || !this.stripHtml(q.answer)) {
+                emptyNums.push(i + 1);
+            }
+        }
+
+        if (emptyNums.length > 0) {
+            const preview = emptyNums.slice(0, 5).join(', ');
+            const extra = emptyNums.length > 5 ? ` (+${emptyNums.length - 5} more)` : '';
+            errors.push(`Questions missing question or answer: ${preview}${extra}`);
+        }
+
+        return errors;
+    }
+
+    async saveQuiz(): Promise<void> {
+        if (this.form.invalid) return;
+
+        const errors = this.validateQuiz();
+        if (errors.length > 0) {
+            errors.forEach((err) => this.notify.error(err));
+            if (errors.some((e) => e.includes('Questions'))) this.tabSelected = '0';
+            return;
+        }
+
+        this.saving = true;
+
+        try {
+            const formValue = this.form.value;
+            formValue.questions.forEach((q: any) => {
+                q.question = this.normalizeHtml(q.question);
+                q.answer = this.normalizeHtml(q.answer);
+            });
+            formValue.notesAbove = this.normalizeHtml(formValue.notesAbove);
+            formValue.notesBelow = this.normalizeHtml(formValue.notesBelow);
+
+            let imageUrl = this.form.value.imageUrl;
+
+            if (this.selectedImageFile) {
+                imageUrl = await this.storageService.uploadQuizImage(this.selectedImageFile, this.form.value.quizId);
+            }
+
+            if (!formValue.deploymentDate) formValue.deploymentDate = serverTimestamp();
+            else if (!(formValue.deploymentDate instanceof Date)) formValue.deploymentDate = new Date(formValue.deploymentDate);
+
+            const quizData: Quiz = { ...this.quiz, ...formValue };
+            if (quizData.quizType == QuizTypeEnum.Weekly) {
+                quizData.quizTitle = 'Quiz ' + String(quizData.quizId);
+            }
+
+            if (quizData.quizSlug == null || quizData.quizSlug == '') {
+                quizData.quizSlug = quizData.quizId.toString();
+            }
+
+            // console.log(quizData)
+            if (this.id && this.id !== '0') {
+                await this.quizzesService.updateQuiz(this.id, quizData);
+            } else {
+                const currentUserId = this.authService.currentUserId;
+                this.id = await this.quizzesService.createQuiz(quizData, currentUserId);
+            }
+
+            this.notify.success('Quiz saved successfully');
+            this.router.navigate(['/fiftyPlus/admin/quizzes']);
+        } catch (error) {
+            console.error('Error saving quiz:', error);
+            this.notify.error('Error saving quiz');
+        } finally {
+            this.saving = false;
+        }
+    }
+
+    showAddCollabDialog(): void {
+        this.newCollabName = '';
+        this.addCollabVisible = true;
+    }
+
+    async addCollaborator(): Promise<void> {
+        if (!this.newCollabName.trim()) return;
+        const collab = await this.collaboratorsService.create(this.newCollabName);
+        this.form.get('collabId')?.setValue(collab.id);
+        this.addCollabVisible = false;
+    }
+
+    cancel(): void {
+        this.router.navigate(['/fiftyPlus/admin/quizzes']);
+    }
+
+    private async loadQuiz(id: string): Promise<void> {
+        const quiz = await firstValueFrom(this.quizzesService.getQuizById(id));
+        this.ngZone.run(async () => {
+            if (!quiz) await this.initializeEmptyQuiz();
+            else {
+                this.quiz = quiz;
+                this.buildForm(this.quiz);
+            }
+        });
+    }
+
+    openImportDialog(): void {
+        const ref: DynamicDialogRef = this.dialogService.open(QuizExtractComponent, {
+            header: 'Import Questions',
+            width: '50%',
+            modal: true,
+            dismissableMask: true,
+            contentStyle: { 'max-height': '80vh', overflow: 'auto' },
+            data: { questions: this.questions.value, quizNum: this.form.get('quizId')?.value }
+        });
+
+        ref.onClose.subscribe((result: { questions: any[]; quizNum: string } | null) => {
+            if (result) {
+                this.questions.clear();
+                result.questions.forEach((q) =>
+                    this.questions.push(
+                        this.fb.group({
+                            questionId: [q.questionId || null],
+                            question: [q.question || ''],
+                            answer: [q.answer || ''],
+                            category: [q.category || ''],
+                            timeless: [q.timeless || false]
+                        })
+                    )
+                );
+                this.form.patchValue({ quizId: result.quizNum, questionCount: result.questions.length });
+                this.syncQuestionMenus();
+            }
+        });
+    }
+
+    toggleFlag(index: number): void {
+        const control = this.questions.at(index);
+        control.get('timeless')?.setValue(!control.get('timeless')?.value);
+    }
+
+    previewQuiz(): void {
+        if (!this.form) return;
+
+        // Build a preview quiz object from the form
+        const previewQuiz: Quiz = {
+            ...this.form.value,
+            questions: this.questions.value,
+            theme: { ...this.form.get('theme')?.value }
+        };
+
+        // console.log(previewQuiz)
+
+        const ref: DynamicDialogRef = this.dialogService.open(QuizDisplayComponent, {
+            showHeader: false, // no title
+            width: '85%', // fill entire modal
+            height: '100%',
+            modal: true,
+            dismissableMask: true,
+            contentStyle: {
+                padding: '0', // remove inner padding
+                height: '100%',
+                overflow: 'auto',
+                'scrollbar-width': 'none', // Firefox
+                // padding: '0.5rem',        // leave a little space inside for the rounded corners      // scroll inside this inner container
+                borderRadius: '1rem',
+                backgroundColor: previewQuiz.theme?.backgroundColor
+            },
+            baseZIndex: 10000, // make sure it’s on top
+            data: { quiz: previewQuiz, previewMode: true, locked: false },
+            focusTrap: false
+        });
+
+        ref.onClose.subscribe((result) => {
+            // optional: handle anything after dialog closes
+        });
+    }
+
+    exportJson(simple: boolean = false): void {
+        if (!this.form) return;
+
+        // Build the quiz object from the form
+        let quizData: any = {
+            ...this.form.value,
+            questions: this.questions.value,
+            theme: { ...this.form.get('theme')?.value }
+        };
+
+        if (simple) {
+            // Map to simplified structure
+            quizData = {
+                quizId: quizData.quizId,
+                questions: (quizData.questions || []).map((q: any) => ({
+                    qNum: q.questionId,
+                    qTitle: q.question,
+                    qAnswer: q.answer
+                }))
+            };
+        }
+
+        const jsonString = JSON.stringify(quizData, null, 2); // pretty print
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+
+        // Create a temporary link and click it to download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Quiz-${quizData.quizId}.json`;
+        a.click();
+
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+    }
+
+    onNotesEditorCreated(editor: any): void {
+        if (!editor.getText().trim()) {
+            editor.format('align', 'center');
+        }
+    }
+
+    showLogoDialog(): void {
+        this.pendingImageUrl = this.form.get('imageUrl')?.value || '';
         this.uploadPreview = null;
-        await this.loadExistingImages();
-      } else {
-        this.form.get('imageUrl')?.setValue(this.pendingImageUrl);
-      }
-      this.logoDialogVisible = false;
-    } finally {
-      this.savingLogo = false;
+        this.pendingUploadFile = null;
+        this.logoDialogVisible = true;
     }
-  }
 
-  cancelLogoDialog(): void {
-    this.logoDialogVisible = false;
-  }
+    selectLogoFromDialog(img: string): void {
+        this.pendingImageUrl = img;
+        this.uploadPreview = null;
+        this.pendingUploadFile = null;
+    }
+
+    async saveLogoDialog(): Promise<void> {
+        if (this.savingLogo) return;
+        this.savingLogo = true;
+        try {
+            if (this.pendingUploadFile) {
+                const url = await this.storageService.uploadQuizImage(this.pendingUploadFile, this.form.value.quizId);
+                this.form.get('imageUrl')?.setValue(url);
+                this.pendingUploadFile = null;
+                this.uploadPreview = null;
+                await this.loadExistingImages();
+            } else {
+                this.form.get('imageUrl')?.setValue(this.pendingImageUrl);
+            }
+            this.logoDialogVisible = false;
+        } finally {
+            this.savingLogo = false;
+        }
+    }
+
+    cancelLogoDialog(): void {
+        this.logoDialogVisible = false;
+    }
 }

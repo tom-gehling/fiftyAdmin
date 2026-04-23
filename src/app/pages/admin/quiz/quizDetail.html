@@ -51,16 +51,10 @@
             <div class="p-field w-full" *ngIf="form.get('quizType')?.value == QuizTypeEnum.Collab">
                 <div class="flex gap-1 items-stretch">
                     <p-floatlabel class="flex-1" variant="in">
-                        <p-select id="collabId" formControlName="collabId"
-                            [options]="availableCollaborators"
-                            optionLabel="name" optionValue="id"
-                            [showClear]="true"
-                            class="w-full"></p-select>
+                        <p-select id="collabId" formControlName="collabId" [options]="availableCollaborators" optionLabel="name" optionValue="id" [showClear]="true" class="w-full"></p-select>
                         <label for="collabId">Collaborator</label>
                     </p-floatlabel>
-                    <button pButton type="button" icon="pi pi-plus" class="p-button-outlined"
-                        pTooltip="Add new collaborator" tooltipPosition="top"
-                        (click)="showAddCollabDialog()"></button>
+                    <button pButton type="button" icon="pi pi-plus" class="p-button-outlined" pTooltip="Add new collaborator" tooltipPosition="top" (click)="showAddCollabDialog()"></button>
                 </div>
             </div>
 
@@ -141,14 +135,18 @@
                                         [ngModel]="toPickerHex(form.get('theme.fontColor')?.value)"
                                         (ngModelChange)="form.get('theme.fontColor')?.setValue(fromPickerHex($event))"
                                         [ngModelOptions]="{standalone: true}"
-                                        [inline]="true"></p-colorPicker>
+                                        [inline]="true"
+                                    ></p-colorPicker>
                                     <div class="flex items-center gap-2 w-full">
-                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
-                                             [style.background-color]="form.get('theme.fontColor')?.value"></div>
-                                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm"
+                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0" [style.background-color]="form.get('theme.fontColor')?.value"></div>
+                                        <input
+                                            pInputText
+                                            type="text"
+                                            class="min-w-0 w-full font-mono text-sm"
                                             [value]="form.get('theme.fontColor')?.value || ''"
                                             (input)="form.get('theme.fontColor')?.setValue(fromPickerHex($any($event.target).value))"
-                                            placeholder="#fbe2df" />
+                                            placeholder="#fbe2df"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -159,14 +157,18 @@
                                         [ngModel]="toPickerHex(form.get('theme.backgroundColor')?.value)"
                                         (ngModelChange)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($event))"
                                         [ngModelOptions]="{standalone: true}"
-                                        [inline]="true"></p-colorPicker>
+                                        [inline]="true"
+                                    ></p-colorPicker>
                                     <div class="flex items-center gap-2 w-full">
-                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
-                                             [style.background-color]="form.get('theme.backgroundColor')?.value"></div>
-                                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm"
+                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0" [style.background-color]="form.get('theme.backgroundColor')?.value"></div>
+                                        <input
+                                            pInputText
+                                            type="text"
+                                            class="min-w-0 w-full font-mono text-sm"
                                             [value]="form.get('theme.backgroundColor')?.value || ''"
                                             (input)="form.get('theme.backgroundColor')?.setValue(fromPickerHex($any($event.target).value))"
-                                            placeholder="#677c73" />
+                                            placeholder="#677c73"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -177,14 +179,18 @@
                                         [ngModel]="toPickerHex(form.get('theme.tertiaryColor')?.value)"
                                         (ngModelChange)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($event))"
                                         [ngModelOptions]="{standalone: true}"
-                                        [inline]="true"></p-colorPicker>
+                                        [inline]="true"
+                                    ></p-colorPicker>
                                     <div class="flex items-center gap-2 w-full">
-                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0"
-                                             [style.background-color]="form.get('theme.tertiaryColor')?.value"></div>
-                                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm"
+                                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0" [style.background-color]="form.get('theme.tertiaryColor')?.value"></div>
+                                        <input
+                                            pInputText
+                                            type="text"
+                                            class="min-w-0 w-full font-mono text-sm"
                                             [value]="form.get('theme.tertiaryColor')?.value || ''"
                                             (input)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($any($event.target).value))"
-                                            placeholder="#4cfbab" />
+                                            placeholder="#4cfbab"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -269,15 +275,7 @@
                         <h3 class="font-semibold mb-2">Submission Form</h3>
                         <div class="p-field w-full max-w-md">
                             <p-floatlabel class="w-full" variant="in">
-                                <p-select
-                                    id="submissionFormId"
-                                    formControlName="submissionFormId"
-                                    [options]="availableSubmissionForms"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    [showClear]="true"
-                                    class="w-full"
-                                ></p-select>
+                                <p-select id="submissionFormId" formControlName="submissionFormId" [options]="availableSubmissionForms" optionLabel="label" optionValue="value" [showClear]="true" class="w-full"></p-select>
                                 <label for="submissionFormId">Submission Form</label>
                             </p-floatlabel>
                         </div>
@@ -304,14 +302,14 @@
             </p-tabpanels>
         </p-tabs>
     </form>
-<!-- Add Collaborator Dialog -->
-<p-dialog [(visible)]="addCollabVisible" header="New Collaborator" [modal]="true" [style]="{width: '320px'}" [draggable]="false">
-    <div class="flex flex-col gap-3 pt-2">
-        <input pInputText placeholder="Collaborator name" [(ngModel)]="newCollabName" (keyup.enter)="addCollaborator()" />
-    </div>
-    <ng-template pTemplate="footer">
-        <button pButton label="Cancel" class="p-button-outlined" (click)="addCollabVisible = false"></button>
-        <button pButton label="Add" (click)="addCollaborator()" [disabled]="!newCollabName.trim()"></button>
-    </ng-template>
-</p-dialog>
+    <!-- Add Collaborator Dialog -->
+    <p-dialog [(visible)]="addCollabVisible" header="New Collaborator" [modal]="true" [style]="{width: '320px'}" [draggable]="false">
+        <div class="flex flex-col gap-3 pt-2">
+            <input pInputText placeholder="Collaborator name" [(ngModel)]="newCollabName" (keyup.enter)="addCollaborator()" />
+        </div>
+        <ng-template pTemplate="footer">
+            <button pButton label="Cancel" class="p-button-outlined" (click)="addCollabVisible = false"></button>
+            <button pButton label="Add" (click)="addCollaborator()" [disabled]="!newCollabName.trim()"></button>
+        </ng-template>
+    </p-dialog>
 </p-card>

@@ -1,16 +1,15 @@
-import { Timestamp } from "firebase/firestore";
-import { QuizTypeEnum } from "../enums/QuizTypeEnum";
-import { QuizTag } from "./quizTags.model";
-
+import { Timestamp } from 'firebase/firestore';
+import { QuizTypeEnum } from '../enums/QuizTypeEnum';
+import { QuizTag } from './quizTags.model';
 
 // Represents a single quiz question
 export interface QuizQuestion {
-    id?: string;             
-    questionId: number;     
+    id?: string;
+    questionId: number;
     question: string;
     answer: string;
     category?: string;
-    timeless?: boolean;      
+    timeless?: boolean;
 }
 
 // Represents quiz theming options
@@ -35,7 +34,7 @@ export interface Quiz {
     creationTime?: Date;
     createdBy?: string; //refers to a user
     deploymentDate?: Timestamp | Date;
-    quizType?: QuizTypeEnum;        // could be enum: Weekly, Fifty+, Collab
+    quizType?: QuizTypeEnum; // could be enum: Weekly, Fifty+, Collab
     isPremium?: boolean;
     isActive?: boolean;
     featuredOnWeekly?: boolean;
@@ -47,8 +46,8 @@ export interface Quiz {
     notesBelow?: string;
     imageUrl?: string;
 
-    collab?: string;        // legacy free-text collaborator name
-    collabId?: string;     // reference to Collaborator.id
+    collab?: string; // legacy free-text collaborator name
+    collabId?: string; // reference to Collaborator.id
 
     /** Reference to SubmissionForm.id for quiz submission form */
     submissionFormId?: string;

@@ -9,227 +9,201 @@ import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 import { UserService } from '@/shared/services/user.service';
 
 @Component({
-  standalone: true,
-  selector: 'app-stats-widget',
-  imports: [CommonModule],
-  template: `
-    <!-- Active Weekly Quiz -->
-    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
-        <ng-container *ngIf="!loadingActiveQuiz; else loadingSpinner">
-          <div>
-            <span class="block text-muted-color font-medium mb-2">Active Weekly Quiz</span>
-            <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
-              {{ activeQuiz?.quizTitle || activeQuiz?.quizId }}
+    standalone: true,
+    selector: 'app-stats-widget',
+    imports: [CommonModule],
+    template: `
+        <!-- Active Weekly Quiz -->
+        <div class="col-span-6 lg:col-span-6 xl:col-span-3">
+            <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
+                <ng-container *ngIf="!loadingActiveQuiz; else loadingSpinner">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-2">Active Weekly Quiz</span>
+                        <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
+                            {{ activeQuiz?.quizTitle || activeQuiz?.quizId }}
+                        </div>
+                    </div>
+                    <div class="mt-4 text-muted-color text-sm">Deployment: {{ getDeploymentDate(activeQuiz?.deploymentDate) | date: 'mediumDate' }}</div>
+                </ng-container>
             </div>
-          </div>
-          <div class="mt-4 text-muted-color text-sm">
-            Deployment: {{ getDeploymentDate(activeQuiz?.deploymentDate) | date:'mediumDate' }}
-          </div>
-        </ng-container>
-      </div>
-    </div>
+        </div>
 
-    <!-- Next Weekly Quiz Status -->
-    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
-        <ng-container *ngIf="!loadingNextQuiz; else loadingSpinner">
-          <div>
-            <span class="block text-muted-color font-medium mb-2">Next Weekly Quiz Status</span>
-            <div class="inline-flex gap-3">
-              <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl mt-2">
-                {{ nextQuizReady === null ? 'Yet to be created' : (nextQuizReady ? 'Ready' : 'In Progress') }}
-              </div>
-              <div 
-                class="w-6 h-6 flex items-center justify-center rounded-full border-2 border-green-500"
-                [class.bg-green-500]="nextQuizReady"
-                *ngIf="nextQuizReady !== null"
-              >
-                <i *ngIf="nextQuizReady" class="pi pi-check text-white text-sm"></i>
-              </div>
+        <!-- Next Weekly Quiz Status -->
+        <div class="col-span-6 lg:col-span-6 xl:col-span-3">
+            <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
+                <ng-container *ngIf="!loadingNextQuiz; else loadingSpinner">
+                    <div>
+                        <span class="block text-muted-color font-medium mb-2">Next Weekly Quiz Status</span>
+                        <div class="inline-flex gap-3">
+                            <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl mt-2">
+                                {{ nextQuizReady === null ? 'Yet to be created' : nextQuizReady ? 'Ready' : 'In Progress' }}
+                            </div>
+                            <div class="w-6 h-6 flex items-center justify-center rounded-full border-2 border-green-500" [class.bg-green-500]="nextQuizReady" *ngIf="nextQuizReady !== null">
+                                <i *ngIf="nextQuizReady" class="pi pi-check text-white text-sm"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-muted-color text-sm" *ngIf="nextDeployment">Due to Deploy: {{ nextDeployment | date: 'h:mm a - MMM d' }}</div>
+                </ng-container>
             </div>
-          </div>
-          <div class="mt-4 text-muted-color text-sm" *ngIf="nextDeployment">
-            Due to Deploy: {{ nextDeployment | date:'h:mm a - MMM d' }}
-          </div>
-        </ng-container>
-      </div>
-    </div>
+        </div>
 
-    <!-- Quiz Sessions -->
-    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
-        <ng-container *ngIf="!loadingStats; else loadingSpinner">
-          <div class="flex justify-between items-center">
-            <div>
-              <span class="block text-muted-color font-medium mb-2">
-                {{ activeQuiz?.quizTitle || activeQuiz?.quizId }} Completed Sessions
-              </span>
-              <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
-                {{ totalSessions }}
-              </div>
+        <!-- Quiz Sessions -->
+        <div class="col-span-6 lg:col-span-6 xl:col-span-3">
+            <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
+                <ng-container *ngIf="!loadingStats; else loadingSpinner">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="block text-muted-color font-medium mb-2"> {{ activeQuiz?.quizTitle || activeQuiz?.quizId }} Completed Sessions </span>
+                            <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
+                                {{ totalSessions }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-muted-color text-sm">Avg Score: {{ averageScore | number: '1.1-2' }}</div>
+                </ng-container>
             </div>
-            
-             
+        </div>
 
-          </div>
-          <div class="mt-4 text-muted-color text-sm">
-            Avg Score: {{ averageScore | number:'1.1-2' }}
-          </div>
-        </ng-container>
-      </div>
-    </div>
-
-    <!-- Member Count -->
-    <div class="col-span-6 lg:col-span-6 xl:col-span-3">
-      <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
-        <ng-container *ngIf="!loadingMembers; else loadingSpinner">
-          <div class="flex justify-between items-center">
-            <div>
-              <span class="block text-muted-color font-medium mb-2">Fifty+ Members</span>
-              <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
-                {{ memberCount }}
-              </div>
+        <!-- Member Count -->
+        <div class="col-span-6 lg:col-span-6 xl:col-span-3">
+            <div class="card mb-0 h-full flex flex-col justify-between p-4 fiftyBorder relative">
+                <ng-container *ngIf="!loadingMembers; else loadingSpinner">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="block text-muted-color font-medium mb-2">Fifty+ Members</span>
+                            <div class="text-surface-900 dark:text-surface-0 font-semibold text-xl">
+                                {{ memberCount }}
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-center bg-cyan-100 dark:bg-cyan-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
+                            <i class="pi pi-users text-cyan-500 text-xl!"></i>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-muted-color text-sm">{{ newMembersLast7Days >= 0 ? '+' : '' }}{{ newMembersLast7Days }} in last 7 days</div>
+                </ng-container>
             </div>
-            <div
-              class="flex items-center justify-center bg-cyan-100 dark:bg-cyan-400/10 rounded-border"
-              style="width: 2.5rem; height: 2.5rem"
-            >
-              <i class="pi pi-users text-cyan-500 text-xl!"></i>
-            </div>
-          </div>
-          <div class="mt-4 text-muted-color text-sm">
-            {{ newMembersLast7Days >= 0 ? '+' : '' }}{{ newMembersLast7Days }} in last 7 days
-          </div>
-        </ng-container>
-      </div>
-    </div>
+        </div>
 
-    <!-- Spinner Template -->
-    <ng-template #loadingSpinner>
-      <div class="flex justify-center items-center h-full">
-        <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
-      </div>
-    </ng-template>
-  `
+        <!-- Spinner Template -->
+        <ng-template #loadingSpinner>
+            <div class="flex justify-center items-center h-full">
+                <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
+            </div>
+        </ng-template>
+    `
 })
 export class StatsWidget implements OnInit {
-  private quizzesService = inject(QuizzesService);
-  private quizStatsService = inject(QuizStatsService);
-  private userService = inject(UserService);
+    private quizzesService = inject(QuizzesService);
+    private quizStatsService = inject(QuizStatsService);
+    private userService = inject(UserService);
 
-  activeQuiz: Quiz | null = null;
-  nextQuizReady: boolean | null = null;
-  nextDeployment: Date | null = null;
+    activeQuiz: Quiz | null = null;
+    nextQuizReady: boolean | null = null;
+    nextDeployment: Date | null = null;
 
-  totalSessions = 0;
-  averageScore = 0;
+    totalSessions = 0;
+    averageScore = 0;
 
-  memberCount = 0;
-  newMembersLast7Days = 0;
+    memberCount = 0;
+    newMembersLast7Days = 0;
 
-  // Loading flags
-  loadingActiveQuiz = true;
-  loadingNextQuiz = true;
-  loadingStats = true;
-  loadingMembers = true;
-  refreshing = false;
+    // Loading flags
+    loadingActiveQuiz = true;
+    loadingNextQuiz = true;
+    loadingStats = true;
+    loadingMembers = true;
+    refreshing = false;
 
-  async ngOnInit() {
-    // Load Active Quiz first — required before stats
-    await this.loadActiveQuiz();
+    async ngOnInit() {
+        // Load Active Quiz first — required before stats
+        await this.loadActiveQuiz();
 
-    // Then load dependent data
-    await Promise.all([
-      this.loadNextQuizStatus(),
-      this.loadQuizStats(),
-      this.loadMembers()
-    ]);
-  }
-
-  getDeploymentDate(date: Date | any) {
-    if (!date) return null;
-    return date instanceof Date ? date : date.toDate?.();
-  }
-
-  async loadActiveQuiz() {
-    this.loadingActiveQuiz = true;
-    try {
-      this.activeQuiz = await firstValueFrom(this.quizzesService.getActiveQuiz()) || null;
-    } finally {
-      this.loadingActiveQuiz = false;
+        // Then load dependent data
+        await Promise.all([this.loadNextQuizStatus(), this.loadQuizStats(), this.loadMembers()]);
     }
-  }
 
-  async loadNextQuizStatus() {
-    this.loadingNextQuiz = true;
-    try {
-      const now = new Date();
-      const quizzes = await firstValueFrom(this.quizzesService.getAllQuizzes());
-
-      const futureQuizzes = quizzes
-        .filter((q): q is Quiz & { deploymentDate: Date | Timestamp } =>
-          q.quizType === QuizTypeEnum.Weekly && !!q.deploymentDate
-        )
-        .map(q => ({
-          ...q,
-          deploymentDate: q.deploymentDate instanceof Date ? q.deploymentDate : q.deploymentDate.toDate()
-        }))
-        .filter(q => q.deploymentDate > now)
-        .sort((a, b) => a.deploymentDate.getTime() - b.deploymentDate.getTime());
-
-      const nextQuiz = futureQuizzes[0];
-
-      if (!nextQuiz) {
-        this.nextQuizReady = null;
-        this.nextDeployment = null;
-      } else {
-        this.nextQuizReady = !!(nextQuiz.questions?.length);
-        this.nextDeployment = nextQuiz.deploymentDate;
-      }
-    } finally {
-      this.loadingNextQuiz = false;
+    getDeploymentDate(date: Date | any) {
+        if (!date) return null;
+        return date instanceof Date ? date : date.toDate?.();
     }
-  }
 
-  async loadQuizStats() {
-    this.loadingStats = true;
-    try {
-      if (!this.activeQuiz?.quizId) return;
-      const aggregate = await this.quizStatsService.getQuizAggregatesFirestore(String(this.activeQuiz.quizId));
-      if (aggregate) {
-        this.totalSessions = (aggregate.completedCount || 0) + (aggregate.inProgressCount || 0);
-        this.averageScore = aggregate.averageScore || 0;
-      }
-    } catch (error) {
-      console.error('Error loading quiz stats:', error);
-    } finally {
-      this.loadingStats = false;
+    async loadActiveQuiz() {
+        this.loadingActiveQuiz = true;
+        try {
+            this.activeQuiz = (await firstValueFrom(this.quizzesService.getActiveQuiz())) || null;
+        } finally {
+            this.loadingActiveQuiz = false;
+        }
     }
-  }
 
-  async loadMembers() {
-    this.loadingMembers = true;
-    try {
-      const users = await this.userService.getAllUsers();
-      this.memberCount = users.length;
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      this.newMembersLast7Days = users.filter(u => {
-        if (!u.createdAt) return false;
-        const created = u.createdAt instanceof Date ? u.createdAt : u.createdAt.toDate?.();
-        return created && created >= sevenDaysAgo;
-      }).length;
-    } catch (error) {
-      console.error('Error loading user count:', error);
-    } finally {
-      this.loadingMembers = false;
+    async loadNextQuizStatus() {
+        this.loadingNextQuiz = true;
+        try {
+            const now = new Date();
+            const quizzes = await firstValueFrom(this.quizzesService.getAllQuizzes());
+
+            const futureQuizzes = quizzes
+                .filter((q): q is Quiz & { deploymentDate: Date | Timestamp } => q.quizType === QuizTypeEnum.Weekly && !!q.deploymentDate)
+                .map((q) => ({
+                    ...q,
+                    deploymentDate: q.deploymentDate instanceof Date ? q.deploymentDate : q.deploymentDate.toDate()
+                }))
+                .filter((q) => q.deploymentDate > now)
+                .sort((a, b) => a.deploymentDate.getTime() - b.deploymentDate.getTime());
+
+            const nextQuiz = futureQuizzes[0];
+
+            if (!nextQuiz) {
+                this.nextQuizReady = null;
+                this.nextDeployment = null;
+            } else {
+                this.nextQuizReady = !!nextQuiz.questions?.length;
+                this.nextDeployment = nextQuiz.deploymentDate;
+            }
+        } finally {
+            this.loadingNextQuiz = false;
+        }
     }
-  }
 
-  async refreshStats() {
-    this.refreshing = true;
-    await this.loadQuizStats();
-    this.refreshing = false;
-  }
+    async loadQuizStats() {
+        this.loadingStats = true;
+        try {
+            if (!this.activeQuiz?.quizId) return;
+            const aggregate = await this.quizStatsService.getQuizAggregatesFirestore(String(this.activeQuiz.quizId));
+            if (aggregate) {
+                this.totalSessions = (aggregate.completedCount || 0) + (aggregate.inProgressCount || 0);
+                this.averageScore = aggregate.averageScore || 0;
+            }
+        } catch (error) {
+            console.error('Error loading quiz stats:', error);
+        } finally {
+            this.loadingStats = false;
+        }
+    }
+
+    async loadMembers() {
+        this.loadingMembers = true;
+        try {
+            const users = await this.userService.getAllUsers();
+            this.memberCount = users.length;
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            this.newMembersLast7Days = users.filter((u) => {
+                if (!u.createdAt) return false;
+                const created = u.createdAt instanceof Date ? u.createdAt : u.createdAt.toDate?.();
+                return created && created >= sevenDaysAgo;
+            }).length;
+        } catch (error) {
+            console.error('Error loading user count:', error);
+        } finally {
+            this.loadingMembers = false;
+        }
+    }
+
+    async refreshStats() {
+        this.refreshing = true;
+        await this.loadQuizStats();
+        this.refreshing = false;
+    }
 }

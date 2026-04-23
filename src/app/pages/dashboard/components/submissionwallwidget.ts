@@ -4,20 +4,20 @@ import { register } from 'swiper/element/bundle';
 register();
 
 interface Submission {
-  teamName: string;
-  userId: string;
-  location: string;
-  score: number;
-  pictureUrl: string;
-  submittedAt: string;
+    teamName: string;
+    userId: string;
+    location: string;
+    score: number;
+    pictureUrl: string;
+    submittedAt: string;
 }
 
 @Component({
-  selector: 'app-submissions-wall-widget',
-  standalone: true,
-  imports: [CommonModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  template: `
+    selector: 'app-submissions-wall-widget',
+    standalone: true,
+    imports: [CommonModule],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    template: `
     <div class="col-span-12">
       <div class="card gap-2 p-4 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden bg-surface-0 dark:bg-surface-900">
         <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-surface-0">Submissions Wall</h3>
@@ -75,76 +75,76 @@ interface Submission {
   `
 })
 export class SubmissionsWallWidget implements AfterViewInit {
-  submissions: Submission[] = [
-    {
-      teamName: 'Saturday Night Slay',
-      userId: 'jizzy_jizzy_gum_drops',
-      location: 'Melbourne',
-      score: 42,
-      pictureUrl: '/assets/submissions/sub1.jpeg',
-      submittedAt: 'Fri 24 Oct, 8:34pm'
-    },
-    {
-      teamName: 'Quiz In My Pants',
-      userId: 'jess_the_brain',
-      location: 'Sydney',
-      score: 38,
-      pictureUrl: '/assets/submissions/sub6.jpeg',
-      submittedAt: 'Thurs 23 Oct, 8:36pm'
-    },
-    {
-      teamName: 'The Fact Hunts',
-      userId: 'earl_squirrelson',
-      location: 'Brisbane',
-      score: 28,
-      pictureUrl: '/assets/submissions/sub3.jpeg',
-      submittedAt: 'Fri 24 Oct, 8:38pm'
-    },
-    {
-      teamName: '35kms',
-      userId: 'nursulltanTulyakby',
-      location: 'Perth',
-      score: 42,
-      pictureUrl: '/assets/submissions/sub7.jpeg',
-      submittedAt: 'Wed 22 Oct, 8:42pm'
-    },
-    {
-      teamName: 'Emu Baes',
-      userId: 'emu_baes',
-      location: 'Adelaide',
-      score: 47,
-      pictureUrl: '/assets/submissions/sub5.jpeg',
-      submittedAt: 'Fri 24 Oct, 8:50pm'
-    }
-  ];
+    submissions: Submission[] = [
+        {
+            teamName: 'Saturday Night Slay',
+            userId: 'jizzy_jizzy_gum_drops',
+            location: 'Melbourne',
+            score: 42,
+            pictureUrl: '/assets/submissions/sub1.jpeg',
+            submittedAt: 'Fri 24 Oct, 8:34pm'
+        },
+        {
+            teamName: 'Quiz In My Pants',
+            userId: 'jess_the_brain',
+            location: 'Sydney',
+            score: 38,
+            pictureUrl: '/assets/submissions/sub6.jpeg',
+            submittedAt: 'Thurs 23 Oct, 8:36pm'
+        },
+        {
+            teamName: 'The Fact Hunts',
+            userId: 'earl_squirrelson',
+            location: 'Brisbane',
+            score: 28,
+            pictureUrl: '/assets/submissions/sub3.jpeg',
+            submittedAt: 'Fri 24 Oct, 8:38pm'
+        },
+        {
+            teamName: '35kms',
+            userId: 'nursulltanTulyakby',
+            location: 'Perth',
+            score: 42,
+            pictureUrl: '/assets/submissions/sub7.jpeg',
+            submittedAt: 'Wed 22 Oct, 8:42pm'
+        },
+        {
+            teamName: 'Emu Baes',
+            userId: 'emu_baes',
+            location: 'Adelaide',
+            score: 47,
+            pictureUrl: '/assets/submissions/sub5.jpeg',
+            submittedAt: 'Fri 24 Oct, 8:50pm'
+        }
+    ];
 
-  ngAfterViewInit() {
-    this.updateSwiperConfig();
-    window.addEventListener('resize', () => this.updateSwiperConfig());
-  }
-
-  updateSwiperConfig() {
-    const swiperEl = document.getElementById('submissionsSwiper') as any;
-    if (!swiperEl) return;
-
-    const width = window.innerWidth;
-
-    // Mobile = horizontal, 1 slide per view
-    if (width < 640) {
-      swiperEl.setAttribute('slides-per-view', '1');
-      swiperEl.setAttribute('direction', 'horizontal');
-    }
-    // Tablet = vertical, 2 slides
-    else if (width < 1024) {
-      swiperEl.setAttribute('slides-per-view', '1');
-      swiperEl.setAttribute('direction', 'vertical');
-    }
-    // Desktop = vertical, 2 slides (more space per slide)
-    else {
-      swiperEl.setAttribute('slides-per-view', '1');
-      swiperEl.setAttribute('direction', 'vertical');
+    ngAfterViewInit() {
+        this.updateSwiperConfig();
+        window.addEventListener('resize', () => this.updateSwiperConfig());
     }
 
-    swiperEl.swiper?.update();
-  }
+    updateSwiperConfig() {
+        const swiperEl = document.getElementById('submissionsSwiper') as any;
+        if (!swiperEl) return;
+
+        const width = window.innerWidth;
+
+        // Mobile = horizontal, 1 slide per view
+        if (width < 640) {
+            swiperEl.setAttribute('slides-per-view', '1');
+            swiperEl.setAttribute('direction', 'horizontal');
+        }
+        // Tablet = vertical, 2 slides
+        else if (width < 1024) {
+            swiperEl.setAttribute('slides-per-view', '1');
+            swiperEl.setAttribute('direction', 'vertical');
+        }
+        // Desktop = vertical, 2 slides (more space per slide)
+        else {
+            swiperEl.setAttribute('slides-per-view', '1');
+            swiperEl.setAttribute('direction', 'vertical');
+        }
+
+        swiperEl.swiper?.update();
+    }
 }

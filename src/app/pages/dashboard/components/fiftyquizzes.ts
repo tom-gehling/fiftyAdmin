@@ -14,102 +14,91 @@ import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
 register();
 
 interface TagWithQuizzes {
-  tag: QuizTag;
-  quizzes: Quiz[];
+    tag: QuizTag;
+    quizzes: Quiz[];
 }
 
 @Component({
-  selector: 'app-fifty-quizzes-dashboard',
-  standalone: true,
-  imports: [CommonModule],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  template: `
-    <div class="card w-full flex flex-col gap-10 p-6 bg-surface-0 dark:bg-surface-900 mb-8 fiftyBorder" *ngIf="tagsWithQuizzes.length" style="padding-left:0px !important; padding-right:0px !important;">
-      <ng-container *ngFor="let tagGroup of tagsWithQuizzes">
-        <div class="flex flex-col gap-2">
-        <div class="text-2xl font-semibold text-surface-900 dark:text-surface-0 pl-6 pr-3">
-          {{ tagGroup.tag.name }}
-        </div>
+    selector: 'app-fifty-quizzes-dashboard',
+    standalone: true,
+    imports: [CommonModule],
+    schemas: [CUSTOM_ELEMENTS_SCHEMA],
+    template: `
+        <div class="card w-full flex flex-col gap-10 p-6 bg-surface-0 dark:bg-surface-900 mb-8 fiftyBorder" *ngIf="tagsWithQuizzes.length" style="padding-left:0px !important; padding-right:0px !important;">
+            <ng-container *ngFor="let tagGroup of tagsWithQuizzes">
+                <div class="flex flex-col gap-2">
+                    <div class="text-2xl font-semibold text-surface-900 dark:text-surface-0 pl-6 pr-3">
+                        {{ tagGroup.tag.name }}
+                    </div>
 
-        <swiper-container
-  loop="true"
-  grab-cursor="true"
-  mousewheel="true"
-  freemode="true"
-  space-between="12"
-  class="w-full !overflow-visible"
-  [breakpoints]="{
-    '0': { slidesPerView: 3 },
-    '640': { slidesPerView: 3 },
-    '1024': { slidesPerView: 3 },
-    '1280': { slidesPerView: '4' }
-  }"
->
-  <swiper-slide
-    *ngFor="let quiz of tagGroup.quizzes"
-    (click)="openQuiz(quiz)"
-    class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-120 m-4 p-2"
-  >
-    <div
-      class="w-full sm:w-[140px] aspect-square sm:h-[140px] rounded-2xl overflow-hidden shadow-lg"
-      style="border: 3px solid #4cfbab; background-color: #000000"
-    >
-      <img
-        [src]="quiz.imageUrl || '/assets/logos/fiftyplus.png'"
-        [alt]="quiz.quizTitle || ('Quiz ' + quiz.quizId)"
-        class="w-full h-full object-contain"
-      />
-    </div>
-    <span
-      class="text-sm text-center mt-2 font-medium line-clamp-2"
-    >
-      {{ quiz.quizTitle || ('Quiz ' + quiz.quizId) }}
-    </span>
-  </swiper-slide>
-</swiper-container>
+                    <swiper-container
+                        loop="true"
+                        grab-cursor="true"
+                        mousewheel="true"
+                        freemode="true"
+                        space-between="12"
+                        class="w-full !overflow-visible"
+                        [breakpoints]="{
+                            '0': { slidesPerView: 3 },
+                            '640': { slidesPerView: 3 },
+                            '1024': { slidesPerView: 3 },
+                            '1280': { slidesPerView: '4' }
+                        }"
+                    >
+                        <swiper-slide *ngFor="let quiz of tagGroup.quizzes" (click)="openQuiz(quiz)" class="group flex flex-col items-center justify-start w-[140px] cursor-pointer transition-transform hover:scale-120 m-4 p-2">
+                            <div class="w-full sm:w-[140px] aspect-square sm:h-[140px] rounded-2xl overflow-hidden shadow-lg" style="border: 3px solid #4cfbab; background-color: #000000">
+                                <img [src]="quiz.imageUrl || '/assets/logos/fiftyplus.png'" [alt]="quiz.quizTitle || 'Quiz ' + quiz.quizId" class="w-full h-full object-contain" />
+                            </div>
+                            <span class="text-sm text-center mt-2 font-medium line-clamp-2">
+                                {{ quiz.quizTitle || 'Quiz ' + quiz.quizId }}
+                            </span>
+                        </swiper-slide>
+                    </swiper-container>
+                </div>
+            </ng-container>
         </div>
-      </ng-container>
-    </div>
-    <p *ngIf="!tagsWithQuizzes.length" class="text-gray-500 text-center mt-10">No quizzes found.</p>
-  `,
+        <p *ngIf="!tagsWithQuizzes.length" class="text-gray-500 text-center mt-10">No quizzes found.</p>
+    `
 })
 export class FiftyQuizzesDashboardComponent implements OnInit {
-  tagsWithQuizzes: TagWithQuizzes[] = [];
+    tagsWithQuizzes: TagWithQuizzes[] = [];
 
-  constructor(
-    private quizTagsService: QuizTagsService,
-    private quizzesService: QuizzesService,
-    private router: Router
-  ) {}
+    constructor(
+        private quizTagsService: QuizTagsService,
+        private quizzesService: QuizzesService,
+        private router: Router
+    ) {}
 
-  ngOnInit() {
-    combineLatest([
-      this.quizTagsService.getAllTags(),
-      this.quizzesService.getAllQuizzes()
-    ])
-    .pipe(
-      map(([tags, quizzes]) =>
-        tags
-          .map(tag => ({
-            tag,
-            quizzes: quizzes.filter(q => tag.quizIds?.includes(q.quizId))
-          }))
-          .filter(group => group.quizzes.length > 0)
-      )
-    )
-    .subscribe(result => {
-      this.tagsWithQuizzes = result;
-    });
-  }
-
-  openQuiz(quiz: Quiz) {
-    let baseRoute = '/fiftyPlus/archives';
-    switch (quiz.quizType) {
-      case QuizTypeEnum.FiftyPlus: baseRoute = '/fiftyPlus/exclusives'; break;
-      case QuizTypeEnum.Collab: baseRoute = '/fiftyPlus/collabs'; break;
-      case QuizTypeEnum.QuestionType: baseRoute = '/fiftyPlus/questionQuizzes'; break;
+    ngOnInit() {
+        combineLatest([this.quizTagsService.getAllTags(), this.quizzesService.getAllQuizzes()])
+            .pipe(
+                map(([tags, quizzes]) =>
+                    tags
+                        .map((tag) => ({
+                            tag,
+                            quizzes: quizzes.filter((q) => tag.quizIds?.includes(q.quizId))
+                        }))
+                        .filter((group) => group.quizzes.length > 0)
+                )
+            )
+            .subscribe((result) => {
+                this.tagsWithQuizzes = result;
+            });
     }
-    this.router.navigate([`${baseRoute}/${quiz.quizId}`]);
-  }
 
+    openQuiz(quiz: Quiz) {
+        let baseRoute = '/fiftyPlus/archives';
+        switch (quiz.quizType) {
+            case QuizTypeEnum.FiftyPlus:
+                baseRoute = '/fiftyPlus/exclusives';
+                break;
+            case QuizTypeEnum.Collab:
+                baseRoute = '/fiftyPlus/collabs';
+                break;
+            case QuizTypeEnum.QuestionType:
+                baseRoute = '/fiftyPlus/questionQuizzes';
+                break;
+        }
+        this.router.navigate([`${baseRoute}/${quiz.quizId}`]);
+    }
 }

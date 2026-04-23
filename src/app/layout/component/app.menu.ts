@@ -25,7 +25,7 @@ export class AppMenu implements OnInit {
     constructor(private auth: AuthService) {}
 
     ngOnInit() {
-        this.auth.user$.pipe(filter(u => u !== undefined)).subscribe(() => this.buildMenu());
+        this.auth.user$.pipe(filter((u) => u !== undefined)).subscribe(() => this.buildMenu());
         this.auth.isMember$.subscribe(() => this.buildMenu());
         this.auth.isAdmin$.subscribe(() => this.buildMenu());
     }
@@ -38,11 +38,11 @@ export class AppMenu implements OnInit {
         const homeMenu: MenuItem = {
             label: 'The Weekly Fifty',
             items: [
-                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/fiftyPlus'] },
-                    { label: 'This Week\'s Quiz', icon: 'pi pi-fw pi-question-circle', routerLink: ['/weekly-quiz'] },
-                    { label: 'Fifty Shop', icon: 'pi pi-fw pi-shopping-cart', url: 'https://theweeklyfifty.com.au/pshop', target: '_blank' },
-                    { label: 'Find A Venue', icon: 'pi pi-fw pi-map-marker', routerLink: ['/find-a-venue'] }
-                ]
+                { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/fiftyPlus'] },
+                { label: "This Week's Quiz", icon: 'pi pi-fw pi-question-circle', routerLink: ['/weekly-quiz'] },
+                { label: 'Fifty Shop', icon: 'pi pi-fw pi-shopping-cart', url: 'https://theweeklyfifty.com.au/pshop', target: '_blank' },
+                { label: 'Find A Venue', icon: 'pi pi-fw pi-map-marker', routerLink: ['/find-a-venue'] }
+            ]
         };
 
         // Admin section
@@ -68,9 +68,7 @@ export class AppMenu implements OnInit {
                 {
                     label: 'Puzzles',
                     icon: 'pi pi-fw pi-bolt',
-                    items: [
-                        { label: 'Puzzle Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/games/stats'] },
-                    ]
+                    items: [{ label: 'Puzzle Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/games/stats'] }]
                 }
             ]
         };
@@ -96,7 +94,7 @@ export class AppMenu implements OnInit {
                 { label: 'Country Jumble', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/country-jumble'] },
                 { label: 'Movie Emoji', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/movie-emoji'] },
                 { label: 'Puzzle Slide', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/games/puzzle-slide'] },
-                { label: 'Tile Run', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/tile-run'] },
+                { label: 'Tile Run', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/games/tile-run'] }
             ]
         };
 

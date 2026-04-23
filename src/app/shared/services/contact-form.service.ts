@@ -21,13 +21,14 @@ export interface ContactFormSubmission extends ContactFormData {
 export class ContactFormService {
     // Dev: Functions emulator (writes to production Firestore via admin SDK, bypasses rules)
     // Prod: deployed function via Firebase Hosting rewrite
-    private readonly apiUrl = isDevMode()
-        ? 'http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/submitContactForm'
-        : 'https://weeklyfifty-7617b.web.app/api/submitContactForm';
+    private readonly apiUrl = isDevMode() ? 'http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/submitContactForm' : 'https://weeklyfifty-7617b.web.app/api/submitContactForm';
 
     private readonly collectionName = 'contactFormSubmissions';
 
-    constructor(private http: HttpClient, private firestore: Firestore) {}
+    constructor(
+        private http: HttpClient,
+        private firestore: Firestore
+    ) {}
 
     async submit(data: ContactFormData): Promise<void> {
         await firstValueFrom(this.http.post(this.apiUrl, data));

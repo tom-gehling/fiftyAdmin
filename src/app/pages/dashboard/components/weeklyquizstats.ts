@@ -26,145 +26,116 @@ interface QuizOption {
     selector: 'app-weekly-quiz-stats',
     imports: [CommonModule, ChartModule, FormsModule, SelectModule],
     template: `
-    <div class="card mb-4 p-4 fiftyBorder w-full">
-      <div class="flex justify-between items-center mb-2">
-        <span class="block text-surface-0 font-medium text-xl">Weekly Quiz Performance</span>
-      </div>
-
-      <ng-container *ngIf="loading; else chartContent">
-        <div class="flex justify-center items-center h-72">
-          <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
-        </div>
-      </ng-container>
-
-      <ng-template #chartContent>
-        <ng-container *ngIf="weeklyStats.length > 0; else noData">
-          <p-chart
-            type="bar"
-            [data]="chartData"
-            [options]="chartOptions"
-            class="w-full h-96"
-          ></p-chart>
-        </ng-container>
-
-        <ng-template #noData>
-          <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-72">
-            No weekly quiz data available.
-          </div>
-        </ng-template>
-      </ng-template>
-    </div>
-
-    <!-- Location Analytics Section -->
-    <div class="card mb-4 p-4 fiftyBorder w-full">
-      <div class="mb-4">
-        <span class="block text-surface-0 font-medium text-xl mb-3">Location Analytics</span>
-        <div class="flex items-center gap-3">
-          <label for="quizSelector" class="text-surface-700 dark:text-surface-300 font-medium">Select Quiz:</label>
-          <p-select
-            [(ngModel)]="selectedQuizId"
-            [options]="quizOptions"
-            optionLabel="label"
-            optionValue="value"
-            (onChange)="onQuizChange()"
-            placeholder="Select a quiz"
-            class="w-80">
-          </p-select>
-        </div>
-      </div>
-
-      <ng-container *ngIf="loadingLocationStats">
-        <div class="flex justify-center items-center h-72">
-          <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
-        </div>
-      </ng-container>
-
-      <ng-container *ngIf="!loadingLocationStats && selectedQuizId && locationStats">
-        <ng-container *ngIf="locationStats.totalResults > 0; else noLocationData">
-          <div class="mb-3 text-surface-600 dark:text-surface-400">
-            <p class="text-sm">Total results analyzed: <strong>{{locationStats.totalResults}}</strong></p>
-            <p class="text-sm">Countries: <strong>{{locationStats.countries.length}}</strong> | Cities: <strong>{{locationStats.cities.length}}</strong></p>
-          </div>
-
-          <!-- World Map - Countries with Submissions -->
-          <div class="mb-6">
-            <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Quiz Submissions by Country</h3>
-            <div class="w-full h-96 relative">
-              <canvas #worldMapCanvas></canvas>
+        <div class="card mb-4 p-4 fiftyBorder w-full">
+            <div class="flex justify-between items-center mb-2">
+                <span class="block text-surface-0 font-medium text-xl">Weekly Quiz Performance</span>
             </div>
-          </div>
 
-          <!-- City Distribution -->
-          <div class="mb-6">
-            <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Top Cities</h3>
-            <p-chart
-              type="bar"
-              [data]="cityChartData"
-              [options]="cityChartOptions"
-              class="w-full h-80"
-            ></p-chart>
-          </div>
+            <ng-container *ngIf="loading; else chartContent">
+                <div class="flex justify-center items-center h-72">
+                    <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
+                </div>
+            </ng-container>
 
-          <!-- Performance by Location -->
-          <div class="mb-6">
-            <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Performance by Country</h3>
-            <p-chart
-              type="bar"
-              [data]="performanceChartData"
-              [options]="performanceChartOptions"
-              class="w-full h-80"
-            ></p-chart>
-          </div>
+            <ng-template #chartContent>
+                <ng-container *ngIf="weeklyStats.length > 0; else noData">
+                    <p-chart type="bar" [data]="chartData" [options]="chartOptions" class="w-full h-96"></p-chart>
+                </ng-container>
 
-          <!-- Map Data (Simple List for now) -->
-          <div class="mb-4">
-            <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Geographic Distribution</h3>
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-surface-100 dark:bg-surface-700">
-                  <tr>
-                    <th class="px-4 py-2 text-left">Country</th>
-                    <th class="px-4 py-2 text-right">Completions</th>
-                    <th class="px-4 py-2 text-right">Avg Score</th>
-                    <th class="px-4 py-2 text-right">Avg Time</th>
-                    <th class="px-4 py-2 text-center">Coordinates</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let country of locationStats.countries.slice(0, 15); let i = index"
-                      [class.bg-surface-50]="i % 2 === 0"
-                      [class.dark:bg-surface-800]="i % 2 === 0">
-                    <td class="px-4 py-2">{{country.name}}</td>
-                    <td class="px-4 py-2 text-right">{{country.count}}</td>
-                    <td class="px-4 py-2 text-right">{{country.averageScore.toFixed(2)}}</td>
-                    <td class="px-4 py-2 text-right">{{country.averageTime.toFixed(0)}}s</td>
-                    <td class="px-4 py-2 text-center text-xs text-surface-500">
-                      <span *ngIf="country.latitude && country.longitude">
-                        {{country.latitude.toFixed(2)}}, {{country.longitude.toFixed(2)}}
-                      </span>
-                      <span *ngIf="!country.latitude || !country.longitude">-</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </ng-container>
-
-        <ng-template #noLocationData>
-          <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-72">
-            No location data available for Quiz #{{selectedQuizId}}.
-          </div>
-        </ng-template>
-      </ng-container>
-
-      <ng-container *ngIf="!loadingLocationStats && !selectedQuizId">
-        <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-48">
-          Select a quiz above to view location analytics.
+                <ng-template #noData>
+                    <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-72">No weekly quiz data available.</div>
+                </ng-template>
+            </ng-template>
         </div>
-      </ng-container>
-    </div>
-  `
+
+        <!-- Location Analytics Section -->
+        <div class="card mb-4 p-4 fiftyBorder w-full">
+            <div class="mb-4">
+                <span class="block text-surface-0 font-medium text-xl mb-3">Location Analytics</span>
+                <div class="flex items-center gap-3">
+                    <label for="quizSelector" class="text-surface-700 dark:text-surface-300 font-medium">Select Quiz:</label>
+                    <p-select [(ngModel)]="selectedQuizId" [options]="quizOptions" optionLabel="label" optionValue="value" (onChange)="onQuizChange()" placeholder="Select a quiz" class="w-80"> </p-select>
+                </div>
+            </div>
+
+            <ng-container *ngIf="loadingLocationStats">
+                <div class="flex justify-center items-center h-72">
+                    <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
+                </div>
+            </ng-container>
+
+            <ng-container *ngIf="!loadingLocationStats && selectedQuizId && locationStats">
+                <ng-container *ngIf="locationStats.totalResults > 0; else noLocationData">
+                    <div class="mb-3 text-surface-600 dark:text-surface-400">
+                        <p class="text-sm">
+                            Total results analyzed: <strong>{{ locationStats.totalResults }}</strong>
+                        </p>
+                        <p class="text-sm">
+                            Countries: <strong>{{ locationStats.countries.length }}</strong> | Cities: <strong>{{ locationStats.cities.length }}</strong>
+                        </p>
+                    </div>
+
+                    <!-- World Map - Countries with Submissions -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Quiz Submissions by Country</h3>
+                        <div class="w-full h-96 relative">
+                            <canvas #worldMapCanvas></canvas>
+                        </div>
+                    </div>
+
+                    <!-- City Distribution -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Top Cities</h3>
+                        <p-chart type="bar" [data]="cityChartData" [options]="cityChartOptions" class="w-full h-80"></p-chart>
+                    </div>
+
+                    <!-- Performance by Location -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Performance by Country</h3>
+                        <p-chart type="bar" [data]="performanceChartData" [options]="performanceChartOptions" class="w-full h-80"></p-chart>
+                    </div>
+
+                    <!-- Map Data (Simple List for now) -->
+                    <div class="mb-4">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Geographic Distribution</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-surface-100 dark:bg-surface-700">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Country</th>
+                                        <th class="px-4 py-2 text-right">Completions</th>
+                                        <th class="px-4 py-2 text-right">Avg Score</th>
+                                        <th class="px-4 py-2 text-right">Avg Time</th>
+                                        <th class="px-4 py-2 text-center">Coordinates</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let country of locationStats.countries.slice(0, 15); let i = index" [class.bg-surface-50]="i % 2 === 0" [class.dark:bg-surface-800]="i % 2 === 0">
+                                        <td class="px-4 py-2">{{ country.name }}</td>
+                                        <td class="px-4 py-2 text-right">{{ country.count }}</td>
+                                        <td class="px-4 py-2 text-right">{{ country.averageScore.toFixed(2) }}</td>
+                                        <td class="px-4 py-2 text-right">{{ country.averageTime.toFixed(0) }}s</td>
+                                        <td class="px-4 py-2 text-center text-xs text-surface-500">
+                                            <span *ngIf="country.latitude && country.longitude"> {{ country.latitude.toFixed(2) }}, {{ country.longitude.toFixed(2) }} </span>
+                                            <span *ngIf="!country.latitude || !country.longitude">-</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <ng-template #noLocationData>
+                    <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-72">No location data available for Quiz #{{ selectedQuizId }}.</div>
+                </ng-template>
+            </ng-container>
+
+            <ng-container *ngIf="!loadingLocationStats && !selectedQuizId">
+                <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-48">Select a quiz above to view location analytics.</div>
+            </ng-container>
+        </div>
+    `
 })
 export class WeeklyQuizStatsComponent implements OnInit {
     @ViewChild('worldMapCanvas', { static: false }) worldMapCanvas!: ElementRef<HTMLCanvasElement>;
@@ -185,7 +156,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
     performanceChartData: any;
     performanceChartOptions: any;
 
-    constructor(private quizStatsService: QuizStatsService) { }
+    constructor(private quizStatsService: QuizStatsService) {}
 
     async ngOnInit() {
         await this.loadWeeklyQuizStats();
@@ -205,8 +176,8 @@ export class WeeklyQuizStatsComponent implements OnInit {
 
             // Sort by quizId descending to show most recent first
             const sortedIds = quizIds
-                .map(id => parseInt(id, 10))
-                .filter(id => !isNaN(id))
+                .map((id) => parseInt(id, 10))
+                .filter((id) => !isNaN(id))
                 .sort((a, b) => b - a);
 
             // Fetch aggregate data for each quiz
@@ -233,7 +204,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
             this.weeklyStats = this.weeklyStats.slice(0, 20);
 
             // Populate quiz options for dropdown
-            this.quizOptions = this.weeklyStats.map(stat => ({
+            this.quizOptions = this.weeklyStats.map((stat) => ({
                 label: `Quiz #${stat.quizId}`,
                 value: stat.quizId
             }));
@@ -256,9 +227,9 @@ export class WeeklyQuizStatsComponent implements OnInit {
         // Sort by quizId ascending for display (oldest to newest)
         const sortedStats = [...this.weeklyStats].sort((a, b) => parseInt(a.quizId) - parseInt(b.quizId));
 
-        const labels = sortedStats.map(stat => `Quiz #${stat.quizId}`);
-        const completedCounts = sortedStats.map(stat => stat.completedCount);
-        const averageScores = sortedStats.map(stat => stat.averageScore);
+        const labels = sortedStats.map((stat) => `Quiz #${stat.quizId}`);
+        const completedCounts = sortedStats.map((stat) => stat.completedCount);
+        const averageScores = sortedStats.map((stat) => stat.averageScore);
 
         this.chartData = {
             labels,
@@ -269,7 +240,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
                     backgroundColor: primaryColor,
                     borderColor: primaryColor,
                     borderWidth: 1,
-                    yAxisID: 'y',
+                    yAxisID: 'y'
                 },
                 {
                     label: 'Average Score',
@@ -282,7 +253,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
                     pointHoverRadius: 6,
                     pointBackgroundColor: '#fbe2df',
                     yAxisID: 'y1',
-                    tension: 0.3,
+                    tension: 0.3
                 }
             ]
         };
@@ -292,7 +263,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
             responsive: true,
             interaction: {
                 mode: 'index' as const,
-                intersect: false,
+                intersect: false
             },
             plugins: {
                 legend: {
@@ -358,8 +329,8 @@ export class WeeklyQuizStatsComponent implements OnInit {
                         beginAtZero: true
                     },
                     grid: {
-                        drawOnChartArea: false,
-                    },
+                        drawOnChartArea: false
+                    }
                 }
             }
         };
@@ -394,14 +365,16 @@ export class WeeklyQuizStatsComponent implements OnInit {
         // City Distribution Chart (Top 10)
         const topCities = this.locationStats.cities.slice(0, 10);
         this.cityChartData = {
-            labels: topCities.map(c => c.name),
-            datasets: [{
-                label: 'Completions by City',
-                data: topCities.map(c => c.count),
-                backgroundColor: '#4cfbab',
-                borderColor: '#4cfbab',
-                borderWidth: 1
-            }]
+            labels: topCities.map((c) => c.name),
+            datasets: [
+                {
+                    label: 'Completions by City',
+                    data: topCities.map((c) => c.count),
+                    backgroundColor: '#4cfbab',
+                    borderColor: '#4cfbab',
+                    borderWidth: 1
+                }
+            ]
         };
 
         this.cityChartOptions = {
@@ -431,23 +404,23 @@ export class WeeklyQuizStatsComponent implements OnInit {
         // Performance by Location Chart (Top 8 countries)
         const topPerformance = this.locationStats.countries.slice(0, 8);
         this.performanceChartData = {
-            labels: topPerformance.map(c => c.name),
+            labels: topPerformance.map((c) => c.name),
             datasets: [
                 {
                     label: 'Average Score',
-                    data: topPerformance.map(c => c.averageScore.toFixed(2)),
+                    data: topPerformance.map((c) => c.averageScore.toFixed(2)),
                     backgroundColor: '#4cfbab',
                     borderColor: '#4cfbab',
                     borderWidth: 2,
-                    yAxisID: 'y',
+                    yAxisID: 'y'
                 },
                 {
                     label: 'Avg Time (seconds)',
-                    data: topPerformance.map(c => c.averageTime.toFixed(0)),
+                    data: topPerformance.map((c) => c.averageTime.toFixed(0)),
                     backgroundColor: '#fbe2df',
                     borderColor: '#fbe2df',
                     borderWidth: 2,
-                    yAxisID: 'y1',
+                    yAxisID: 'y1'
                 }
             ]
         };
@@ -457,7 +430,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
             responsive: true,
             interaction: {
                 mode: 'index' as const,
-                intersect: false,
+                intersect: false
             },
             plugins: {
                 legend: {
@@ -516,9 +489,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
             const countries: any = topojson.feature(worldData, worldData.objects.countries);
 
             // Create a map of country names to submission counts
-            const countryMap = new Map(
-                this.locationStats.countries.map(c => [c.name.toLowerCase(), c.count])
-            );
+            const countryMap = new Map(this.locationStats.countries.map((c) => [c.name.toLowerCase(), c.count]));
 
             // Match features to our data
             const chartData = countries.features.map((feature: any) => {
@@ -530,7 +501,7 @@ export class WeeklyQuizStatsComponent implements OnInit {
                 };
             });
 
-            const maxCount = Math.max(...this.locationStats.countries.map(c => c.count), 1);
+            const maxCount = Math.max(...this.locationStats.countries.map((c) => c.count), 1);
 
             const ctx = this.worldMapCanvas.nativeElement.getContext('2d');
             if (!ctx) return;
@@ -542,18 +513,20 @@ export class WeeklyQuizStatsComponent implements OnInit {
                 type: 'choropleth',
                 data: {
                     labels: countries.features.map((f: any) => f.properties.name),
-                    datasets: [{
-                        label: 'Quiz Completions',
-                        outline: countries.features,
-                        data: chartData,
-                        backgroundColor: (context: any) => {
-                            const value = context.raw?.value || 0;
-                            // Binary coloring: neon green if has submissions, gray if not
-                            return value > 0 ? neonGreen : 'rgba(200, 200, 200, 0.3)';
-                        },
-                        borderColor: '#666',
-                        borderWidth: 0.5
-                    }]
+                    datasets: [
+                        {
+                            label: 'Quiz Completions',
+                            outline: countries.features,
+                            data: chartData,
+                            backgroundColor: (context: any) => {
+                                const value = context.raw?.value || 0;
+                                // Binary coloring: neon green if has submissions, gray if not
+                                return value > 0 ? neonGreen : 'rgba(200, 200, 200, 0.3)';
+                            },
+                            borderColor: '#666',
+                            borderWidth: 0.5
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -583,5 +556,4 @@ export class WeeklyQuizStatsComponent implements OnInit {
             console.error('Error initializing world map:', error);
         }
     }
-
 }

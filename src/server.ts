@@ -1,9 +1,4 @@
-import {
-  AngularNodeAppEngine,
-  createNodeRequestHandler,
-  isMainModule,
-  writeResponseToNodeResponse,
-} from '@angular/ssr/node';
+import { AngularNodeAppEngine, createNodeRequestHandler, isMainModule, writeResponseToNodeResponse } from '@angular/ssr/node';
 import express from 'express';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,23 +27,21 @@ const angularApp = new AngularNodeAppEngine();
  * Serve static files from /browser
  */
 app.use(
-  express.static(browserDistFolder, {
-    maxAge: '1y',
-    index: false,
-    redirect: false,
-  }),
+    express.static(browserDistFolder, {
+        maxAge: '1y',
+        index: false,
+        redirect: false
+    })
 );
 
 /**
  * Handle all other requests by rendering the Angular application.
  */
 app.use('/**', (req, res, next) => {
-  angularApp
-    .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
-    .catch(next);
+    angularApp
+        .handle(req)
+        .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
+        .catch(next);
 });
 
 /**
@@ -56,20 +49,20 @@ app.use('/**', (req, res, next) => {
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */
 if (isMainModule(import.meta.url)) {
-  const port = process.env['PORT'] || 4000;
-  app.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`);
-  });
+    const port = process.env['PORT'] || 4000;
+    app.listen(port, () => {
+        console.log(`Node Express server listening on http://localhost:${port}`);
+    });
 }
 
 const auth = new google.auth.GoogleAuth({
-  keyFile: resolve(serverDistFolder, 'service-account.json'), // path to JSON key
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    keyFile: resolve(serverDistFolder, 'service-account.json'), // path to JSON key
+    scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
 });
 
 // app.get('/api/sheet/:sheetId', async (req, res) => {
 //     const sheetId = req.params.sheetId;
-//     const range = (req.query['range'] as string) || 'Sheet1!A:B'; 
+//     const range = (req.query['range'] as string) || 'Sheet1!A:B';
 //     try {
 //         const sheets = google.sheets({ version: 'v4', auth });
 //         const response = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });

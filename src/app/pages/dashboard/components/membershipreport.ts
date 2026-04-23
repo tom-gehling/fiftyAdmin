@@ -8,10 +8,10 @@ import { LayoutService } from '../../../layout/service/layout.service';
     selector: 'app-membership-report-widget',
     imports: [ChartModule],
     template: `
-    <div class="card mb-8">
-        <div class="font-semibold text-xl mb-4">Fifty+ Membership Sign Ups (Last 6 Months)</div>
-        <p-chart type="bar" [data]="chartData" [options]="chartOptions" class="h-100" />
-    </div>
+        <div class="card mb-8">
+            <div class="font-semibold text-xl mb-4">Fifty+ Membership Sign Ups (Last 6 Months)</div>
+            <p-chart type="bar" [data]="chartData" [options]="chartOptions" class="h-100" />
+        </div>
     `
 })
 export class MembershipReportWidget implements OnInit, OnDestroy {
@@ -20,8 +20,7 @@ export class MembershipReportWidget implements OnInit, OnDestroy {
     subscription!: Subscription;
 
     constructor(public layoutService: LayoutService) {
-        this.subscription = this.layoutService.configUpdate$.pipe(debounceTime(25))
-            .subscribe(() => this.initChart());
+        this.subscription = this.layoutService.configUpdate$.pipe(debounceTime(25)).subscribe(() => this.initChart());
     }
 
     ngOnInit() {
