@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Product context
+
+**The Weekly Fifty** is an Australian quiz brand — core product is a weekly 50-question quiz, plus quiz nights in every AU state, a recent podcast, merch, and a paid Fifty+ member tier. Scale: ~20,000 weekly public quiz players, 15k Instagram, 200+ consecutive weeks, primary demo 18-35 with ~60% female skew.
+
+**Migration status**: a WordPress site currently serves the public weekly quiz (and fetches quiz data from this Angular site's Cloud Functions API). The roadmap is to retire WordPress and move *this* site to the primary URL. `/WPUpgrades/` holds the legacy WP HTML templates that need parity here before cutover. Key blockers: MemberPress→RevenueCat user migration, WooCommerce shop port, public-quiz UX parity (self-marking + team-photo submission), 301 redirect map, historical content import.
+
+**Brand voice**: social, trendy, cool — not corporate SaaS. Public-facing pages must carry that. Prioritise engagement/retention (the product is weekly; daily return is the gap) and revenue breadth (merch, events, B2B — not just subscriptions).
+
 ## Commands
 
 ```bash
