@@ -4,6 +4,9 @@ on:
   push:
     branches: [dev]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   deploy:
     name: Build and deploy to weeklyfifty-dev
@@ -27,6 +30,26 @@ jobs:
         run: echo "$ENV_FILE" > src/environments/environment.ts
         env:
           ENV_FILE: ${{ secrets.ENVIRONMENT_TS_DEV }}
+
+      - name: Verify env file + service account secret are non-empty
+        run: |
+          ENV_BYTES=$(wc -c < src/environments/environment.ts)
+          echo "environment.ts size: $ENV_BYTES bytes"
+          if [ "$ENV_BYTES" -lt 100 ]; then
+            echo "::error::environment.ts is suspiciously small (<100 bytes). Is the ENVIRONMENT_TS_DEV secret set?"
+            echo "--- file preview (first line only) ---"
+            head -n 1 src/environments/environment.ts
+            exit 1
+          fi
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_DEV }}" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT_DEV secret is empty."
+            exit 1
+          fi
+          # Also needs an environment.prod.ts for the imports graph even though dev-deploy doesn't replace it
+          if [ ! -f src/environments/environment.prod.ts ]; then
+            cp src/environments/environment.example.ts src/environments/environment.prod.ts
+            echo "wrote placeholder environment.prod.ts"
+          fi
 
       - name: Build web (dev-deploy config — uses environment.ts)
         run: npx ng build --configuration dev-deploy

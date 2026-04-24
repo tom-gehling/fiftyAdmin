@@ -4,6 +4,9 @@ on:
   push:
     branches: [master]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   deploy:
     name: Build and deploy to weeklyfifty-7617b
@@ -31,6 +34,19 @@ jobs:
 
       - name: Write environment.ts placeholder (build needs both — production config swaps to prod via fileReplacements)
         run: cp src/environments/environment.example.ts src/environments/environment.ts
+
+      - name: Verify secrets are non-empty
+        run: |
+          PROD_BYTES=$(wc -c < src/environments/environment.prod.ts)
+          echo "environment.prod.ts size: $PROD_BYTES bytes"
+          if [ "$PROD_BYTES" -lt 100 ]; then
+            echo "::error::environment.prod.ts is suspiciously small (<100 bytes). Is the ENVIRONMENT_TS_PROD secret set?"
+            exit 1
+          fi
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_PROD }}" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT_PROD secret is empty."
+            exit 1
+          fi
 
       - name: Build web (production config — swaps to environment.prod.ts)
         run: npx ng build --configuration production
