@@ -344,6 +344,7 @@ Do this after both envs are confirmed deployable (Steps 10 + 12).
 - [ ] Set up **scheduled Firestore exports** on prod for disaster recovery (separate small task).
 - [ ] Flip the `continue-on-error: true` on the lint step in `.github/workflows/pr-checks.yml` to `false` once lint is clean.
 - [ ] When `BQconvert` merges: update `functions/scripts/deploy-bq.ts` to read project from `.firebaserc` alias or `--project` arg (it currently hardcodes).
+- [ ] **Align Angular package versions + remove `.npmrc` `legacy-peer-deps`.** Currently most `@angular/*` packages are at `^20` (lockfile resolved to `20.1.3`) while `@angular/platform-server` is at `^20.3.0`. The mismatch forced `legacy-peer-deps=true` to unblock CI. Clean fix: run `npm install @angular/animations@^20.3 @angular/cdk@^20.3 @angular/common@^20.3 @angular/compiler@^20.3 @angular/core@^20.3 @angular/forms@^20.3 @angular/platform-browser@^20.3 @angular/platform-browser-dynamic@^20.3 @angular/router@^20.3 @angular-devkit/build-angular@^20.3 @angular/cli@^20.3 @angular/compiler-cli@^20.3` to align, verify build + test locally, then remove `.npmrc`.
 
 ---
 
