@@ -10,6 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Brand voice**: social, trendy, cool — not corporate SaaS. Public-facing pages must carry that. Prioritise engagement/retention (the product is weekly; daily return is the gap) and revenue breadth (merch, events, B2B — not just subscriptions).
 
+**Stats are first-class.** Every feature must be designed with both an admin-facing analytics surface (insight Tom can act on) and a user-facing stats surface (numbers users return to check). Moving off WordPress to a fully-controlled stack is the chance to own the data layer end-to-end — instrumentation designed in is always richer than instrumentation bolted on. Analytics events, admin tile, and user-facing visualisation should land in the same PR as the feature, not a v2.
+
+**Aggregations live in BigQuery (active work on `BQconvert` branch)** — Firestore stays the OLTP layer; BigQuery is OLAP. Flat tables in `sql/bigquery/tables/`, stored procs in `sql/bigquery/procedures/`, deployment via `functions/scripts/deploy-bq.ts`. New stats features add a stored proc and expose via Cloud Functions API, not a Firestore counter doc (counters only for sub-second-fresh real-time needs).
+
 **Design is first-class.** Public surfaces must clear the bar set by `src/app/pages/public/home.ts` — motion-led, scroll-driven, on-brand. Two distinct palettes (defined at `src/assets/styles.scss:16-18`):
 - **Public** pages (home, weekly-quiz, find-a-venue, /join, /fiftyshop) → light/atmospheric. Use `--fifty-green: #677c73` (sage) + `--fifty-pink: #fbe2df` (soft pink).
 - **Fifty+ member area + admin** (`/fiftyPlus/*`) → dark mode (`app-dark` class via `LayoutService`). Use `--fifty-neon-green: #4cfbab` for accents (borders, dividers, badges, focus states) on near-black surfaces.

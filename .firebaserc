@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "weeklyfifty-7617b"
+    "default": "weeklyfifty-dev",
+    "dev": "weeklyfifty-dev",
+    "prod": "weeklyfifty-7617b"
   }
 }
