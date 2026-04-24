@@ -10,6 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Brand voice**: social, trendy, cool — not corporate SaaS. Public-facing pages must carry that. Prioritise engagement/retention (the product is weekly; daily return is the gap) and revenue breadth (merch, events, B2B — not just subscriptions).
 
+**Design is first-class.** Public surfaces must clear the bar set by `src/app/pages/public/home.ts` — motion-led, scroll-driven, on-brand. Two distinct palettes (defined at `src/assets/styles.scss:16-18`):
+- **Public** pages (home, weekly-quiz, find-a-venue, /join, /fiftyshop) → light/atmospheric. Use `--fifty-green: #677c73` (sage) + `--fifty-pink: #fbe2df` (soft pink).
+- **Fifty+ member area + admin** (`/fiftyPlus/*`) → dark mode (`app-dark` class via `LayoutService`). Use `--fifty-neon-green: #4cfbab` for accents (borders, dividers, badges, focus states) on near-black surfaces.
+
+Don't mix the two — the visual shift is part of the "you've earned the member space" experience. Never use raw Tailwind grays / PrimeNG defaults; always go through the tokens. Always honour `prefers-reduced-motion`. Run a deliberate design pass during the build, not as a polish step.
+
 ## Commands
 
 ```bash
