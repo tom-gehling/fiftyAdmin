@@ -36,6 +36,7 @@ In the dev project's Firebase console:
 - **Storage** → Get started → same region.
 - **Hosting** → Get started → click through (no domain needed yet; dev will run at `weeklyfifty-dev.web.app`).
 - **Functions** → enabling happens automatically on first deploy. Requires the project to be on **Blaze** (pay-as-you-go) plan. Upgrade now — usage at dev traffic levels is effectively free, but Functions + BQ both require Blaze.
+- **Cloud Billing API** → must be enabled (separate from being on Blaze). Firebase CLI queries billing state during Functions deploy. Enable via Cloud Shell once: `gcloud services enable cloudbilling.googleapis.com --project=<PROJECT_ID>`.
 
 **Verify:** All services show "Enabled" in the Firebase console nav.
 
@@ -67,27 +68,49 @@ In the dev project's Firebase console:
 
 ---
 
-## Step 4 — Generate service account JSON keys (dev + prod)
+## Step 4 — Generate service account JSON keys (dev + prod) + grant deploy roles
 
 **Why:** CI uses these to deploy on your behalf. Scoped keys, revocable.
 
 Repeat this for **both** projects (dev + prod):
 
-1. Firebase console → select the project → **Project Settings** → **Service accounts** tab.
-2. Click **Generate new private key** → Download the JSON file.
-3. **Do not commit this JSON anywhere.** Keep it in your password manager or secrets vault.
-4. (Optional hardening) In GCP IAM → Service accounts, you can create a dedicated `github-actions-deploy` service account with only these roles:
-   - Firebase Admin SDK Administrator Service Agent
-   - Cloud Functions Developer
-   - Firebase Hosting Admin
-   - Firestore Service Agent (or Cloud Datastore User)
-   - Storage Admin
+1. **Create a dedicated deploy service account.** GCP Console → IAM & Admin → **Service Accounts** → **Create service account** → name `github-actions-deploy` → Continue. (You can reuse the default `firebase-adminsdk-*` account, but it's designed for Admin SDK runtime use, not CI deploys — its permissions won't cover everything needed.)
 
-   Then generate the JSON from that account instead. The default "firebase-adminsdk" account works too but has broader permissions than strictly needed.
+2. **Grant the roles.** On the service account, add these roles:
+   - **Firebase Admin** (`roles/firebase.admin`) — Hosting, Firestore, Storage, rules deploys
+   - **Cloud Functions Admin** (`roles/cloudfunctions.admin`) — deploy 2nd-gen functions
+   - **Service Account User** (`roles/iam.serviceAccountUser`) — CI needs to act *as* the runtime service account when deploying functions
+   - **Artifact Registry Admin** (`roles/artifactregistry.admin`) — 2nd-gen functions deploy via container images in Artifact Registry
+   - **Cloud Build Editor** (`roles/cloudbuild.builds.editor`) — 2nd-gen functions build via Cloud Build
+   - **Service Usage Consumer** (`roles/serviceusage.serviceUsageConsumer`) — preflight API-enabled checks
 
-**Verify:** You now have two JSON files — one per project. Open each and confirm the `project_id` field inside matches the expected project.
+   **Shortcut that works** (dev only, skip for prod): grant `Owner` (`roles/owner`). `Editor` alone is NOT enough — it's missing `cloudfunctions.functions.setIamPolicy` (needed for HTTPS function deploy) and IAM policy modification (needed for service-agent bindings). If you grant Editor, you'll also need `Cloud Functions Admin` + `Project IAM Admin`. Simpler to grant the explicit list above or `Owner` on dev.
 
-**Pitfall:** The default service account JSON has powerful permissions. If it leaks, it can delete your project. Rotate (delete old key in IAM → generate new) if you ever paste it anywhere shared.
+3. **Generate the JSON key.** Service account row → **⋮** → **Manage keys** → **Add key** → **Create new key** → JSON → download.
+
+4. **Store safely.** Password manager / secrets vault. Never commit the JSON.
+
+**Verify:** Open each JSON — the `client_email` field should match your service account, `project_id` should match the right project.
+
+**Pitfalls:**
+- **The default `firebase-adminsdk-*` account is NOT enough for CI deploys.** It lacks Artifact Registry + Cloud Build + Service Usage permissions. Use a dedicated account as above.
+- **403 "Permission denied to get service" on deploy** = missing Service Usage Consumer (or broader Firebase Admin).
+- **"Failed to verify the project has the correct IAM bindings" on first Functions deploy.** Firebase Functions needs IAM bindings between the pubsub service agent and Cloud Run / Eventarc service agents. The CLI tries to create them but needs `setIamPolicy` — not in Editor/Firebase Admin. Two options:
+  - **Option A (recommended, minimal scope):** run these 3 gcloud commands once in Cloud Shell (substituting your project ID + project number). The CLI reports the exact commands in its error output on first failure.
+    ```bash
+    gcloud projects add-iam-policy-binding <PROJECT_ID> \
+      --member=serviceAccount:service-<PROJECT_NUMBER>@gcp-sa-pubsub.iam.gserviceaccount.com \
+      --role=roles/iam.serviceAccountTokenCreator
+    gcloud projects add-iam-policy-binding <PROJECT_ID> \
+      --member=serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com \
+      --role=roles/run.invoker
+    gcloud projects add-iam-policy-binding <PROJECT_ID> \
+      --member=serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com \
+      --role=roles/eventarc.eventReceiver
+    ```
+  - **Option B (broader, one-time pain but fully automated):** grant CI service account the `Project IAM Admin` role. It'll self-create these bindings on first deploy.
+- **Keys leaking** = rotate immediately (delete old key, generate new, update GitHub secret).
+- **First 2nd-gen Functions deploy fails with Eventarc errors** ("Permission denied while using the Eventarc Service Agent" / "Since this is your first time using 2nd gen functions, we need a little bit longer..."). Not a config mistake — Eventarc service agent needs 5-10 min to propagate on first use per project. Wait, re-run. Only happens on the very first 2nd-gen Functions deploy per project.
 
 ---
 

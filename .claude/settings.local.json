@@ -44,7 +44,15 @@
       "Bash(npx prettier *)",
       "Bash(echo \"exit=$?\")",
       "Bash(echo \"---EXIT=$?\")",
-      "Bash(npx ng *)"
+      "Bash(npx ng *)",
+      "Bash(gcloud auth *)",
+      "Bash(gcloud config *)",
+      "Bash(gcloud firestore databases list *)",
+      "Bash(gsutil mb *)",
+      "Bash(gsutil rb *)",
+      "Bash(gsutil iam *)",
+      "Bash(gcloud firestore *)",
+      "Bash(tee /tmp/fifty-import-op.txt)"
     ]
   }
 }
