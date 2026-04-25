@@ -3,10 +3,6 @@
 @use './layout/layout.scss';
 @use 'primeicons/primeicons.css';
 @use './demo/demo.scss';
-/* You can add global styles to this file, and also import other style files */
-@import 'swiper/css';
-@import 'swiper/css/pagination';
-@import 'swiper/css/scrollbar';
 
 
 
@@ -61,6 +57,26 @@ html{
 }
 .gm-style-iw-d {
   overflow: hidden !important;
+}
+
+/* Fifty+ dashboard — scale up all text */
+.fifty-dashboard-lg {
+  font-size: 1.125rem;
+
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.875rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+  h5 { font-size: 1.125rem; }
+  h6 { font-size: 1rem; }
+
+  .text-xs   { font-size: 0.875rem; }
+  .text-sm   { font-size: 1rem; }
+  .text-base { font-size: 1.125rem; }
+  .text-lg   { font-size: 1.25rem; }
+  .text-xl   { font-size: 1.5rem; }
+  .text-2xl  { font-size: 1.875rem; }
+  .text-3xl  { font-size: 2.25rem; }
 }
 
 /* Question tooltip — wide enough to show full question text */

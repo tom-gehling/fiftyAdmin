@@ -44,6 +44,15 @@
                     },
                     "configurations": {
                         "production": {
+                            "outputHashing": "all",
+                            "fileReplacements": [
+                                {
+                                    "replace": "src/environments/environment.ts",
+                                    "with": "src/environments/environment.prod.ts"
+                                }
+                            ]
+                        },
+                        "dev-deploy": {
                             "outputHashing": "all"
                         },
                         "development": {
@@ -59,6 +68,9 @@
                     "configurations": {
                         "production": {
                             "buildTarget": "weeklyfifty-7617b:build:production"
+                        },
+                        "dev-deploy": {
+                            "buildTarget": "weeklyfifty-7617b:build:dev-deploy"
                         },
                         "development": {
                             "buildTarget": "weeklyfifty-7617b:build:development"

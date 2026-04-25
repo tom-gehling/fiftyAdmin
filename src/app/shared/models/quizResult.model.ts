@@ -28,4 +28,7 @@ export interface QuizResult {
     retro?: boolean; // true if manually recorded (backwards compatibility)
     taggedUsers?: TaggedUser[]; // users who took the quiz together
     userHidden?: boolean; // true when user has opted out of stats tracking; result still stored for admin use
+    lastActivityAt?: Date; // updated on answer clicks, visibility changes, and periodic heartbeats while tab is visible
+    closedAt?: Date | null; // set when the user closes the tab mid-quiz; cleared if they resume
+    wasAbandoned?: boolean; // true once a sweep or unrecovered close has marked this session abandoned
 }

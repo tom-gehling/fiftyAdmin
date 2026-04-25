@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { PopoverModule, Popover } from 'primeng/popover';
@@ -31,13 +32,20 @@ interface CalendarDay {
 @Component({
     selector: 'app-venue-calendar',
     standalone: true,
-    imports: [CommonModule, FormsModule, SelectModule, ButtonModule, PopoverModule],
+    imports: [CommonModule, FormsModule, RouterModule, SelectModule, ButtonModule, PopoverModule],
     template: `
         <div class="col-span-12">
-            <div class="card p-4 fiftyBorder">
+            <div class="card p-4 fiftyBorder" style="background: rgb(40, 40, 40); border-radius: 1rem;">
                 <!-- Header -->
                 <div class="flex flex-wrap justify-between items-center mb-4 gap-3">
-                    <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 m-0">Quiz Night Schedule</h3>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <h3 class="text-2xl font-bold text-surface-900 dark:text-surface-0 m-0">Quiz Night Schedule</h3>
+                        <a routerLink="/find-a-venue" class="inline-flex items-center gap-1 text-sm font-medium no-underline hover:opacity-80" style="color: var(--fifty-neon-green);">
+                            <i class="pi pi-map-marker text-xs"></i>
+                            <span>Find a venue</span>
+                            <i class="pi pi-arrow-right text-xs"></i>
+                        </a>
+                    </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <!-- View toggle -->
                         <div class="flex rounded-lg overflow-hidden border border-surface-300 dark:border-surface-600">

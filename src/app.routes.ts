@@ -136,40 +136,6 @@ export const appRoutes: Routes = [
             }
         ]
     },
-    // ------------------------------
-    // 🛠 ADMIN ROUTES
-    // ------------------------------
-    {
-        path: 'fiftyPlus/admin',
-        canActivate: [AdminGuard],
-        children: [
-            {
-                path: 'stats',
-                children: [
-                    { path: 'total', component: TotalStats },
-                    { path: 'weekly', component: WeeklyStats },
-                    { path: '', redirectTo: 'total', pathMatch: 'full' }
-                ]
-            },
-            { path: 'quizzes', component: QuizTableComponent },
-            { path: 'quizzes/:id', component: QuizDetailComponent },
-            { path: 'quizTags', component: QuizTagsComponent },
-            { path: 'venues', component: VenuesComponent },
-            { path: 'submissionForms', component: SubmissionFormTableComponent },
-            { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
-            { path: 'users', component: UserTableComponent },
-            {
-                path: 'games',
-                children: [
-                    { path: 'stats', loadComponent: () => import('@/pages/admin/games/game-stats/game-stats').then((m) => m.GameStatsComponent) },
-                    { path: 'movie-emoji', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-list').then((m) => m.MovieEmojiListComponent) },
-                    { path: 'movie-emoji/:id', loadComponent: () => import('@/pages/admin/games/movie-emoji-admin/movie-emoji-detail').then((m) => m.MovieEmojiDetailComponent) },
-                    { path: 'rush-hour', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-list').then((m) => m.RushHourListComponent) },
-                    { path: 'rush-hour/:id', loadComponent: () => import('@/pages/admin/games/rush-hour-admin/rush-hour-detail').then((m) => m.RushHourDetailComponent) }
-                ]
-            }
-        ]
-    },
 
     // ------------------------------
     // ❌ NOT FOUND

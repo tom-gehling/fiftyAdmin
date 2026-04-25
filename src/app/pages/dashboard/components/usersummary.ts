@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { Auth } from '@angular/fire/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
@@ -12,12 +13,17 @@ import { RecentQuizzesWidget } from './userrecentquizzes';
 @Component({
     standalone: true,
     selector: 'app-user-summary-widget',
-    imports: [CommonModule, RecentQuizzesWidget],
+    imports: [CommonModule, RouterModule, RecentQuizzesWidget],
     template: `
-        <div class="card p-6 mb-6 flex flex-col">
-            <!-- Top row: Name -->
-            <div class="flex items-center mb-2">
+        <div class="card p-4 sm:p-6 mb-6 flex flex-col fiftyBorder" style="background: rgb(40, 40, 40); border-radius: 1rem;">
+            <!-- Top row: Name + Weekly Quiz CTA -->
+            <div class="flex items-center justify-between mb-2 gap-3 flex-wrap">
                 <h2 class="text-2xl font-semibold">{{ greeting }}, {{ displayName || 'Guest User' }}</h2>
+                <a routerLink="/weekly-quiz" class="inline-flex items-center gap-2 py-2 px-4 rounded-lg font-semibold no-underline transition-opacity hover:opacity-90" style="background: var(--fifty-neon-green); color: #282828;">
+                    <i class="pi pi-bolt"></i>
+                    <span>This Week's Quiz</span>
+                    <i class="pi pi-arrow-right text-xs"></i>
+                </a>
             </div>
 
             <div class="flex justify-center">

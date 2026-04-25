@@ -1,6 +1,7 @@
-import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, HostListener, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges, isDevMode } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom, filter, Subscription, take } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -19,6 +20,7 @@ import { SubmissionForm, SubmissionFormField } from '@/shared/models/submissionF
 import { TaggedUser } from '@/shared/models/quizSubmission.model';
 import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 import { UserService } from '@/shared/services/user.service';
+import { NotifyService } from '@/shared/services/notify.service';
 import { UserTagSelectorComponent } from '../userTagSelector/userTagSelector.component';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DynamicDialogConfig } from 'primeng/dynamicdialog';
@@ -66,87 +68,45 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             <!-- Notes Above -->
             <div *ngIf="quiz.notesAbove" class="notes" [innerHTML]="quiz.notesAbove"></div>
 
-            <!-- View toggle -->
-            <div class="viewToggle">
-                <button class="viewToggleBtn" [class.active]="viewMode === 'classic'" (click)="viewMode = 'classic'">Classic Panels</button>
-                <button class="viewToggleBtn" [class.active]="viewMode === 'panel'" (click)="viewMode = 'panel'">(TEST) New Panels</button>
-            </div>
+            <!-- Questions -->
+            @for (q of quiz.questions; track i; let i = $index) {
+                @if (!locked || i < 3) {
+                    <p-panel [toggleable]="true" toggler="header" [collapsed]="true">
+                        <ng-template pTemplate="header">
+                            <span class="dot" [ngClass]="{ removed: answers[i]?.correct !== null }"></span>
+                            <span class="questionText"
+                                ><b>Q{{ i + 1 }}.</b>&nbsp;<span [innerHTML]="q.question"></span
+                            ></span>
+                        </ng-template>
 
-            <!-- Questions: Panel view -->
-            @if (viewMode === 'panel') {
-                @for (q of quiz.questions; track i; let i = $index) {
-                    @if (!locked || i < 3) {
-                        <p-panel [toggleable]="true" toggler="header" [collapsed]="true">
-                            <ng-template pTemplate="header">
-                                <span class="dot" [ngClass]="{ removed: answers[i]?.correct !== null }"></span>
-                                <span class="questionText"
-                                    ><b>Q{{ i + 1 }}.</b>&nbsp;<span [innerHTML]="q.question"></span
-                                ></span>
-                            </ng-template>
-
-                            <div class="flex justify-center my-2">
-                                <button class="genericButton" [ngClass]="{ reveal: answerRevealed[i] }" (click)="toggleAnswer(i)">Click for answer</button>
-                            </div>
-
-                            @if (answerRevealed[i]) {
-                                <div class="panel answer">
-                                    <p [innerHTML]="q.answer"></p>
-
-                                    @if (!locked) {
-                                        <div class="flex flex-col items-center gap-1">
-                                            <div class="flex gap-2">
-                                                <button class="genericButton" [ngClass]="{ correct: answers[i]?.correct === true }" (click)="markAnswer(i, true)">Correct</button>
-                                                <button class="genericButton" [ngClass]="{ incorrect: answers[i]?.correct === false }" (click)="markAnswer(i, false)">Incorrect</button>
-                                            </div>
-                                            @if (answers[i]?.percentCorrect !== undefined) {
-                                                <span class="questionStat">({{ answers[i]?.percentCorrect }}% got this right)</span>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </p-panel>
-                    }
-                }
-            }
-
-            <!-- Questions: Classic view -->
-            @if (viewMode === 'classic') {
-                @for (q of quiz.questions; track i; let i = $index) {
-                    @if (!locked || i < 3) {
-                        <div class="question">
-                            <button class="accordionButton" [class.active]="questionClicked[i]" (click)="toggleQuestion(i)">
-                                <span class="dot" [ngClass]="{ removed: answers[i]?.correct !== null }"></span>
-                                <span class="questionText"
-                                    ><b>Q{{ i + 1 }}.</b>&nbsp;<span [innerHTML]="q.question"></span
-                                ></span>
-                            </button>
-
-                            @if (questionClicked[i]) {
-                                <div class="flex justify-center my-2">
-                                    <button class="genericButton" [ngClass]="{ reveal: answerRevealed[i] }" (click)="toggleAnswer(i)">Click for answer</button>
-                                </div>
-                            }
-
-                            @if (questionClicked[i] && answerRevealed[i]) {
-                                <div class="panel answer">
-                                    <p [innerHTML]="q.answer"></p>
-
-                                    @if (!locked) {
-                                        <div class="flex flex-col items-center gap-1">
-                                            <div class="flex gap-2">
-                                                <button class="genericButton" [ngClass]="{ correct: answers[i]?.correct === true }" (click)="markAnswer(i, true)">Correct</button>
-                                                <button class="genericButton" [ngClass]="{ incorrect: answers[i]?.correct === false }" (click)="markAnswer(i, false)">Incorrect</button>
-                                            </div>
-                                            @if (answers[i]?.percentCorrect !== undefined) {
-                                                <span class="questionStat">({{ answers[i]?.percentCorrect }}% got this right)</span>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
+                        <div class="flex justify-center">
+                            <button class="genericButton" [ngClass]="{ reveal: answerRevealed[i] }" (click)="toggleAnswer(i)">Click for answer</button>
                         </div>
-                    }
+
+                        <div class="answerWrap" [class.revealed]="answerRevealed[i]">
+                            <div class="answerInner">
+                                <div class="panel answer">
+                                    <p [innerHTML]="q.answer"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!locked) {
+                            <div class="answerWrap markWrap" [class.revealed]="answerRevealed[i]">
+                                <div class="answerInner">
+                                    <div class="flex flex-col items-center gap-1">
+                                        <div class="flex gap-2">
+                                            <button class="genericButton" [ngClass]="{ correct: answers[i]?.correct === true }" (click)="markAnswer(i, true)">Correct</button>
+                                            <button class="genericButton" [ngClass]="{ incorrect: answers[i]?.correct === false }" (click)="markAnswer(i, false)">Incorrect</button>
+                                        </div>
+                                        @if (answers[i]?.percentCorrect !== undefined) {
+                                            <span class="questionStat">({{ answers[i]?.percentCorrect }}% got this right)</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </p-panel>
                 }
             }
 
@@ -275,7 +235,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             --tertiary: #4cfbab;
             --secondary: #677c73;
             --primary: #fbe2df;
-            --font: Helvetica, Arial, sans-serif;
+            --font: 'Lato', sans-serif;
             --header: 25px;
             --normal: 22px;
             --smaller: 18px;
@@ -301,11 +261,13 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             align-items: center;
             margin-bottom: 20px;
             padding: 0 10px;
+            gap: 8px;
         }
 
         .quizHeaderLeft,
         .quizHeaderRight {
-            flex: 0 0 20%;
+            flex: 1 1 0;
+            min-width: 0;
             display: flex;
             gap: 5px;
         }
@@ -316,15 +278,30 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
         .quizHeaderRight {
             justify-content: flex-end;
+            flex-wrap: wrap;
         }
 
         .quizTitle {
-            flex: 0 0 60%;
+            flex: 2 1 0;
+            min-width: 0;
             text-align: center;
             padding: 20px 8px;
-            font-size: 30px;
+            font-size: 22px;
             font-weight: 600;
             color: var(--primary);
+            overflow-wrap: anywhere;
+        }
+
+        @media (min-width: 600px) {
+            .quizTitle {
+                font-size: 26px;
+            }
+        }
+
+        @media (min-width: 800px) {
+            .quizTitle {
+                font-size: 30px;
+            }
         }
 
         .loggedInName {
@@ -352,11 +329,6 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             display: inline;
         }
 
-        ::ng-deep .accordionButton p {
-            margin: 0;
-            display: inline;
-        }
-
         :host ::ng-deep .p-panel {
             border: 3px solid var(--secondary);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -366,6 +338,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             margin-left: 2%;
             margin-right: 2%;
             overflow: hidden;
+            transition: border-color var(--transition);
         }
 
         :host ::ng-deep .p-panel .p-panel-header {
@@ -398,12 +371,19 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
         :host ::ng-deep .p-panel .p-panel-content {
             border: none;
             background: transparent;
-            padding: 0;
+            padding: 10px 0;
+            display: flow-root;
         }
 
         :host ::ng-deep .p-panel .p-panel-header p {
             margin: 0;
             display: inline;
+        }
+
+        :host ::ng-deep .p-panel .p-panel-header-actions,
+        :host ::ng-deep .p-panel .p-panel-toggle-button,
+        :host ::ng-deep .p-panel .p-panel-icons {
+            display: none !important;
         }
 
         :host ::ng-deep .infoButton .p-button,
@@ -456,52 +436,6 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             margin-top: 30px;
         }
 
-        .viewToggle {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .viewToggleBtn {
-            padding: 6px 18px;
-            font-size: 14px;
-            font-family: var(--font);
-            font-weight: 600;
-            border-radius: 20px;
-            border: 2px solid var(--primary);
-            background-color: transparent;
-            color: var(--primary);
-            cursor: pointer;
-            opacity: 0.5;
-            transition: var(--transition);
-        }
-
-        .viewToggleBtn.active {
-            background-color: var(--primary);
-            color: var(--secondary);
-            opacity: 1;
-        }
-
-        .accordionButton {
-            width: 100%;
-            border: none;
-            padding: 25px;
-            margin-bottom: 20px;
-            font-size: var(--header);
-            font-weight: 400;
-            text-align: center;
-            line-height: 130%;
-            color: var(--primary);
-            background-color: var(--secondary);
-            transition: var(--transition);
-        }
-
-        .accordionButton.active {
-            background-color: var(--primary);
-            color: var(--secondary);
-        }
-
         .genericButton {
             margin: 5px;
             padding: 15px;
@@ -550,10 +484,11 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             flex-shrink: 0;
             border-radius: 50%;
             background-color: var(--tertiary);
+            transition: opacity var(--transition);
         }
 
         .dot.removed {
-            display: none;
+            opacity: 0;
         }
 
         .panel {
@@ -561,6 +496,28 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             width: auto;
             text-align: center;
             font-size: var(--normal);
+        }
+
+        .answerWrap {
+            display: grid;
+            grid-template-rows: 0fr;
+            opacity: 0;
+            transition:
+                grid-template-rows 0.2s ease,
+                opacity 0.15s ease;
+        }
+
+        .answerWrap.revealed {
+            grid-template-rows: 1fr;
+            opacity: 1;
+        }
+
+        .answerWrap.markWrap {
+            transition-delay: 0.05s;
+        }
+
+        .answerInner {
+            overflow: hidden;
         }
 
         .panel.answer {
@@ -807,14 +764,16 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     private rotationInterval?: ReturnType<typeof setInterval>;
     logoIsSquare = false;
 
+    // Presence tracking
+    private heartbeatInterval?: ReturnType<typeof setInterval>;
+    private readonly HEARTBEAT_MS = 2 * 60 * 1000;
+
     // Quiz state
     score = 0;
     totalQuestions = 0;
 
     answers: { correct: boolean | null; percentCorrect?: number }[] = [];
-    questionClicked: boolean[] = [];
     answerRevealed: boolean[] = [];
-    viewMode: 'panel' | 'classic' = 'panel';
 
     userId?: string;
     userEmail?: string;
@@ -846,6 +805,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         private quizStatsService: QuizStatsService,
         private authService: AuthService,
         private userService: UserService,
+        private notify: NotifyService,
         private quizPdfService: QuizPdfService,
         private submissionFormService: SubmissionFormService,
         private quizSubmissionService: QuizSubmissionService,
@@ -862,6 +822,44 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     ngOnDestroy() {
         this.authSub?.unsubscribe();
         clearInterval(this.rotationInterval);
+        this.stopHeartbeat();
+    }
+
+    @HostListener('document:visibilitychange')
+    onVisibilityChange() {
+        if (!this.resultId || this.previewMode || this.locked) return;
+        if (document.visibilityState === 'visible') {
+            this.quizResultsService.heartbeat(this.resultId).catch(() => {});
+        }
+    }
+
+    @HostListener('window:pagehide')
+    @HostListener('window:beforeunload')
+    onPageHide() {
+        if (!this.resultId || this.previewMode || this.locked) return;
+        if (this.isQuizCompleted) return;
+        const url = isDevMode() ? 'http://127.0.0.1:5001/weeklyfifty-7617b/us-central1/api/logQuizClose' : `${environment.functionsBaseUrl}/api/logQuizClose`;
+        const payload = new Blob([JSON.stringify({ resultId: this.resultId })], { type: 'application/json' });
+        try {
+            navigator.sendBeacon(url, payload);
+        } catch {
+            // sendBeacon may be blocked in some contexts; the scheduled sweep is the safety net
+        }
+    }
+
+    private startHeartbeat() {
+        this.stopHeartbeat();
+        this.heartbeatInterval = setInterval(() => {
+            if (!this.resultId || document.visibilityState !== 'visible') return;
+            this.quizResultsService.heartbeat(this.resultId).catch(() => {});
+        }, this.HEARTBEAT_MS);
+    }
+
+    private stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = undefined;
+        }
     }
 
     // ---------------------------------------------
@@ -933,7 +931,6 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         this.totalQuestions = questions.length;
 
         this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
-        this.questionClicked = Array.from({ length: this.totalQuestions }, () => false);
         this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
         this.score = 0;
 
@@ -1012,7 +1009,6 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         this.totalQuestions = questions.length;
 
         this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
-        this.questionClicked = Array.from({ length: this.totalQuestions }, () => false);
         this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
         this.score = 0;
 
@@ -1029,6 +1025,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
                 if (idx !== -1) this.answers[idx] = { correct: a.correct ?? null };
             });
             this.score = this.answers.filter((a) => a.correct).length;
+            if (this.resultId) {
+                this.quizResultsService.markResumed(this.resultId).catch(() => {});
+                this.startHeartbeat();
+            }
             return;
         }
 
@@ -1045,6 +1045,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         }
 
         this.resultId = await this.quizResultsService.createResult(quiz.quizId.toString(), this.userId, this.totalQuestions, this.disableStats || undefined);
+        this.startHeartbeat();
     }
 
     // ---------------------------------------------
@@ -1162,10 +1163,6 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         return this.quiz.quizTitle || `Quiz ${this.quiz.quizId}`;
     }
 
-    toggleQuestion(i: number) {
-        this.questionClicked[i] = !this.questionClicked[i];
-    }
-
     toggleAnswer(i: number) {
         this.answerRevealed[i] = !this.answerRevealed[i];
     }
@@ -1188,9 +1185,9 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
             this.resultId = await this.quizResultsService.createResult(this.quiz.quizId.toString(), this.userId, this.totalQuestions, this.disableStats || undefined);
 
             this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
-            this.questionClicked = Array.from({ length: this.totalQuestions }, () => false);
             this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
             this.score = 0;
+            this.startHeartbeat();
         } catch (err) {
             console.error('Failed to reset quiz', err);
         }
@@ -1226,6 +1223,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         if (this.isQuizCompleted && this.resultId) {
             try {
                 await this.quizResultsService.completeResult(this.resultId);
+                this.stopHeartbeat();
                 this.applyStatsToAnswers();
             } catch (err) {
                 console.error('Failed to complete result', err);
@@ -1268,7 +1266,11 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     // DOWNLOAD PDF
     // ---------------------------------------------
     async downloadPdf() {
-        if (!this.quiz) return;
+        if (!this.quiz || this.locked) return;
+        if (!this.userId) {
+            this.notify.info('Sign in to download quizzes.');
+            return;
+        }
         await this.quizPdfService.downloadQuizPdf(this.quiz);
     }
 
@@ -1393,10 +1395,10 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             let fontSize = 102;
-            ctx.font = `bold ${fontSize}px Helvetica, Arial, sans-serif`;
+            ctx.font = `bold ${fontSize}px 'Lato', sans-serif`;
             while (ctx.measureText(teamName).width > size - 80 && fontSize > 40) {
                 fontSize -= 4;
-                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                ctx.font = `bold ${fontSize}px 'Lato', sans-serif`;
             }
             ctx.fillText(teamName, size / 2, 80);
             scoreLabelY = 80 + fontSize + 14;
@@ -1404,14 +1406,14 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
 
         // Score — just below team name, smaller
         ctx.fillStyle = pink;
-        ctx.font = `bold 48px Helvetica, Arial, sans-serif`;
+        ctx.font = `bold 48px 'Lato', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(`Score: ${this.score}`, size / 2, scoreLabelY);
 
         // Location — fifty-green pill at the bottom
         if (location) {
-            const pillFont = 'bold 40px Helvetica, Arial, sans-serif';
+            const pillFont = `bold 40px 'Lato', sans-serif`;
             ctx.font = pillFont;
             const textW = ctx.measureText(location).width;
             const pinH = 36;

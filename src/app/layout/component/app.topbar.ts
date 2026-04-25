@@ -72,7 +72,7 @@ import { AuthModalService } from '@/shared/services/auth-modal.service';
         <div class="ml-auto flex items-center gap-3">
             @if (auth.initialized$ | async) {
                 @if (!(auth.user$ | async) || (auth.user$ | async)?.isAnon) {
-                    <p-button label="Sign In" [outlined]="false" size="large" (click)="authModal.open('login')"></p-button>
+                    <p-button label="Sign In" [outlined]="false" size="large" (click)="authModal.open('login')" [style]="{ background: '#4cfbab', 'border-color': '#4cfbab', color: '#1a1a1a' }"></p-button>
                 } @else {
                     @if (!(auth.isMember$ | async) && !(auth.isAdmin$ | async)) {
                         <p-button label="Become a Fifty+ Member" icon="pi pi-star" size="large" [outlined]="true" [routerLink]="['/join']" [queryParams]="{ returnUrl: router.url }"></p-button>

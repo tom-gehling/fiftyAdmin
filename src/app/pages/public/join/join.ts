@@ -1,26 +1,29 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { AuthService } from '@/shared/services/auth.service';
 import { SubscriptionService } from '@/shared/services/subscription.service';
-import { injectStripe, StripeElementsDirective, StripePaymentElementComponent } from 'ngx-stripe';
-import type { Appearance, StripeElementsOptionsClientSecret, StripeElements } from '@stripe/stripe-js';
+import type { Offering, Package } from '@revenuecat/purchases-js';
 import { AppFloatingConfigurator } from '../../../layout/component/app.floatingconfigurator';
 import { Subscription } from 'rxjs';
 
-const PRICES = {
-    quarterly: { id: 'price_1TCsduH14haeupiArZVyTSg2', display: '$20 / quarter', savings: '' },
-    yearly: { id: 'price_1TCtR6H14haeupiAkV4e1aWH', display: '$40 / year', savings: 'Save $40 vs quarterly' },
-};
+// Stripe (deprecated — replaced by RevenueCat Web Billing)
+// import { injectStripe, StripeElementsDirective, StripePaymentElementComponent } from 'ngx-stripe';
+// import type { Appearance, StripeElementsOptionsClientSecret, StripeElements } from '@stripe/stripe-js';
+// const PRICES = {
+//     quarterly: { id: 'price_1TCsduH14haeupiArZVyTSg2', display: '$20 / quarter', savings: '' },
+//     yearly: { id: 'price_1TCtR6H14haeupiAkV4e1aWH', display: '$40 / year', savings: 'Save $40 vs quarterly' },
+// };
 
 @Component({
     selector: 'app-join',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, DividerModule, SelectButtonModule, AppFloatingConfigurator, StripeElementsDirective, StripePaymentElementComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, DialogModule, DividerModule, SelectButtonModule, AppFloatingConfigurator],
     styles: [
         `
             .logo-bg {
@@ -120,7 +123,7 @@ const PRICES = {
                                 <p-button label="Create Free Account" styleClass="w-full mb-3" (click)="router.navigate(['/login'], { queryParams: { register: 'true' } })"></p-button>
                                 <p class="text-surface-500 text-lg mt-3">Already have an account? <a class="text-primary cursor-pointer" (click)="router.navigate(['/login'])">Sign in</a></p>
                             </div>
-                        } @else if (!showPaymentElement) {
+                        } @else {
                             <!-- Billing toggle + pricing card -->
                             <div class="mb-6">
                                 <p class="text-surface-700 dark:text-surface-300 text-sm font-medium mb-3 text-center">Choose your billing period</p>
@@ -130,34 +133,19 @@ const PRICES = {
                             <!-- Pricing card -->
                             <div class="border border-primary rounded-xl p-6 mb-6 text-center" style="border-width: 2px; border-color: var(--primary-color)">
                                 <p class="text-surface-500 dark:text-surface-400 text-sm uppercase tracking-widest mb-2">Fifty+ Membership</p>
-                                <p class="text-surface-900 dark:text-surface-0 text-4xl font-bold mb-1">{{ currentPrice.display }}</p>
-                                @if (currentPrice.savings) {
-                                    <p class="text-primary text-sm font-medium mb-4">{{ currentPrice.savings }}</p>
+                                @if (currentPackage) {
+                                    <p class="text-surface-900 dark:text-surface-0 text-4xl font-bold mb-1">{{ currentPriceDisplay }}</p>
+                                    @if (savingsLabel) {
+                                        <p class="text-primary text-sm font-medium mb-4">{{ savingsLabel }}</p>
+                                    } @else {
+                                        <p class="text-surface-400 text-sm mb-4">{{ billingPeriod === 'quarterly' ? 'Billed every 3 months' : 'Billed annually' }}</p>
+                                    }
+                                    <p-button label="Start 7 Day Free Trial" icon="pi pi-lock" styleClass="w-full mb-3" [loading]="loadingOfferings" (click)="openPurchaseDialog()"></p-button>
+                                    <p class="text-surface-500 text-sm">Cancel anytime from your account settings</p>
                                 } @else {
-                                    <p class="text-surface-400 text-sm mb-4">Billed every 3 months</p>
+                                    <p class="text-surface-400 text-sm my-8">{{ loadingOfferings ? 'Loading pricing…' : 'No pricing available — please try again shortly.' }}</p>
                                 }
-                                <p-button label="Start 7 Day Free Trial" icon="pi pi-lock" styleClass="w-full mb-3" [loading]="loadingIntent" (click)="setupPayment()"></p-button>
-                                <p class="text-surface-500 text-sm">Cancel anytime from your account settings</p>
                             </div>
-
-                            
-
-                            @if (error) {
-                                <p class="text-red-500 mt-4 text-center text-sm">{{ error }}</p>
-                            }
-                        } @else {
-                            <!-- Stripe Payment Element -->
-                            <div class="mb-2">
-                                <p class="text-surface-700 dark:text-surface-300 text-sm mb-1 font-medium">{{ currentPrice.display }}</p>
-                                <p class="text-surface-500 text-sm mb-4">{{ billingPeriod === 'quarterly' ? 'Billed every 3 months' : 'Billed annually' }} · Cancel anytime</p>
-                            </div>
-
-                            <ngx-stripe-elements [elementsOptions]="elementsOptions" (elements)="elements = $event">
-                                <ngx-stripe-payment></ngx-stripe-payment>
-                            </ngx-stripe-elements>
-
-                            <p-button label="Subscribe Now" icon="pi pi-star" styleClass="w-full mt-6" [loading]="loadingSubscribe" (click)="subscribe()"></p-button>
-                            <p-button label="Change billing period" styleClass="w-full mt-2" [text]="true" severity="secondary" (click)="resetPayment()"></p-button>
 
                             @if (error) {
                                 <p class="text-red-500 mt-4 text-center text-sm">{{ error }}</p>
@@ -177,6 +165,28 @@ const PRICES = {
                 </div>
             </div>
         </div>
+
+        <!-- RevenueCat embedded purchase flow -->
+        <p-dialog
+            [(visible)]="purchasing"
+            [modal]="true"
+            [dismissableMask]="false"
+            [draggable]="false"
+            [resizable]="false"
+            appendTo="body"
+            [style]="{ width: '520px', maxWidth: '95vw' }"
+            [header]="dialogHeader"
+            (onShow)="onDialogShow()"
+            (onHide)="onDialogHide()">
+            <div class="mb-3">
+                <p class="text-surface-900 dark:text-surface-0 text-lg font-semibold mb-1">{{ currentPriceDisplay }}</p>
+                <p class="text-surface-500 text-sm">{{ billingPeriod === 'quarterly' ? 'Billed every 3 months' : 'Billed annually' }} · Cancel anytime</p>
+            </div>
+            <div #rcPurchaseTarget id="rc-purchase-target" class="min-h-[200px]"></div>
+            @if (error) {
+                <p class="text-red-500 mt-4 text-sm">{{ error }}</p>
+            }
+        </p-dialog>
     `,
 })
 export class JoinPage implements OnInit, OnDestroy {
@@ -224,35 +234,41 @@ export class JoinPage implements OnInit, OnDestroy {
         { label: 'Yearly', value: 'yearly' },
     ];
 
-    stripe = injectStripe();
-
     billingPeriod: 'quarterly' | 'yearly' = 'quarterly';
     isLoggedIn = false;
+    private userEmail: string | undefined;
     private userSub: Subscription | null = null;
     returnUrl = '/fiftyPlus';
-    showPaymentElement = false;
-    loadingIntent = false;
-    loadingSubscribe = false;
+
+    offering: Offering | null = null;
+    loadingOfferings = false;
+    purchasing = false;
     error: string | null = null;
-    elements: StripeElements | null = null;
 
-    elementsOptions: StripeElementsOptionsClientSecret = {
-        clientSecret: '',
-        appearance: {
-            theme: 'night',
-            variables: {
-                colorPrimary: '#4cfbab',
-                colorBackground: '#1c1c1c',
-                colorText: '#ffffff',
-                colorTextSecondary: '#aaaaaa',
-                borderRadius: '8px',
-                fontFamily: 'Lato, sans-serif',
-            },
-        } as Appearance,
-    };
+    @ViewChild('rcPurchaseTarget') rcPurchaseTarget?: ElementRef<HTMLDivElement>;
 
-    get currentPrice() {
-        return PRICES[this.billingPeriod];
+    get currentPackage(): Package | null {
+        if (!this.offering) return null;
+        return this.billingPeriod === 'yearly' ? this.offering.annual : this.offering.threeMonth;
+    }
+
+    get currentPriceDisplay(): string {
+        return this.currentPackage?.webBillingProduct.currentPrice.formattedPrice ?? '—';
+    }
+
+    get dialogHeader(): string {
+        return 'Complete your Fifty+ membership';
+    }
+
+    get savingsLabel(): string {
+        if (!this.offering || this.billingPeriod !== 'yearly') return '';
+        const yearly = this.offering.annual?.webBillingProduct.currentPrice;
+        const quarterly = this.offering.threeMonth?.webBillingProduct.currentPrice;
+        if (!yearly || !quarterly) return '';
+        const savedMicros = quarterly.amountMicros * 4 - yearly.amountMicros;
+        if (savedMicros <= 0) return '';
+        const formatted = new Intl.NumberFormat(undefined, { style: 'currency', currency: yearly.currency }).format(savedMicros / 1_000_000);
+        return `Save ${formatted} vs quarterly`;
     }
 
     constructor(
@@ -262,10 +278,17 @@ export class JoinPage implements OnInit, OnDestroy {
         private subscriptionService: SubscriptionService
     ) {}
 
-    ngOnInit() {
+    async ngOnInit() {
         this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/fiftyPlus';
+        let offeringsLoaded = false;
         this.userSub = this.auth.user$.subscribe((user) => {
             this.isLoggedIn = !!user && !user.isAnon;
+            this.userEmail = user?.email || undefined;
+            // RevenueCat is only configured once a Firebase user resolves — fetch offerings then.
+            if (this.isLoggedIn && !offeringsLoaded) {
+                offeringsLoaded = true;
+                this.loadOfferings();
+            }
         });
     }
 
@@ -273,60 +296,134 @@ export class JoinPage implements OnInit, OnDestroy {
         this.userSub?.unsubscribe();
     }
 
-    async setupPayment() {
-        this.error = null;
-        this.loadingIntent = true;
+    private async loadOfferings() {
+        this.loadingOfferings = true;
         try {
-            const priceId = PRICES[this.billingPeriod].id;
-            const { clientSecret } = await this.subscriptionService.createSubscriptionIntent(priceId);
-            this.elementsOptions = { ...this.elementsOptions, clientSecret };
-            this.showPaymentElement = true;
+            this.offering = await this.subscriptionService.getCurrentOffering();
         } catch (err: any) {
-            this.error = err?.message ?? 'Something went wrong. Please try again.';
+            console.error('[RevenueCat] failed to load offerings', err);
+            this.error = 'Could not load pricing. Please try again.';
         } finally {
-            this.loadingIntent = false;
+            this.loadingOfferings = false;
         }
     }
 
-    subscribe() {
-        if (!this.elements) return;
+    openPurchaseDialog() {
+        if (!this.currentPackage) return;
         this.error = null;
-        this.loadingSubscribe = true;
-
-        this.stripe
-            .confirmPayment({
-                elements: this.elements,
-                confirmParams: {
-                    return_url: `${window.location.origin}/join/success?returnUrl=${encodeURIComponent(this.returnUrl)}`,
-                },
-            })
-            .subscribe({
-                next: (result) => {
-                    this.loadingSubscribe = false;
-                    if (result.error) {
-                        this.error = result.error.message ?? 'Payment failed. Please try again.';
-                    }
-                },
-                error: (err) => {
-                    this.loadingSubscribe = false;
-                    this.error = err?.message ?? 'Payment failed. Please try again.';
-                },
-            });
+        this.purchasing = true;
     }
 
-    resetPayment() {
-        this.showPaymentElement = false;
-        this.elementsOptions = { ...this.elementsOptions, clientSecret: '' };
-        this.elements = null;
+    async onDialogShow() {
+        const pkg = this.currentPackage;
+        if (!pkg) {
+            this.purchasing = false;
+            return;
+        }
+
+        // onShow can fire before ViewChild resolves — defer one tick, then fall back to a DOM query.
+        await new Promise((r) => setTimeout(r, 0));
+        const target = this.rcPurchaseTarget?.nativeElement ?? (document.getElementById('rc-purchase-target') as HTMLDivElement | null);
+
+        if (!target) {
+            console.error('[RevenueCat] purchase target element not found in dialog');
+            this.error = 'Something went wrong loading the purchase form. Please try again.';
+            this.purchasing = false;
+            return;
+        }
+
+        try {
+            await this.subscriptionService.purchasePackage(pkg, {
+                htmlTarget: target,
+                customerEmail: this.userEmail
+            });
+            await this.auth.refreshMembership();
+            this.purchasing = false;
+            this.router.navigate(['/join/success'], { queryParams: { returnUrl: this.returnUrl } });
+        } catch (err: any) {
+            if (SubscriptionService.isUserCancelled(err)) {
+                this.purchasing = false;
+                return;
+            }
+            this.error = err?.message ?? 'Payment failed. Please try again.';
+            this.purchasing = false;
+        }
+    }
+
+    onDialogHide() {
         this.error = null;
     }
 
     async manageBilling() {
         try {
-            const url = await this.subscriptionService.createPortalSession(window.location.href);
-            window.location.href = url;
+            await this.subscriptionService.openManagementUrl();
         } catch {
             this.error = 'Could not open billing portal. You may not have an active subscription yet.';
         }
     }
+
+    // ================================================================
+    // DEPRECATED — previous Stripe implementation.
+    // Kept commented for reference during the RevenueCat migration.
+    // ================================================================
+    //
+    // stripe = injectStripe();
+    // showPaymentElement = false;
+    // loadingIntent = false;
+    // loadingSubscribe = false;
+    // elements: StripeElements | null = null;
+    // elementsOptions: StripeElementsOptionsClientSecret = {
+    //     clientSecret: '',
+    //     appearance: {
+    //         theme: 'night',
+    //         variables: {
+    //             colorPrimary: '#4cfbab',
+    //             colorBackground: '#1c1c1c',
+    //             colorText: '#ffffff',
+    //             colorTextSecondary: '#aaaaaa',
+    //             borderRadius: '8px',
+    //             fontFamily: 'Lato, sans-serif',
+    //         },
+    //     } as Appearance,
+    // };
+    //
+    // async setupPayment() {
+    //     this.error = null;
+    //     this.loadingIntent = true;
+    //     try {
+    //         const priceId = PRICES[this.billingPeriod].id;
+    //         const { clientSecret } = await this.subscriptionService.createSubscriptionIntent(priceId);
+    //         this.elementsOptions = { ...this.elementsOptions, clientSecret };
+    //         this.showPaymentElement = true;
+    //     } catch (err: any) {
+    //         this.error = err?.message ?? 'Something went wrong. Please try again.';
+    //     } finally {
+    //         this.loadingIntent = false;
+    //     }
+    // }
+    //
+    // subscribe() {
+    //     if (!this.elements) return;
+    //     this.error = null;
+    //     this.loadingSubscribe = true;
+    //     this.stripe
+    //         .confirmPayment({
+    //             elements: this.elements,
+    //             confirmParams: {
+    //                 return_url: `${window.location.origin}/join/success?returnUrl=${encodeURIComponent(this.returnUrl)}`,
+    //             },
+    //         })
+    //         .subscribe({
+    //             next: (result) => {
+    //                 this.loadingSubscribe = false;
+    //                 if (result.error) {
+    //                     this.error = result.error.message ?? 'Payment failed. Please try again.';
+    //                 }
+    //             },
+    //             error: (err) => {
+    //                 this.loadingSubscribe = false;
+    //                 this.error = err?.message ?? 'Payment failed. Please try again.';
+    //             },
+    //         });
+    // }
 }

@@ -7,14 +7,21 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { QuizStatsService } from '@/shared/services/quiz-stats.service';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 
 @Component({
     standalone: true,
     selector: 'app-user-quiz-history-widget',
-    imports: [CommonModule, ChartModule],
+    imports: [CommonModule, RouterModule, ChartModule],
     template: `
-        <div class="card mb-8 p-4 fiftyBorder">
-            <div class="font-semibold text-xl mb-4">Weekly Quiz History</div>
+        <div class="card mb-8 p-4 fiftyBorder" style="background: rgb(40, 40, 40); border-radius: 1rem;">
+            <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                <div class="font-semibold text-xl">Weekly Quiz History</div>
+                <a routerLink="/fiftyPlus/archives" class="inline-flex items-center gap-1 text-sm font-medium no-underline hover:opacity-80" style="color: var(--fifty-neon-green);">
+                    <span>Browse archives</span>
+                    <i class="pi pi-arrow-right text-xs"></i>
+                </a>
+            </div>
 
             <ng-container *ngIf="loading; else chartBlock">
                 <div class="flex justify-center items-center h-100">
