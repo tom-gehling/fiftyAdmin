@@ -19,7 +19,6 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { SpeedDialModule } from 'primeng/speeddial';
 import { DividerModule } from 'primeng/divider';
 
 // Angular CDK Drag & Drop
@@ -37,8 +36,8 @@ import { QuizTag } from '@/shared/models/quizTags.model';
 import { NotifyService } from '@/shared/services/notify.service';
 import { SubmissionFormService } from '@/shared/services/submission-form.service';
 import { SubmissionForm } from '@/shared/models/submissionForm.model';
-import { firstValueFrom, Subscription } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { firstValueFrom, Observable, Subscription } from 'rxjs';
+import { debounceTime, map } from 'rxjs/operators';
 import { MenuItem } from 'primeng/api';
 import { MenuModule } from 'primeng/menu';
 import { OverlayModule } from 'primeng/overlay';
@@ -47,6 +46,7 @@ import { StorageService } from '@/shared/services/storage.service';
 import { CollaboratorsService } from '@/shared/services/collaborators.service';
 import { Collaborator } from '@/shared/models/collaborator.model';
 import { TooltipModule } from 'primeng/tooltip';
+import { QuizCategoriesService } from '@/shared/services/quiz-categories.service';
 
 @Component({
     selector: 'quiz-detail',
@@ -71,7 +71,6 @@ import { TooltipModule } from 'primeng/tooltip';
         ProgressSpinnerModule,
         FloatLabelModule,
         FormsModule,
-        SpeedDialModule,
         MenuModule,
         DividerModule,
         TooltipModule,
@@ -96,9 +95,6 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
     availableCollaborators: Collaborator[] = [];
     addCollabVisible = false;
     newCollabName = '';
-
-    // NEW: Holds the SpeedDial menu for each question
-    questionMenus: MenuItem[][] = [];
 
     quizType = [
         { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
@@ -140,6 +136,8 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
     themePreviewQuiz: Quiz | null = null;
     private themePreviewSub?: Subscription;
 
+    categoryOptions$!: Observable<{ label: string; value: string }[]>;
+
     private removedQuestionsBackup: any[] = [];
     logoDialogVisible: boolean = false;
     pendingImageUrl: string = '';
@@ -159,8 +157,11 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
         private notify: NotifyService,
         private storageService: StorageService,
         private submissionFormService: SubmissionFormService,
-        private collaboratorsService: CollaboratorsService
-    ) {}
+        private collaboratorsService: CollaboratorsService,
+        private quizCategoriesService: QuizCategoriesService
+    ) {
+        this.categoryOptions$ = this.quizCategoriesService.categories$.pipe(map((vals) => vals.map((v) => ({ label: v, value: v }))));
+    }
 
     ngOnInit(): void {
         this.checkScreen();
@@ -296,9 +297,6 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
             submissionFormId: [quiz.submissionFormId || null]
         });
 
-        // Sync SpeedDial menus initially
-        this.syncQuestionMenus();
-
         this.form.get('quizType')?.valueChanges.subscribe(async (newType: QuizTypeEnum) => {
             // if (!this.id || this.id === '0') { // only for new quizzes
             const nextId = await this.quizzesService.getNextQuizId(newType);
@@ -310,7 +308,6 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
 
         this.form.get('questionCount')?.valueChanges.subscribe((count) => {
             this.setQuestionCount(count);
-            this.syncQuestionMenus();
         });
 
         this.setupThemePreview();
@@ -333,18 +330,6 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
 
     get questions(): FormArray {
         return this.form.get('questions') as FormArray;
-    }
-
-    private syncQuestionMenus(): void {
-        const count = this.questions.length;
-        this.questionMenus = Array.from({ length: count }, (_, i) => this.createQuestionMenu(i));
-    }
-
-    private createQuestionMenu(index: number): MenuItem[] {
-        return [
-            { icon: 'pi pi-pencil', command: () => this.notify.info('Commenting on Quiz Coming Soon!') },
-            { icon: 'pi pi-flag', command: () => this.toggleFlag(index) }
-        ];
     }
 
     onImageSelected(event: any) {
@@ -553,7 +538,6 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
                     )
                 );
                 this.form.patchValue({ quizId: result.quizNum, questionCount: result.questions.length });
-                this.syncQuestionMenus();
             }
         });
     }

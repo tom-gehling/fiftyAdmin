@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { AuthModalComponent } from '@/shared/components/auth-modal/auth-modal.component';
 import { AuthService } from '@/shared/services/auth.service';
+import { environment } from './environments/environment';
 
 @Component({
     selector: 'app-root',
@@ -22,6 +23,9 @@ import { AuthService } from '@/shared/services/auth.service';
         <p-toast position="bottom-right"></p-toast>
         <app-auth-modal />
         <router-outlet></router-outlet>
+        @if (showEnvBadge) {
+            <div class="env-badge">DEV · {{ firebaseProjectId }}</div>
+        }
     `,
     styles: [
         `
@@ -82,6 +86,22 @@ import { AuthService } from '@/shared/services/auth.service';
                     opacity: 0;
                 }
             }
+            .env-badge {
+                position: fixed;
+                bottom: 8px;
+                left: 8px;
+                z-index: 9999;
+                pointer-events: none;
+                padding: 4px 10px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 600;
+                font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                letter-spacing: 0.04em;
+                background: #facc15;
+                color: #1a1a1a;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            }
             @keyframes auth-splash-heartbeat {
                 0% {
                     transform: scale(1);
@@ -107,4 +127,7 @@ import { AuthService } from '@/shared/services/auth.service';
 })
 export class AppComponent {
     auth = inject(AuthService);
+
+    readonly firebaseProjectId = environment.firebase.projectId;
+    readonly showEnvBadge = !environment.production;
 }

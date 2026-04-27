@@ -52,7 +52,21 @@
       "Bash(gsutil rb *)",
       "Bash(gsutil iam *)",
       "Bash(gcloud firestore *)",
-      "Bash(tee /tmp/fifty-import-op.txt)"
+      "Bash(tee /tmp/fifty-import-op.txt)",
+      "Bash(git ls-tree *)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")",
+      "Bash(node -e ' *)",
+      "Bash(node *)",
+      "mcp__firebase__firestore_get_document",
+      "Bash(grep -E \"\\\\.ts$|routes|api\")",
+      "Bash(grep -n \"user\\\\$\\\\|isMember\\\\$\\\\|isAdmin\\\\$\" src/app/shared/services/auth.service.ts)",
+      "Bash(grep -rn \"user\\\\$\" src/app/shared/services/auth.service.ts)",
+      "Bash(grep -n \"user\\\\\\\\$\\\\|user_\" src/app/shared/services/auth.service.ts)",
+      "Bash(npm start *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4200/fiftyPlus/stats)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4200/main.js)",
+      "Bash(xargs sed *)"
     ]
   }
 }

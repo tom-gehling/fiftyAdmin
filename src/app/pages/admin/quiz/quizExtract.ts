@@ -81,7 +81,7 @@ export class QuizExtractComponent {
     selectedTab = '0';
     quizNum: string = '';
     inputText: string = '';
-    questions: { question: string; answer: string }[] = [];
+    questions: { question: string; answer: string; category?: string }[] = [];
     googleSheetId: string = '';
     googleTabName: string = 'Sheet1';
 
@@ -119,7 +119,7 @@ export class QuizExtractComponent {
         const tempEl = document.createElement('div');
         tempEl.innerHTML = htmlContent;
 
-        const rows: { question: string; answer: string }[] = [];
+        const rows: { question: string; answer: string; category?: string }[] = [];
 
         // Look for table rows
         tempEl.querySelectorAll('tr').forEach((tr) => {
@@ -127,11 +127,12 @@ export class QuizExtractComponent {
             if (tds.length >= 2) {
                 let questionHtml = this.stripInlineStyles(tds[0].innerHTML);
                 let answerHtml = this.stripInlineStyles(tds[1].innerHTML);
+                const categoryRaw = tds.length >= 3 ? this.stripInlineStyles(tds[2].innerHTML) : '';
 
                 questionHtml = this.convertPipesToList(questionHtml);
                 answerHtml = this.convertPipesToList(answerHtml);
 
-                rows.push({ question: questionHtml, answer: answerHtml });
+                rows.push({ question: questionHtml, answer: answerHtml, category: this.normaliseCategoryHtml(categoryRaw) });
             }
         });
 
@@ -139,12 +140,12 @@ export class QuizExtractComponent {
         if (!rows.length) {
             tempEl.childNodes.forEach((node) => {
                 if (node instanceof Element && (node.tagName === 'DIV' || node.tagName === 'P') && node.innerHTML.trim()) {
-                    let [q, a] = node.innerHTML.split('\t').map((html) => this.stripInlineStyles(html));
+                    let [q, a, cat] = node.innerHTML.split('\t').map((html) => this.stripInlineStyles(html));
 
                     q = this.convertPipesToList(q);
                     a = this.convertPipesToList(a);
 
-                    rows.push({ question: q || '', answer: a || '' });
+                    rows.push({ question: q || '', answer: a || '', category: this.normaliseCategoryHtml(cat || '') });
                 }
             });
         }
@@ -163,6 +164,13 @@ export class QuizExtractComponent {
         return temp.innerHTML.trim();
     }
 
+    private normaliseCategoryHtml(html: string): string {
+        if (!html) return '';
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        return (temp.textContent || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    }
+
     /**
      * Import questions from Excel file
      */
@@ -176,11 +184,12 @@ export class QuizExtractComponent {
             const workbook = XLSX.read(data, { type: 'array' });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            const jsonData: { question?: string; answer?: string }[] = XLSX.utils.sheet_to_json(worksheet);
+            const jsonData: { question?: string; answer?: string; category?: string }[] = XLSX.utils.sheet_to_json(worksheet);
 
             this.questions = jsonData.map((row) => ({
                 question: row.question || '',
-                answer: row.answer || ''
+                answer: row.answer || '',
+                category: (row.category || '').toUpperCase().replace(/\s+/g, ' ').trim()
             }));
         };
         reader.readAsArrayBuffer(file);
