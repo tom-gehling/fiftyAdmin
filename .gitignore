@@ -56,3 +56,6 @@ cors.json
 # Environment files with API keys
 src/environments/environment.ts
 src/environments/environment.prod.ts
+
+# Backfill script outputs
+scripts/category-data/

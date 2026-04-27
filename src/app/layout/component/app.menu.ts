@@ -71,6 +71,7 @@ export class AppMenu implements OnInit {
         const fiftyPlusMenu: MenuItem = {
             label: 'Fifty+ Quizzes',
             items: [
+                { label: 'My Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/stats'] },
                 { label: 'Archives', icon: 'pi pi-fw pi-book', routerLink: ['/fiftyPlus/archives'] },
                 { label: 'Exclusives', icon: 'pi pi-fw pi-star', routerLink: ['/fiftyPlus/exclusives'] },
                 { label: 'Collaborations', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/collabs'] },

@@ -96,11 +96,19 @@
                         <div *ngFor="let q of questions.controls; let i = index" [formGroupName]="i" cdkDrag>
                             <!-- Container with shadow -->
                             <div class="flex flex-row gap-3 items-center p-2 rounded-md shadow hover:shadow-lg transition-shadow bg-surface-0 dark:bg-surface-800">
-                                <!-- Left: Number and Flag -->
-                                <div cdkDragHandle class="w-10 flex justify-center items-center text-gray-600 dark:text-gray-300 cursor-move flex-shrink-0 relative gap-1">
+                                <!-- Left: Number (top) and Flag (bottom) -->
+                                <div cdkDragHandle class="w-10 self-stretch flex flex-col justify-between items-center text-gray-600 dark:text-gray-300 cursor-move flex-shrink-0 py-1">
                                     <span class="font-bold text-lg">Q{{ i + 1 }}.</span>
-                                    <i *ngIf="q.get('timeless')?.value" class="pi pi-flag-fill text-red-300"></i>
-                                    <!-- ✅ shows red flag -->
+                                    <button
+                                        type="button"
+                                        (click)="toggleFlag(i); $event.stopPropagation()"
+                                        class="p-0 bg-transparent border-0 cursor-pointer leading-none"
+                                        [attr.aria-label]="q.get('timeless')?.value ? 'Unflag as timeless' : 'Flag as timeless'"
+                                        [pTooltip]="q.get('timeless')?.value ? 'Timeless — click to unflag' : 'Flag as timeless'"
+                                        tooltipPosition="right"
+                                    >
+                                        <i class="pi pi-flag-fill" [ngClass]="q.get('timeless')?.value ? 'text-red-500' : 'text-gray-300 dark:text-gray-600'"></i>
+                                    </button>
                                 </div>
 
                                 <!-- Right: Editors -->
@@ -112,11 +120,17 @@
                                     <div class="flex-1 border border-gray-300 dark:border-gray-600 rounded-md p-1">
                                         <quill-editor formControlName="answer" [modules]="quillModules" style="width: 100%; height: 100%" theme="bubble"></quill-editor>
                                     </div>
-                                </div>
 
-                                <!-- SpeedDial -->
-                                <div class="justify-center">
-                                    <p-speeddial [model]="questionMenus[i]" direction="up" [buttonStyle]="{width: '1.5rem', height: '1.5rem'}" hideOnClickOutside="true"></p-speeddial>
+                                    <p-select
+                                        *ngIf="form.get('quizType')?.value == QuizTypeEnum.Weekly"
+                                        formControlName="category"
+                                        [options]="(categoryOptions$ | async) ?? []"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        appendTo="body"
+                                        placeholder="Category"
+                                        class="w-full sm:w-40 items-center [&_.p-select-label]:whitespace-normal! [&_.p-select-label]:overflow-visible! [&_.p-select-label]:text-clip!"
+                                    ></p-select>
                                 </div>
                             </div>
                         </div>
@@ -125,7 +139,7 @@
 
                 <!-- Color Scheme Tab -->
                 <p-tabpanel value="1">
-                    <div class="flex flex-col lg:flex-row gap-8 pt-4 items-start">
+                    <div class="flex flex-col lg:flex-row gap-8 pt-4 items-start lg:items-stretch">
                         <!-- Left: color pickers stacked vertically -->
                         <div class="flex flex-row lg:flex-col gap-8 w-full lg:w-1/2">
                             <div class="flex flex-col items-center gap-3">
@@ -196,8 +210,10 @@
                             </div>
                         </div>
                         <!-- Right: live quiz preview, scrollable but contained -->
-                        <div class="w-full mx-auto lg:w-1/2 overflow-y-auto overflow-x-hidden rounded-xl max-h-[calc(80vh-250px)]">
-                            <app-quiz-display *ngIf="themePreviewQuiz" [quiz]="themePreviewQuiz" [previewMode]="true" [locked]="true" />
+                        <div class="w-full mx-auto lg:w-1/2 lg:relative">
+                            <div class="overflow-y-auto overflow-x-hidden rounded-xl max-h-[calc(80vh-250px)] lg:max-h-none lg:absolute lg:inset-0">
+                                <app-quiz-display *ngIf="themePreviewQuiz" [quiz]="themePreviewQuiz" [previewMode]="true" [locked]="true" />
+                            </div>
                         </div>
                     </div>
                 </p-tabpanel>

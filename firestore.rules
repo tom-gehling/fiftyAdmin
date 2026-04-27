@@ -142,6 +142,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Config docs (e.g. quizCategories) — admin-only read, never client-writable
+    match /config/{id} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
     // Default deny everything else
     match /{document=**} {
       allow read, write: if false;

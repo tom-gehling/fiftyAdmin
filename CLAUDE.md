@@ -2,6 +2,24 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Product context
+
+**The Weekly Fifty** is an Australian quiz brand — core product is a weekly 50-question quiz, plus quiz nights in every AU state, a recent podcast, merch, and a paid Fifty+ member tier. Scale: ~20,000 weekly public quiz players, 15k Instagram, 200+ consecutive weeks, primary demo 18-35 with ~60% female skew.
+
+**Migration status**: a WordPress site currently serves the public weekly quiz (and fetches quiz data from this Angular site's Cloud Functions API). The roadmap is to retire WordPress and move *this* site to the primary URL. `/WPUpgrades/` holds the legacy WP HTML templates that need parity here before cutover. Key blockers: MemberPress→RevenueCat user migration, WooCommerce shop port, public-quiz UX parity (self-marking + team-photo submission), 301 redirect map, historical content import.
+
+**Brand voice**: social, trendy, cool — not corporate SaaS. Public-facing pages must carry that. Prioritise engagement/retention (the product is weekly; daily return is the gap) and revenue breadth (merch, events, B2B — not just subscriptions).
+
+**Stats are first-class.** Every feature must be designed with both an admin-facing analytics surface (insight Tom can act on) and a user-facing stats surface (numbers users return to check). Moving off WordPress to a fully-controlled stack is the chance to own the data layer end-to-end — instrumentation designed in is always richer than instrumentation bolted on. Analytics events, admin tile, and user-facing visualisation should land in the same PR as the feature, not a v2.
+
+**Aggregations live in BigQuery (active work on `BQconvert` branch)** — Firestore stays the OLTP layer; BigQuery is OLAP. Flat tables in `sql/bigquery/tables/`, stored procs in `sql/bigquery/procedures/`, deployment via `functions/scripts/deploy-bq.ts`. New stats features add a stored proc and expose via Cloud Functions API, not a Firestore counter doc (counters only for sub-second-fresh real-time needs).
+
+**Design is first-class.** Public surfaces must clear the bar set by `src/app/pages/public/home.ts` — motion-led, scroll-driven, on-brand. Two distinct palettes (defined at `src/assets/styles.scss:16-18`):
+- **Public** pages (home, weekly-quiz, find-a-venue, /join, /fiftyshop) → light/atmospheric. Use `--fifty-green: #677c73` (sage) + `--fifty-pink: #fbe2df` (soft pink).
+- **Fifty+ member area + admin** (`/fiftyPlus/*`) → dark mode (`app-dark` class via `LayoutService`). Use `--fifty-neon-green: #4cfbab` for accents (borders, dividers, badges, focus states) on near-black surfaces.
+
+Don't mix the two — the visual shift is part of the "you've earned the member space" experience. Never use raw Tailwind grays / PrimeNG defaults; always go through the tokens. Always honour `prefers-reduced-motion`. Run a deliberate design pass during the build, not as a polish step.
+
 ## Commands
 
 ```bash

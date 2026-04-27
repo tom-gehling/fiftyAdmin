@@ -21,6 +21,7 @@ import { ProfilePage } from '@/pages/profile/profile';
 // Protected pages
 import { Dashboard } from './app/pages/dashboard/dashboard';
 import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
+import { UserStatsComponent } from '@/pages/fiftyPlus/stats/userStats.component';
 
 // Admin pages
 import { TotalStats } from '@/pages/dashboard/totalStats';
@@ -96,6 +97,8 @@ export const appRoutes: Routes = [
 
             { path: 'fiftyPlus/questionQuizzes', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes', topbarColor: 'black' } },
             { path: 'fiftyPlus/questionQuizzes/:quizid', component: FiftyPageComponent, data: { type: 4, topbarColor: 'black' } },
+
+            { path: 'fiftyPlus/stats', component: UserStatsComponent, canActivate: [AuthGuard], data: { topbarColor: 'black' } },
 
             // ------------------------------
             // 🛠 ADMIN ROUTES
