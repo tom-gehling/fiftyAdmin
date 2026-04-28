@@ -22,8 +22,9 @@
   - **Skill:** use `memberpress-migrate` skill when starting.
 
 - [ ] **BigQuery merge** *(elevated to pre-ship 2026-04-27)*
-  - **What:** Merge `BQconvert` branch into `dev`, deploy BQ tables/procs to prod via `functions/scripts/deploy-bq.ts`, switch stats endpoints from Firestore counters to BQ-backed.
-  - **Where:** `BQconvert` branch (1 commit ahead of `dev`). `sql/bigquery/tables/`, `sql/bigquery/procedures/` (7 stored procs), `functions/src/index.ts` (BQ-backed endpoints already written).
+  - **What:** Wire each Firebase project to BigQuery (extensions + backfill + scheduled refresh), merge `BQconvert` → `dev` → `master`, deploy BQ tables/procs to dev then prod, switch stats endpoints from Firestore counters to BQ-backed.
+  - **Where:** `BQconvert` branch. `sql/bigquery/tables/`, `sql/bigquery/procedures/`, `functions/src/index.ts` (BQ-backed endpoints already written).
+  - **How:** Follow `sql/bigquery/SETUP.md` — browser-first walkthrough, dev first then prod. Locations: `us-central1` Cloud Functions, `US` BigQuery dataset (Firestore is `nam5`).
   - **Why gating:** Tom wants the analytics layer in place at launch, not bolted on after. Instrumentation designed in is richer than retro-fitted.
   - **Effort:** integration + verification. The build is done.
 

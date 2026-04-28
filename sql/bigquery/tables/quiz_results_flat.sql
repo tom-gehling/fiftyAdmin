@@ -3,13 +3,22 @@
 -- Source: extension-maintained view `quiz_results_raw_latest` (JSON data column).
 -- Refreshed by a scheduled query (see docs — every 5 minutes recommended).
 -- Rows with retro=true are excluded (they are hand-entered and skew stats).
+--
+-- quiz_type is denormalised from quizzes_flat so per-user procedures can
+-- group by Weekly / Fifty+ / Collab / Question without re-joining.
 
 CREATE OR REPLACE TABLE `weeklyfifty_analytics.quiz_results_flat`
 PARTITION BY DATE(started_at)
 CLUSTER BY quiz_id AS
+WITH quiz_type_lookup AS (
+    SELECT quiz_id, ANY_VALUE(quiz_type) AS quiz_type
+    FROM `weeklyfifty_analytics.quizzes_flat`
+    GROUP BY quiz_id
+)
 SELECT
     document_id                                               AS session_id,
     JSON_VALUE(data, '$.quizId')                              AS quiz_id,
+    qtl.quiz_type                                             AS quiz_type,
     JSON_VALUE(data, '$.userId')                              AS user_id,
     JSON_VALUE(data, '$.status')                              AS status,
     JSON_VALUE(data, '$.submittedFrom')                       AS submitted_from,
@@ -25,6 +34,8 @@ SELECT
     SAFE_CAST(JSON_VALUE(data, '$.retro')        AS BOOL)     AS is_retro,
     SAFE_CAST(JSON_VALUE(data, '$.wasAbandoned') AS BOOL)     AS was_abandoned,
     JSON_QUERY_ARRAY(data, '$.answers')                       AS answers_json
-FROM `weeklyfifty_analytics.quiz_results_raw_latest`
-WHERE operation != 'DELETE'
-  AND (JSON_VALUE(data, '$.retro') IS NULL OR JSON_VALUE(data, '$.retro') = 'false');
+FROM `weeklyfifty_analytics.quiz_results_raw_latest` AS r
+LEFT JOIN quiz_type_lookup AS qtl
+    ON qtl.quiz_id = JSON_VALUE(r.data, '$.quizId')
+WHERE r.operation != 'DELETE'
+  AND (JSON_VALUE(r.data, '$.retro') IS NULL OR JSON_VALUE(r.data, '$.retro') = 'false');
