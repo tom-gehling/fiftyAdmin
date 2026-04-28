@@ -8,8 +8,8 @@
 
 ## Critical path (must ship before cutover)
 
-- [ ] **301 SEO redirect map**
-  - **What:** Map every legacy WP URL (`/quiz/`, `/quiz/{slug}/`, `/archive/`, `/find-a-venue/`, etc.) → Angular routes.
+- [ ] **301 SEO redirect map** *(part of the domain cutover — full DNS/Hosting runbook in `~/.claude/plans/apart-of-the-roadmap-fluffy-simon.md`; high-level domain context in `context.md`)*
+  - **What:** Map every legacy WP URL (`/quiz/`, `/quiz/{slug}/`, `/archive/`, `/find-a-venue/`, etc.) → Angular routes. Shop URLs (`/shop/*`, `/cart`, `/checkout`, `/my-account`, `/product/*`) 301 to `shop.theweeklyfifty.com.au` (WP retains the shop).
   - **Where:** `firebase.json` `hosting.redirects` array (currently has SPA rewrites only — zero redirects).
   - **Why gating:** ~200 weeks of indexed pages would 404 on cutover day, killing organic traffic from ~20k weekly users.
   - **Effort:** hours, not days. Pull live WP sitemap, write the map, verify against staging before flipping DNS.

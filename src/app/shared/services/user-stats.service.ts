@@ -1,18 +1,53 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { Injectable, inject } from '@angular/core';
+import { Auth } from '@angular/fire/auth';
+import { from, Observable, of, throwError } from 'rxjs';
+import { delay, switchMap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 import { DailyGamesSummary, QuizDeepDive, QuizTypeBreakdown, QuizTypeKey, UserStatsResponse } from '@/shared/models/userStats.model';
 
 export type StatsFixture = 'realistic' | 'lowScorer' | 'newcomer';
 
 @Injectable({ providedIn: 'root' })
 export class UserStatsService {
+    private auth = inject(Auth);
+
     /**
-     * Returns mocked stats while the BigQuery + Cloud Function backend is on the BQconvert branch.
-     * Once /api/userStats/:userId ships, swap this for an HTTP call.
+     * Returns the current user's stats from BigQuery via /api/userStats/:userId.
+     * Pass a fixture key to bypass the network and return canned data (used by QA).
      */
-    getMyStats(fixture: StatsFixture = 'realistic'): Observable<UserStatsResponse> {
-        return of(buildFixture(fixture)).pipe(delay(450));
+    getMyStats(fixture?: StatsFixture | null): Observable<UserStatsResponse> {
+        if (fixture) {
+            return of(buildFixture(fixture)).pipe(delay(450));
+        }
+
+        const user = this.auth.currentUser;
+        if (!user) return throwError(() => new Error('Not authenticated'));
+
+        return from(user.getIdToken()).pipe(
+            switchMap(async (token) => {
+                const res = await fetch(`${environment.functionsBaseUrl}/api/userStats/${user.uid}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error(`userStats responded ${res.status}`);
+                return (await res.json()) as UserStatsResponse;
+            })
+        );
+    }
+
+    /** Lazy fetch of one quiz's deep-dive (called when the user changes the dropdown). */
+    getQuizDeepDive(quizId: number): Observable<QuizDeepDive> {
+        const user = this.auth.currentUser;
+        if (!user) return throwError(() => new Error('Not authenticated'));
+
+        return from(user.getIdToken()).pipe(
+            switchMap(async (token) => {
+                const res = await fetch(`${environment.functionsBaseUrl}/api/userQuizDeepDive/${user.uid}/${quizId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error(`userQuizDeepDive responded ${res.status}`);
+                return (await res.json()) as QuizDeepDive;
+            })
+        );
     }
 }
 
@@ -341,3 +376,6 @@ function lowScorerDailyGames(): DailyGamesSummary {
         ]
     };
 }
+
+// Suppress unused-import warning in TS strict mode for QuizTypeBreakdown (re-exported via UserStatsResponse).
+export type { QuizTypeBreakdown };

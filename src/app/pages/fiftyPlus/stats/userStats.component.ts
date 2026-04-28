@@ -127,9 +127,9 @@ export class UserStatsComponent implements OnInit, OnDestroy {
         this.sub.unsubscribe();
     }
 
-    private readFixtureFromQuery(): StatsFixture {
+    private readFixtureFromQuery(): StatsFixture | null {
         const v = this.route.snapshot.queryParamMap.get('fixture');
         if (v === 'lowScorer' || v === 'newcomer' || v === 'realistic') return v;
-        return 'realistic';
+        return null;
     }
 }

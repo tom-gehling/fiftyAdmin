@@ -13,12 +13,15 @@ CLUSTER BY quiz_id, question_id AS
 SELECT
     SAFE_CAST(JSON_VALUE(q.data, '$.quizId')   AS STRING) AS quiz_id,
     SAFE_CAST(JSON_VALUE(q.data, '$.quizType') AS INT64)  AS quiz_type,
-    JSON_VALUE(q.data, '$.title')                         AS quiz_title,
-    TIMESTAMP(JSON_VALUE(q.data, '$.deploymentDate'))     AS deployment_date,
-    SAFE_CAST(JSON_VALUE(question, '$.id')   AS INT64)    AS question_id,
+    JSON_VALUE(q.data, '$.quizTitle')                     AS quiz_title,
+    `weeklyfifty_analytics.fs_ts`(
+        JSON_VALUE(q.data, '$.deploymentDate'),
+        JSON_VALUE(q.data, '$.deploymentDate._seconds')
+    )                                                     AS deployment_date,
+    SAFE_CAST(JSON_VALUE(question, '$.questionId') AS INT64)     AS question_id,
     SAFE_CAST(JSON_VALUE(question, '$.questionNumber') AS INT64) AS question_number,
     UPPER(JSON_VALUE(question, '$.category'))             AS category,
-    JSON_VALUE(question, '$.questionText')                AS question_text
+    JSON_VALUE(question, '$.question')                    AS question_text
 FROM `weeklyfifty_analytics.quizzes_raw_latest` AS q,
     UNNEST(JSON_QUERY_ARRAY(q.data, '$.questions')) AS question
 WHERE q.operation != 'DELETE'

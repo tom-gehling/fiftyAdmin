@@ -22,9 +22,18 @@ SELECT
     JSON_VALUE(data, '$.userId')                              AS user_id,
     JSON_VALUE(data, '$.status')                              AS status,
     JSON_VALUE(data, '$.submittedFrom')                       AS submitted_from,
-    TIMESTAMP(JSON_VALUE(data, '$.startedAt'))                AS started_at,
-    TIMESTAMP(JSON_VALUE(data, '$.completedAt'))              AS completed_at,
-    TIMESTAMP(JSON_VALUE(data, '$.lastActivityAt'))           AS last_activity_at,
+    `weeklyfifty_analytics.fs_ts`(
+        JSON_VALUE(data, '$.startedAt'),
+        JSON_VALUE(data, '$.startedAt._seconds')
+    )                                                         AS started_at,
+    `weeklyfifty_analytics.fs_ts`(
+        JSON_VALUE(data, '$.completedAt'),
+        JSON_VALUE(data, '$.completedAt._seconds')
+    )                                                         AS completed_at,
+    `weeklyfifty_analytics.fs_ts`(
+        JSON_VALUE(data, '$.lastActivityAt'),
+        JSON_VALUE(data, '$.lastActivityAt._seconds')
+    )                                                         AS last_activity_at,
     SAFE_CAST(JSON_VALUE(data, '$.score') AS INT64)           AS score,
     SAFE_CAST(JSON_VALUE(data, '$.total') AS INT64)           AS total,
     JSON_VALUE(data, '$.geo.country')                         AS country,

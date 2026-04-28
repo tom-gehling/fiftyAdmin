@@ -49,13 +49,48 @@ function getGeoReader(): Promise<maxmind.Reader<maxmind.CityResponse> | null> {
 // ===============================
 // BigQuery client (shared, lazy singleton)
 // ===============================
-const BQ_LOCATION = 'australia-southeast1';
+const BQ_LOCATION = 'US';
 const BQ_DATASET = 'weeklyfifty_analytics';
 let bqClient: BigQuery | null = null;
 
 function getBigQuery(): BigQuery {
     if (!bqClient) bqClient = new BigQuery({ location: BQ_LOCATION });
     return bqClient;
+}
+
+// BQ returns TIMESTAMP cells as { value: 'iso-string' } in the JS client.
+// This helper normalises both that shape and any plain string back to ISO.
+function tsToIso(v: unknown): string | null {
+    if (v == null) return null;
+    if (typeof v === 'string') return v;
+    if (typeof v === 'object' && 'value' in (v as Record<string, unknown>)) {
+        return String((v as { value: string }).value);
+    }
+    return null;
+}
+
+// Verifies a Firebase ID token from the Authorization header. Returns true if
+// the token's uid matches expectedUid OR the user has isAdmin=true. Otherwise
+// writes a 401/403 response and returns false.
+async function requireUidOrAdmin(req: Request, res: Response, expectedUid: string): Promise<boolean> {
+    const authHeader = (req.headers.authorization ?? '').toString();
+    const match = authHeader.match(/^Bearer (.+)$/);
+    if (!match) {
+        res.status(401).json({ error: 'Missing bearer token' });
+        return false;
+    }
+    try {
+        const decoded = await admin.auth().verifyIdToken(match[1]);
+        if (decoded.uid === expectedUid) return true;
+        const userDoc = await db.collection('users').doc(decoded.uid).get();
+        if (userDoc.exists && userDoc.data()?.['isAdmin'] === true) return true;
+        res.status(403).json({ error: 'Forbidden' });
+        return false;
+    } catch (err) {
+        console.error('verifyIdToken failed:', err);
+        res.status(401).json({ error: 'Invalid token' });
+        return false;
+    }
 }
 
 async function lookupGeoFromIp(ip: string | null | undefined): Promise<GeoLocation | null> {
@@ -432,6 +467,205 @@ app.get('/api/allQuizSummaries', async (_req: Request, res: Response): Promise<v
         res.status(200).json({ summaries });
     } catch (error) {
         console.error('Error generating all quiz summaries:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ===============================
+// /api/userStats/:userId
+// Powers /fiftyPlus/stats. Fans out 9 BQ procs in parallel and assembles the
+// UserStatsResponse expected by src/app/shared/models/userStats.model.ts.
+// Auth: caller must be the same user OR an admin.
+// ===============================
+app.get('/api/userStats/:userId', async (req: Request, res: Response): Promise<void> => {
+    const userId = req.params.userId;
+    if (!(await requireUidOrAdmin(req, res, userId))) return;
+    try {
+        const bq = getBigQuery();
+        const call = (proc: string, params: Record<string, unknown> = {}) =>
+            bq
+                .query({
+                    query: `CALL \`${BQ_DATASET}.${proc}\`(${Object.keys(params)
+                        .map((k) => `@${k}`)
+                        .join(', ')})`,
+                    params: { user_id: userId, ...params },
+                    location: BQ_LOCATION
+                })
+                .then(([rows]) => rows as Record<string, unknown>[]);
+
+        const [summaryRows, historyRows, byTypeRows, categoryRows, timeRows, highlightRows, localRankRows, deepDiveRows, dailyGameRows] = await Promise.all([
+            call('sp_user_stats', { user_id: userId }),
+            call('sp_user_quiz_history', { user_id: userId }),
+            call('sp_user_quiz_type_breakdown', { user_id: userId }),
+            call('sp_user_category_stats', { user_id: userId }),
+            call('sp_user_time_patterns', { user_id: userId }),
+            call('sp_user_question_highlights', { user_id: userId }),
+            call('sp_user_local_rank', { user_id: userId }),
+            call('sp_user_recent_deep_dives', { user_id: userId, n: 5 }),
+            call('sp_user_daily_games', { user_id: userId }).catch(() => null) // proc not yet deployed
+        ]);
+
+        const s = (summaryRows[0] ?? {}) as Record<string, unknown>;
+        const summary = {
+            totalCompleted: Number(s.total_completed ?? 0),
+            totalQuestionsAnswered: Number(s.total_questions_answered ?? 0),
+            correctTotal: Number(s.correct_total ?? 0),
+            correctRate: Number(s.correct_rate ?? 0),
+            lifetimeScore: Number(s.lifetime_score ?? 0),
+            personalBestScore: Number(s.personal_best_score ?? 0),
+            personalBestQuizId: s.personal_best_quiz_id != null ? Number(s.personal_best_quiz_id) : null,
+            firstQuizCompletedAt: tsToIso(s.first_quiz_completed_at),
+            mostRecentQuizId: s.most_recent_quiz_id != null ? Number(s.most_recent_quiz_id) : null,
+            mostRecentScore: s.most_recent_score != null ? Number(s.most_recent_score) : null,
+            mostRecentCompletedAt: tsToIso(s.most_recent_completed_at),
+            weeklyStreak: Number(s.weekly_streak ?? 0),
+            longestWeeklyStreak: Number(s.longest_weekly_streak ?? 0),
+            totalWeeksPlayed: Number(s.total_weeks_played ?? 0),
+            improvement4wVsFirst4w: Number(s.improvement_4w_vs_first_4w ?? 0)
+        };
+
+        const history = historyRows.map((r) => ({
+            quizId: Number(r.quiz_id),
+            score: Number(r.score ?? 0),
+            total: Number(r.total ?? 0),
+            completedAt: tsToIso(r.completed_at) ?? '',
+            quizAvgScore: Number(r.quiz_avg_score ?? 0),
+            wasPersonalBestAtTime: Boolean(r.was_personal_best_at_time),
+            scoreVsAvg: Number(r.score_vs_avg ?? 0)
+        }));
+
+        const byQuizType = byTypeRows.map((r) => ({
+            type: String(r.type) as 'weekly' | 'fiftyPlus' | 'collab' | 'questionType',
+            label: String(r.label ?? ''),
+            completed: Number(r.completed ?? 0),
+            averageScore: Number(r.average_score ?? 0),
+            bestScore: Number(r.best_score ?? 0),
+            correctRate: Number(r.correct_rate ?? 0),
+            lastPlayedAt: tsToIso(r.last_played_at)
+        }));
+
+        const categories = categoryRows.map((r) => ({
+            category: String(r.category ?? ''),
+            attempts: Number(r.attempts ?? 0),
+            correct: Number(r.correct ?? 0),
+            correctRate: Number(r.correct_rate ?? 0),
+            correctRateVsGlobal: Number(r.correct_rate_vs_global ?? 0)
+        }));
+
+        const t = (timeRows[0] ?? {}) as Record<string, unknown>;
+        const timePatterns = {
+            mostCommonHour: Number(t.most_common_hour ?? 0),
+            mostCommonDow: Number(t.most_common_dow ?? 0),
+            hourBuckets: Array.isArray(t.hour_buckets) ? (t.hour_buckets as unknown[]).map((n) => Number(n)) : new Array(24).fill(0),
+            dowBuckets: Array.isArray(t.dow_buckets) ? (t.dow_buckets as unknown[]).map((n) => Number(n)) : new Array(7).fill(0),
+            fastestSeconds: t.fastest_seconds != null ? Number(t.fastest_seconds) : null,
+            slowestSeconds: t.slowest_seconds != null ? Number(t.slowest_seconds) : null,
+            averageSeconds: t.average_seconds != null ? Number(t.average_seconds) : null
+        };
+
+        const shapeHighlight = (r: Record<string, unknown>) => ({
+            quizId: Number(r.quiz_id),
+            questionId: String(r.question_id),
+            globalCorrectRate: Number(r.global_correct_rate ?? 0)
+        });
+        const highlights = {
+            hardGotRight: highlightRows.filter((r) => r.kind === 'hardGotRight').map(shapeHighlight),
+            easyGotWrong: highlightRows.filter((r) => r.kind === 'easyGotWrong').map(shapeHighlight)
+        };
+
+        const lr = (localRankRows[0] ?? {}) as Record<string, unknown>;
+        const localRank = {
+            city: lr.city != null ? String(lr.city) : null,
+            cityRank: lr.city_rank != null ? Number(lr.city_rank) : null,
+            cityTotalPlayers: lr.city_total_players != null ? Number(lr.city_total_players) : null,
+            cityAvgScore: lr.city_avg_score != null ? Number(lr.city_avg_score) : null,
+            country: lr.country != null ? String(lr.country) : null,
+            countryRank: lr.country_rank != null ? Number(lr.country_rank) : null,
+            countryTotalPlayers: lr.country_total_players != null ? Number(lr.country_total_players) : null
+        };
+
+        const shapeQuestion = (q: Record<string, unknown>) => ({
+            questionNumber: Number(q.question_number ?? 0),
+            questionId: String(q.question_id ?? ''),
+            globalCorrectRate: Number(q.global_correct_rate ?? 0),
+            userCorrect: Boolean(q.user_correct),
+            userAnswered: Boolean(q.user_answered)
+        });
+        const deepDives = deepDiveRows.map((r) => ({
+            quizId: Number(r.quiz_id),
+            quizLabel: String(r.quiz_label ?? ''),
+            quizType: String(r.quiz_type) as 'weekly' | 'fiftyPlus' | 'collab' | 'questionType',
+            completedAt: tsToIso(r.completed_at) ?? '',
+            userScore: Number(r.user_score ?? 0),
+            total: Number(r.total ?? 0),
+            avgScore: Number(r.avg_score ?? 0),
+            questions: Array.isArray(r.questions) ? (r.questions as Record<string, unknown>[]).map(shapeQuestion) : []
+        }));
+
+        let dailyGames: unknown = null;
+        if (dailyGameRows && dailyGameRows.length > 0) {
+            const dg = dailyGameRows[0] as Record<string, unknown>;
+            dailyGames = {
+                totalDaysPlayed: Number(dg.total_days_played ?? 0),
+                totalSolves: Number(dg.total_solves ?? 0),
+                activeStreak: Number(dg.active_streak ?? 0),
+                games: Array.isArray(dg.games) ? dg.games : []
+            };
+        }
+
+        res.status(200).json({ summary, history, categories, timePatterns, highlights, localRank, byQuizType, deepDives, dailyGames });
+    } catch (error) {
+        console.error('Error generating user stats:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ===============================
+// /api/userQuizDeepDive/:userId/:quizId
+// Lazy fetch for one deep-dive when the user changes the dropdown selection.
+// ===============================
+app.get('/api/userQuizDeepDive/:userId/:quizId', async (req: Request, res: Response): Promise<void> => {
+    const userId = req.params.userId;
+    const quizIdNum = Number(req.params.quizId);
+    if (!Number.isFinite(quizIdNum)) {
+        res.status(400).json({ error: 'Invalid quizId' });
+        return;
+    }
+    if (!(await requireUidOrAdmin(req, res, userId))) return;
+    try {
+        const bq = getBigQuery();
+        const [rows] = await bq.query({
+            query: `CALL \`${BQ_DATASET}.sp_user_quiz_deep_dive\`(@user_id, @quiz_id)`,
+            params: { user_id: userId, quiz_id: quizIdNum },
+            location: BQ_LOCATION
+        });
+
+        const r = (rows[0] ?? null) as Record<string, unknown> | null;
+        if (!r) {
+            res.status(404).json({ error: 'No deep-dive data for this user/quiz' });
+            return;
+        }
+
+        const shapeQuestion = (q: Record<string, unknown>) => ({
+            questionNumber: Number(q.question_number ?? 0),
+            questionId: String(q.question_id ?? ''),
+            globalCorrectRate: Number(q.global_correct_rate ?? 0),
+            userCorrect: Boolean(q.user_correct),
+            userAnswered: Boolean(q.user_answered)
+        });
+
+        res.status(200).json({
+            quizId: Number(r.quiz_id),
+            quizLabel: String(r.quiz_label ?? ''),
+            quizType: String(r.quiz_type) as 'weekly' | 'fiftyPlus' | 'collab' | 'questionType',
+            completedAt: tsToIso(r.completed_at) ?? '',
+            userScore: Number(r.user_score ?? 0),
+            total: Number(r.total ?? 0),
+            avgScore: Number(r.avg_score ?? 0),
+            questions: Array.isArray(r.questions) ? (r.questions as Record<string, unknown>[]).map(shapeQuestion) : []
+        });
+    } catch (error) {
+        console.error('Error generating quiz deep dive:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

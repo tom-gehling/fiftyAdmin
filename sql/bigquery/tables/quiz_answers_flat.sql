@@ -15,7 +15,18 @@ SELECT
     r.was_abandoned,
     SAFE_CAST(JSON_VALUE(a, '$.questionId') AS INT64) AS question_id,
     SAFE_CAST(JSON_VALUE(a, '$.correct')    AS BOOL)  AS is_correct,
-    TIMESTAMP(JSON_VALUE(a, '$.clickedAt'))           AS clicked_at,
+    -- Legacy WP-bridge writes `timestamp` (ISO string); newer Angular writes
+    -- `clickedAt` (Firestore Timestamp). COALESCE both so all rows populate.
+    COALESCE(
+        `weeklyfifty_analytics.fs_ts`(
+            JSON_VALUE(a, '$.clickedAt'),
+            JSON_VALUE(a, '$.clickedAt._seconds')
+        ),
+        `weeklyfifty_analytics.fs_ts`(
+            JSON_VALUE(a, '$.timestamp'),
+            JSON_VALUE(a, '$.timestamp._seconds')
+        )
+    )                                                 AS clicked_at,
     qf.category                                       AS category
 FROM `weeklyfifty_analytics.quiz_results_flat` AS r,
     UNNEST(r.answers_json) AS a

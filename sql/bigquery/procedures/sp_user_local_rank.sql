@@ -8,7 +8,7 @@
 
 CREATE OR REPLACE PROCEDURE `weeklyfifty_analytics.sp_user_local_rank`(IN target_user_id STRING)
 BEGIN
-    DECLARE window_start TIMESTAMP DEFAULT TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 12 WEEK);
+    DECLARE window_start TIMESTAMP DEFAULT TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 84 DAY);
 
     WITH window_sessions AS (
         SELECT

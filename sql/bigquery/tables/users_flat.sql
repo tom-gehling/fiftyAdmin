@@ -15,7 +15,10 @@ SELECT
     JSON_VALUE(data, '$.email')                                  AS email,
     JSON_VALUE(data, '$.displayName')                            AS display_name,
     JSON_VALUE(data, '$.photoUrl')                               AS photo_url,
-    TIMESTAMP(JSON_VALUE(data, '$.createdAt'))                   AS created_at,
+    `weeklyfifty_analytics.fs_ts`(
+        JSON_VALUE(data, '$.createdAt'),
+        JSON_VALUE(data, '$.createdAt._seconds')
+    )                                                            AS created_at,
     SAFE_CAST(JSON_VALUE(data, '$.isAdmin')      AS BOOL)        AS is_admin,
     SAFE_CAST(JSON_VALUE(data, '$.isMember')     AS BOOL)        AS is_member,
     SAFE_CAST(JSON_VALUE(data, '$.isAnon')       AS BOOL)        AS is_anon,
@@ -23,8 +26,14 @@ SELECT
     ARRAY_LENGTH(JSON_QUERY_ARRAY(data, '$.followers'))          AS followers_count,
     ARRAY_LENGTH(JSON_QUERY_ARRAY(data, '$.following'))          AS following_count,
     JSON_VALUE(data, '$.externalQuizId')                         AS external_quiz_id,
-    TIMESTAMP(JSON_VALUE(data, '$.lastLoginAt'))                 AS last_login_at,
-    TIMESTAMP(JSON_VALUE(data, '$.updatedAt'))                   AS updated_at,
+    `weeklyfifty_analytics.fs_ts`(
+        JSON_VALUE(data, '$.lastLoginAt'),
+        JSON_VALUE(data, '$.lastLoginAt._seconds')
+    )                                                            AS last_login_at,
+    `weeklyfifty_analytics.fs_ts`(
+        JSON_VALUE(data, '$.updatedAt'),
+        JSON_VALUE(data, '$.updatedAt._seconds')
+    )                                                            AS updated_at,
     SAFE_CAST(JSON_VALUE(data, '$.disableStats') AS BOOL)        AS disable_stats,
     JSON_VALUE(data, '$.defaultTeamName')                        AS default_team_name
 FROM `weeklyfifty_analytics.users_raw_latest`

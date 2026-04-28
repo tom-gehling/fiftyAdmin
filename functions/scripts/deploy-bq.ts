@@ -17,7 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const PROJECT_ID = process.env.BQ_PROJECT_ID || 'weeklyfifty-7617b';
-const LOCATION = process.env.BQ_LOCATION || 'australia-southeast1';
+const LOCATION = process.env.BQ_LOCATION || 'US';
 const SQL_ROOT = path.resolve(__dirname, '..', '..', 'sql', 'bigquery');
 
 async function runFile(bq: BigQuery, filePath: string): Promise<void> {
@@ -29,20 +29,31 @@ async function runFile(bq: BigQuery, filePath: string): Promise<void> {
     process.stdout.write(`ok\n`);
 }
 
-function sqlFilesIn(dir: string): string[] {
+// Tables have a dependency chain (CTAS joins) so order matters.
+// Procedures are independent — alphabetical is fine.
+const TABLE_ORDER = ['users_flat.sql', 'quizzes_flat.sql', 'quiz_results_flat.sql', 'quiz_answers_flat.sql'];
+
+// Procedures that reference tables not yet provisioned. Skipped until the source extension lands.
+const SKIP_PROCEDURES = new Set(['sp_user_daily_games.sql']);
+
+function sqlFilesIn(dir: string, opts: { ordered?: string[]; skip?: Set<string> } = {}): string[] {
     if (!fs.existsSync(dir)) return [];
-    return fs
-        .readdirSync(dir)
-        .filter((f) => f.endsWith('.sql'))
-        .sort()
-        .map((f) => path.join(dir, f));
+    const all = fs.readdirSync(dir).filter((f) => f.endsWith('.sql'));
+    const filtered = opts.skip ? all.filter((f) => !opts.skip!.has(f)) : all;
+    if (opts.ordered) {
+        const missing = filtered.filter((f) => !opts.ordered!.includes(f));
+        if (missing.length) throw new Error(`Unordered .sql files in ${dir}: ${missing.join(', ')}. Add them to TABLE_ORDER.`);
+        return opts.ordered.map((f) => path.join(dir, f));
+    }
+    return filtered.sort().map((f) => path.join(dir, f));
 }
 
 async function main(): Promise<void> {
     const bq = new BigQuery({ projectId: PROJECT_ID, location: LOCATION });
 
-    const tableFiles = sqlFilesIn(path.join(SQL_ROOT, 'tables'));
-    const procedureFiles = sqlFilesIn(path.join(SQL_ROOT, 'procedures'));
+    const udfFiles = sqlFilesIn(path.join(SQL_ROOT, 'udfs'));
+    const tableFiles = sqlFilesIn(path.join(SQL_ROOT, 'tables'), { ordered: TABLE_ORDER });
+    const procedureFiles = sqlFilesIn(path.join(SQL_ROOT, 'procedures'), { skip: SKIP_PROCEDURES });
 
     if (tableFiles.length === 0 && procedureFiles.length === 0) {
         console.error(`No .sql files found under ${SQL_ROOT}`);
@@ -50,6 +61,10 @@ async function main(): Promise<void> {
     }
 
     console.log(`Deploying to ${PROJECT_ID} (${LOCATION})`);
+    if (udfFiles.length > 0) {
+        console.log(`UDFs (${udfFiles.length}):`);
+        for (const f of udfFiles) await runFile(bq, f);
+    }
     console.log(`Tables (${tableFiles.length}):`);
     for (const f of tableFiles) await runFile(bq, f);
     console.log(`Procedures (${procedureFiles.length}):`);

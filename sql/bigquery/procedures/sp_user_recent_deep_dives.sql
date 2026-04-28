@@ -23,7 +23,9 @@ BEGIN
         LIMIT 50  -- safety bound; n still drives final slice below
     ),
     capped AS (
-        SELECT * FROM recent_quizzes ORDER BY completed_at DESC LIMIT n
+        SELECT *
+        FROM recent_quizzes
+        QUALIFY ROW_NUMBER() OVER (ORDER BY completed_at DESC) <= n
     ),
     quiz_avgs AS (
         SELECT
