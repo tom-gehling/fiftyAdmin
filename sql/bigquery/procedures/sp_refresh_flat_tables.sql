@@ -1,12 +1,35 @@
 -- sp_refresh_flat_tables
--- Rebuilds quizzes_flat, quiz_results_flat, and quiz_answers_flat from the
--- extension-maintained raw views. Order matters: results join to quizzes_flat
--- for quiz_type, and answers join to quizzes_flat for category.
+-- Rebuilds users_flat, quizzes_flat, quiz_results_flat, and quiz_answers_flat
+-- from the extension-maintained raw views. Order matters: results join to
+-- quizzes_flat for quiz_type, and answers join to quizzes_flat for category.
+-- users_flat is independent so it runs first.
 -- Schedule this every 5 minutes:
 --   CALL `weeklyfifty_analytics.sp_refresh_flat_tables`();
 
 CREATE OR REPLACE PROCEDURE `weeklyfifty_analytics.sp_refresh_flat_tables`()
 BEGIN
+    CREATE OR REPLACE TABLE `weeklyfifty_analytics.users_flat`
+    CLUSTER BY user_id AS
+    SELECT
+        document_id                                                  AS user_id,
+        JSON_VALUE(data, '$.email')                                  AS email,
+        JSON_VALUE(data, '$.displayName')                            AS display_name,
+        JSON_VALUE(data, '$.photoUrl')                               AS photo_url,
+        TIMESTAMP(JSON_VALUE(data, '$.createdAt'))                   AS created_at,
+        SAFE_CAST(JSON_VALUE(data, '$.isAdmin')      AS BOOL)        AS is_admin,
+        SAFE_CAST(JSON_VALUE(data, '$.isMember')     AS BOOL)        AS is_member,
+        SAFE_CAST(JSON_VALUE(data, '$.isAnon')       AS BOOL)        AS is_anon,
+        SAFE_CAST(JSON_VALUE(data, '$.loginCount')   AS INT64)       AS login_count,
+        ARRAY_LENGTH(JSON_QUERY_ARRAY(data, '$.followers'))          AS followers_count,
+        ARRAY_LENGTH(JSON_QUERY_ARRAY(data, '$.following'))          AS following_count,
+        JSON_VALUE(data, '$.externalQuizId')                         AS external_quiz_id,
+        TIMESTAMP(JSON_VALUE(data, '$.lastLoginAt'))                 AS last_login_at,
+        TIMESTAMP(JSON_VALUE(data, '$.updatedAt'))                   AS updated_at,
+        SAFE_CAST(JSON_VALUE(data, '$.disableStats') AS BOOL)        AS disable_stats,
+        JSON_VALUE(data, '$.defaultTeamName')                        AS default_team_name
+    FROM `weeklyfifty_analytics.users_raw_latest`
+    WHERE operation != 'DELETE';
+
     CREATE OR REPLACE TABLE `weeklyfifty_analytics.quizzes_flat`
     CLUSTER BY quiz_id, question_id AS
     SELECT

@@ -16,8 +16,11 @@ Do **dev** (`weeklyfifty-dev`) first, validate end-to-end, then repeat for **pro
 ## Constants (both projects)
 
 - Dataset ID: `weeklyfifty_analytics`
-- Extension instance A — collection `quizResults`, table prefix `quiz_results`
-- Extension instance B — collection `quizzes`, table prefix `quizzes`
+- Extension instance A — instance ID `firestore-bigquery-export-quizzes`, collection `quizzes`, table prefix `quizzes`
+- Extension instance B — instance ID `firestore-bigquery-export-users`, collection `users`, table prefix `users`
+- Extension instance C — instance ID `firestore-bigquery-export-quizresults`, collection `quizResults`, table prefix `quiz_results`
+
+> Instance ID is the label Firebase shows in the Extensions list. Naming each one after the collection makes it obvious which is which. Lowercase + hyphens only, ≤45 chars.
 
 ---
 
@@ -26,7 +29,7 @@ Do **dev** (`weeklyfifty-dev`) first, validate end-to-end, then repeat for **pro
 **Firebase Console** → switch to the target project (top-left switcher).
 
 - [ ] Build → **Extensions** — list any installed `firestore-bigquery-export` instances (none expected on first run).
-- [ ] Build → **Firestore** — confirm `quizResults` and `quizzes` collections exist.
+- [ ] Build → **Firestore** — confirm `quizzes`, `users`, and `quizResults` collections exist.
 
 Direct URLs:
 - Dev extensions: https://console.firebase.google.com/project/weeklyfifty-dev/extensions
@@ -35,7 +38,7 @@ Direct URLs:
 **BigQuery Console** → https://console.cloud.google.com/bigquery, switch project (top bar).
 
 - [ ] Expand the project in **Explorer** — note whether `weeklyfifty_analytics` exists.
-- [ ] If it exists, expand it and list which of these are present: `quiz_results_raw_latest`, `quiz_results_raw_changelog`, `quizzes_raw_latest`, `quizzes_raw_changelog`, `quiz_results_flat`, `quizzes_flat`, `quiz_answers_flat`.
+- [ ] If it exists, expand it and list which of these are present: `quizzes_raw_latest`, `quizzes_raw_changelog`, `users_raw_latest`, `users_raw_changelog`, `quiz_results_raw_latest`, `quiz_results_raw_changelog`, `quizzes_flat`, `users_flat`, `quiz_results_flat`, `quiz_answers_flat`.
 
 Outcomes:
 - Nothing exists → run all steps below.
@@ -44,22 +47,23 @@ Outcomes:
 
 ---
 
-## Step 1 — Install the two extension instances
+## Step 1 — Install the three extension instances
 
 Firebase Console → **Extensions** → **Explore Hub** → search **"Stream Firestore to BigQuery"** (publisher: Firebase) → **Install in Firebase console**.
 
 Pre-install: Firebase will require Blaze plan + enabling BigQuery API + granting IAM roles. Click through.
 
-### Instance A — `quizResults`
+### Instance A — `quizzes`
 
 | Field | Value |
 |---|---|
+| Instance ID | `firestore-bigquery-export-quizzes` |
 | Cloud Functions location | `us-central1` |
 | BigQuery Dataset location | `US` |
-| Collection path | `quizResults` |
+| Collection path | `quizzes` |
 | Enable Wildcard Column field with Parent Firestore Document IDs | `No` |
 | Dataset ID | `weeklyfifty_analytics` |
-| Table ID | `quiz_results` |
+| Table ID | `quizzes` |
 | BigQuery SQL table Time Partitioning option type | leave default (`NONE`) |
 | BigQuery Time Partitioning column name | blank |
 | Firestore document field name for BigQuery SQL Time Partitioning Field option | blank |
@@ -73,14 +77,23 @@ Pre-install: Firebase will require Blaze plan + enabling BigQuery API + granting
 
 Click **Install extension**. Wait for "Installed" badge (~2 min).
 
-### Instance B — `quizzes`
+### Instance B — `users`
 
 Click **Install another instance**. Same form, same values, **except**:
 
-- Collection path: `quizzes`
-- Table ID: `quizzes`
+- Instance ID: `firestore-bigquery-export-users`
+- Collection path: `users`
+- Table ID: `users`
 
-After both finish, BigQuery Explorer should show `weeklyfifty_analytics` with four objects: `quiz_results_raw_changelog`, `quiz_results_raw_latest`, `quizzes_raw_changelog`, `quizzes_raw_latest`.
+### Instance C — `quizResults`
+
+Click **Install another instance**. Same form, same values, **except**:
+
+- Instance ID: `firestore-bigquery-export-quizresults`
+- Collection path: `quizResults`
+- Table ID: `quiz_results`
+
+After all three finish, BigQuery Explorer should show `weeklyfifty_analytics` with six objects: `quizzes_raw_changelog`, `quizzes_raw_latest`, `users_raw_changelog`, `users_raw_latest`, `quiz_results_raw_changelog`, `quiz_results_raw_latest`.
 
 ---
 
@@ -88,35 +101,26 @@ After both finish, BigQuery Explorer should show `weeklyfifty_analytics` with fo
 
 The extension only captures *new* writes. To pull existing docs in:
 
-**Option A — in-console backfill (if available):** Firebase Console → Extensions → click the installed instance → look for a **Run backfill** button on the detail page. If it's there, run it for both instances and watch the Cloud Run job in **GCP Console → Cloud Run**.
+**Option A — in-console backfill (if available):** Firebase Console → Extensions → click each installed instance → look for a **Run backfill** button on the detail page. If it's there, run it for all three instances and watch the Cloud Run jobs in **GCP Console → Cloud Run**.
 
 **Option B — CLI (one-off):**
 
-```bash
-npx @firebaseextensions/fs-bq-import-collection \
-  --non-interactive \
-  --project=weeklyfifty-dev \
-  --source-collection-path=quizResults \
-  --dataset=weeklyfifty_analytics \
-  --table-name-prefix=quiz_results \
-  --dataset-location=US \
-  --multi-threaded=true
+> Note: `--non-interactive` requires *every* flag below. Missing any will error with `[ERROR] X is not specified.` The flag set here is the minimal working one — leave nothing out.
 
-npx @firebaseextensions/fs-bq-import-collection \
-  --non-interactive \
-  --project=weeklyfifty-dev \
-  --source-collection-path=quizzes \
-  --dataset=weeklyfifty_analytics \
-  --table-name-prefix=quizzes \
-  --dataset-location=US \
-  --multi-threaded=true
+```bash
+npx @firebaseextensions/fs-bq-import-collection --non-interactive --project=weeklyfifty-dev --big-query-project=weeklyfifty-dev --query-collection-group=false --source-collection-path=quizzes --dataset=weeklyfifty_analytics --table-name-prefix=quizzes --dataset-location=us --multi-threaded=true --use-new-snapshot-query-syntax=true
+
+npx @firebaseextensions/fs-bq-import-collection --non-interactive --project=weeklyfifty-dev --big-query-project=weeklyfifty-dev --query-collection-group=false --source-collection-path=users --dataset=weeklyfifty_analytics --table-name-prefix=users --dataset-location=us --multi-threaded=true --use-new-snapshot-query-syntax=true
+
+npx @firebaseextensions/fs-bq-import-collection --non-interactive --project=weeklyfifty-dev --big-query-project=weeklyfifty-dev --query-collection-group=false --source-collection-path=quizResults --dataset=weeklyfifty_analytics --table-name-prefix=quiz_results --dataset-location=us --multi-threaded=true --use-new-snapshot-query-syntax=true
 ```
 
 Verify in BigQuery Studio:
 
 ```sql
-SELECT COUNT(*) FROM `weeklyfifty_analytics.quiz_results_raw_latest`;
 SELECT COUNT(*) FROM `weeklyfifty_analytics.quizzes_raw_latest`;
+SELECT COUNT(*) FROM `weeklyfifty_analytics.users_raw_latest`;
+SELECT COUNT(*) FROM `weeklyfifty_analytics.quiz_results_raw_latest`;
 ```
 
 Prod backfill is large (200+ weeks × 20k weekly users) — run during a quiet window, expect minutes-to-hours. Can pass `--batch-size=300`.
@@ -125,12 +129,14 @@ Prod backfill is large (200+ weeks × 20k weekly users) — run during a quiet w
 
 ## Step 3 — Confirm `_raw_latest` views exist
 
-In BigQuery Explorer, expand `weeklyfifty_analytics`. All four expected:
+In BigQuery Explorer, expand `weeklyfifty_analytics`. All six expected:
 
-- `quiz_results_raw_changelog` (table)
-- `quiz_results_raw_latest` (view)
 - `quizzes_raw_changelog` (table)
 - `quizzes_raw_latest` (view)
+- `users_raw_changelog` (table)
+- `users_raw_latest` (view)
+- `quiz_results_raw_changelog` (table)
+- `quiz_results_raw_latest` (view)
 
 If a `_raw_latest` view is missing (older extension version), regenerate it:
 
@@ -139,10 +145,10 @@ npx @firebaseextensions/fs-bq-schema-views \
   --non-interactive \
   --project=weeklyfifty-dev \
   --dataset=weeklyfifty_analytics \
-  --table-name-prefix=quiz_results
+  --table-name-prefix=quizzes
 ```
 
-Repeat for `quizzes`.
+Repeat for `users` and `quiz_results`.
 
 ---
 
@@ -174,12 +180,13 @@ gcloud auth application-default login
 
 In BigQuery Studio → **Compose new query**, paste and run each in this order:
 
-1. `sql/bigquery/tables/quizzes_flat.sql`
-2. `sql/bigquery/tables/quiz_results_flat.sql`
-3. `sql/bigquery/tables/quiz_answers_flat.sql`
-4. All files in `sql/bigquery/procedures/` (any order — independent)
+1. `sql/bigquery/tables/users_flat.sql` (independent)
+2. `sql/bigquery/tables/quizzes_flat.sql`
+3. `sql/bigquery/tables/quiz_results_flat.sql` (joins quizzes_flat)
+4. `sql/bigquery/tables/quiz_answers_flat.sql` (joins both)
+5. All files in `sql/bigquery/procedures/` (any order — independent)
 
-After deploy, Explorer should show three flat tables and the procedures under **Routines**.
+After deploy, Explorer should show four flat tables (`users_flat`, `quizzes_flat`, `quiz_results_flat`, `quiz_answers_flat`) and the procedures under **Routines**.
 
 ---
 
@@ -215,8 +222,9 @@ In BigQuery Studio:
 
 ```sql
 -- Wait one 5-min cycle after Step 5, then:
-SELECT COUNT(*) FROM `weeklyfifty_analytics.quiz_results_flat`;
+SELECT COUNT(*) FROM `weeklyfifty_analytics.users_flat`;
 SELECT COUNT(*) FROM `weeklyfifty_analytics.quizzes_flat`;
+SELECT COUNT(*) FROM `weeklyfifty_analytics.quiz_results_flat`;
 SELECT COUNT(*) FROM `weeklyfifty_analytics.quiz_answers_flat`;
 
 -- Replace 123 with a real quizId for the project:
@@ -250,9 +258,12 @@ Switch project selector in both consoles to `weeklyfifty-7617b` and walk Steps 1
 
 ## Files referenced
 
-- `sql/bigquery/tables/*.sql` — flat-table DDL (sourced from extension `*_raw_latest` views)
+- `sql/bigquery/tables/users_flat.sql` — sourced from `users_raw_latest`, mirrors `AppUser` shape (`src/app/shared/models/user.model.ts`)
+- `sql/bigquery/tables/quizzes_flat.sql` — sourced from `quizzes_raw_latest`
+- `sql/bigquery/tables/quiz_results_flat.sql` — sourced from `quiz_results_raw_latest`, joins `quizzes_flat`
+- `sql/bigquery/tables/quiz_answers_flat.sql` — derived from `quiz_results_flat` × `quizzes_flat`
 - `sql/bigquery/procedures/*.sql` — quiz/user-stats stored procedures
-- `sql/bigquery/procedures/sp_refresh_flat_tables.sql` — called by the scheduled query
+- `sql/bigquery/procedures/sp_refresh_flat_tables.sql` — called by the scheduled query (rebuilds all four flat tables)
 - `functions/scripts/deploy-bq.ts` — `BQ_PROJECT_ID` / `BQ_LOCATION` env overrides
 - `functions/package.json` — `npm run deploy:bq`
 - `functions/src/index.ts` — runtime BigQuery endpoints (`/api/quizStats/:quizId` etc.)
