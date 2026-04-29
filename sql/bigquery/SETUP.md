@@ -12,13 +12,13 @@ Do **dev** (`weeklyfifty-dev`) first, validate end-to-end, then repeat for **pro
 | Extension Cloud Functions | `us-central1` |
 | BigQuery dataset | `US` (multi-region) |
 | BigQuery scheduled query | `US` |
-
+ 
 ## Constants (both projects)
 
 - Dataset ID: `weeklyfifty_analytics`
 - Extension instance A — instance ID `firestore-bigquery-export-quizzes`, collection `quizzes`, table prefix `quizzes`
 - Extension instance B — instance ID `firestore-bigquery-export-users`, collection `users`, table prefix `users`
-- Extension instance C — instance ID `firestore-bigquery-export-quizresults`, collection `quizResults`, table prefix `quiz_results`
+- Extension instance C — instance ID `firestore-bigquery-export`, collection `quizResults`, table prefix `quiz_results`
 
 > Instance ID is the label Firebase shows in the Extensions list. Naming each one after the collection makes it obvious which is which. Lowercase + hyphens only, ≤45 chars.
 
