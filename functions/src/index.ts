@@ -101,29 +101,17 @@ app.get('/api/getLatestCollabQuiz', async (req: Request, res: Response): Promise
 app.get('/api/getLatestCollabQuizByCollaborator', async (req: Request, res: Response): Promise<void> => {
   try {
     const collaboratorRaw = req.query.collaborator;
-    const collaboratorName = typeof collaboratorRaw === 'string' ? collaboratorRaw.trim() : '';
+    const quizSlug = typeof collaboratorRaw === 'string' ? collaboratorRaw.trim() : '';
 
-    if (!collaboratorName) {
+    if (!quizSlug) {
       res.status(400).json({ error: 'collaborator query parameter is required' });
-      return;
-    }
-
-    const collaboratorsSnap = await db.collection('collaborators').get();
-    const target = collaboratorName.toLowerCase();
-    const match = collaboratorsSnap.docs.find(d => {
-      const name = (d.data().name ?? '').toString().trim().toLowerCase();
-      return name === target;
-    });
-
-    if (!match) {
-      res.status(404).json({ message: 'Collaborator not found' });
       return;
     }
 
     const now = Timestamp.fromDate(new Date());
     const snapshot = await db.collection('quizzes')
       .where('quizType', '==', 3)
-      .where('collabId', '==', match.id)
+      .where('quizSlug', '==', quizSlug)
       .where('deploymentDate', '<=', now)
       .orderBy('deploymentDate', 'desc')
       .limit(1)

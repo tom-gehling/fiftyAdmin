@@ -5,9 +5,6 @@
     <title>The Weekly Fifty</title>
     <style>
       :root {
-        --tertiary: #4cfbab;
-        --secondary: #677c73;
-        --primary: #fbe2df !important;
         --font: Helvetica, Arial, sans-serif !important;
         --header: 25px !important;
         --normal: 22px !important;
@@ -44,78 +41,6 @@
         width: 100%;
         justify-content: center;
         margin-bottom: 30px;
-      }
-
-      .topContainer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .info-button {
-        background-color: var(--secondary) !important;
-        font-family: var(--font) !important;
-        font-size: var(--smaller) !important;
-        font-weight: 500 !important;
-        color: var(--primary) !important;
-        cursor: pointer !important;
-        padding: 15px !important;
-        padding-top: 1% !important;
-        padding-bottom: 1% !important;
-        vertical-align: centre !important;
-        text-align: left !important;
-        width: 100% !important;
-        height: 70% !important;
-        border: none !important;
-        outline: none !important;
-        transition: var(--transition) !important;
-        width: auto !important;
-        margin-right: 10px !important;
-        line-height: 130% !important;
-      }
-
-      .modal {
-        font-family: var(--font);
-        display: none;
-        position: fixed;
-        z-index: 1;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0, 0, 0, 0.8);
-      }
-
-      .modal-content {
-        background-color: white;
-        margin: 15% auto;
-        padding: 20px;
-        font-size: var(--smaller);
-        font-family: var(--font);
-        width: 80%;
-      }
-
-      .close {
-        color: #aaa;
-        float: right;
-        font-size: 38px;
-        font-weight: bold;
-      }
-
-      .close:hover,
-      .close:focus {
-        color: secondary;
-        text-decoration: none;
-        cursor: pointer;
-      }
-
-      .info {
-        text-align: center;
-        color: var(--secondary);
-        font-family: var(--font);
-        font-weight: 300 !important;
-        line-height: 200%;
       }
 
       .quizTitle {
@@ -292,44 +217,6 @@
           year: 'numeric',
           timeZone: 'Australia/Adelaide'
         }).format(new Date(dateString));
-      }
-
-      function createTopContainer() {
-        var quizElement = document.getElementById("load");
-        var topContainerDiv = document.createElement("div");
-        topContainerDiv.className = "topContainer";
-
-        var infoButton = document.createElement("button");
-        infoButton.className = "info-button";
-        infoButton.id = "infoBtn";
-        infoButton.innerHTML = "︎First timers<br /><b>click me!</b>";
-        infoButton.onclick = function () {
-          modal.style.display = "block";
-        };
-
-        var modalDiv = document.createElement("div");
-        modalDiv.id = "infoModal";
-        modalDiv.className = "modal";
-
-        var modalContentDiv = document.createElement("div");
-        modalContentDiv.className = "modal-content";
-
-        var closeButton = document.createElement("span");
-        closeButton.className = "close";
-        closeButton.innerHTML = "&times;";
-
-        var infoParagraph = document.createElement("p");
-        infoParagraph.className = "info";
-        infoParagraph.innerHTML =
-          "Welcome to the Fifty. <br> First time? Easy. <br> <br> Once you've settled on your answer, click on the question to see if you're correct. Mark accordingly. <br> <br> If you don’t want your answers straight away, no stress. There’s a 'gimme the answers' button down below. Just have a notepad handy, and scroll gently. <br> <br> Happy quizzing! <br> All our love, <br> The Weekly Fifty xx";
-
-        modalContentDiv.appendChild(closeButton);
-        modalContentDiv.appendChild(infoParagraph);
-        modalDiv.appendChild(modalContentDiv);
-
-        topContainerDiv.appendChild(infoButton);
-        topContainerDiv.appendChild(modalDiv);
-        quizElement.appendChild(topContainerDiv);
       }
 
       function createNotesAbove() {
@@ -702,7 +589,6 @@
         correctClicked = Array(quizzes.length * 50).fill(false);
         incorrectClicked = Array(quizzes.length * 50).fill(false);
         dotStatus = Array(quizzes.length * 50).fill("block");
-        createTopContainer();
         createTitle();
         createNotesAbove();
         createQuizContainers();
@@ -722,7 +608,6 @@
             buttons.push(buttonPair);
           }
         }
-        wireModalControls();
       }
 
       function getSlugFromUrl() {
@@ -730,11 +615,26 @@
         return parts[parts.length - 1];
       }
 
+      const THEME_FALLBACK = {
+        fontColor: "#fbe2df",
+        backgroundColor: "#677c73",
+        tertiaryColor: "#4cfbab",
+      };
+
+      function applyTheme() {
+        const theme = quizzes[0]?.theme || {};
+        const root = document.documentElement;
+        root.style.setProperty("--primary", theme.fontColor || THEME_FALLBACK.fontColor, "important");
+        root.style.setProperty("--secondary", theme.backgroundColor || THEME_FALLBACK.backgroundColor, "important");
+        root.style.setProperty("--tertiary", theme.tertiaryColor || THEME_FALLBACK.tertiaryColor, "important");
+      }
+
       async function fetchQuizByCollaborator() {
         const slug = getSlugFromUrl();
         if (!slug) {
           document.getElementById("load").innerText =
             "No collaborator specified.";
+          applyTheme();
           return;
         }
         try {
@@ -746,6 +646,7 @@
           if (response.status === 404) {
             document.getElementById("load").innerText =
               "No quiz available yet for this collaborator. Check back soon!";
+            applyTheme();
             return;
           }
           if (!response.ok) throw new Error("Network response was not ok");
@@ -757,27 +658,14 @@
           scoreCount = Array(quizzes.length).fill(0);
           totalCount = Array(quizzes.length).fill(0);
 
+          applyTheme();
           initPage();
         } catch (error) {
           console.error("Error fetching collab quiz:", error);
           document.getElementById("load").innerText =
             "Failed to load quiz. Please try again later.";
+          applyTheme();
         }
-      }
-
-      function wireModalControls() {
-        modal = document.getElementById("infoModal");
-        var span = document.getElementsByClassName("close")[0];
-        if (span) {
-          span.onclick = function () {
-            modal.style.display = "none";
-          };
-        }
-        window.onclick = function (event) {
-          if (event.target == modal) {
-            modal.style.display = "none";
-          }
-        };
       }
 
       var answerTimestamps = {};
@@ -789,7 +677,6 @@
       var dotStatus = [];
       var scoreCount = [];
       var totalCount = [];
-      var modal = null;
 
       fetchQuizByCollaborator();
     </script>

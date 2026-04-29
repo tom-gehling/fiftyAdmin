@@ -26,7 +26,10 @@
       "Bash(node -e \"const s = require\\('./node_modules/stripe/package.json'\\); console.log\\(s.version\\)\")",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.npmjs.com)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(curl -sw \"\\\\nHTTP %{http_code}\\\\n\" 'https://weeklyfifty-7617b.web.app/api/getLatestCollabQuizByCollaborator' -o /dev/null --max-time 15)",
+      "Bash(curl -sw \"\\\\nHTTP %{http_code}\\\\n\" 'https://weeklyfifty-7617b.web.app/api/getLatestCollabQuizByCollaborator?collaborator=__nonexistent__' --max-time 15)",
+      "Bash(gcloud logging *)"
     ]
   }
 }
