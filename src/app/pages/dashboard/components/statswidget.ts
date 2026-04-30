@@ -100,20 +100,12 @@ import { VenueService } from '@/shared/services/venue.service';
             <div class="card mb-0 p-4 fiftyBorder flex flex-wrap items-center gap-2" style="background: rgb(40, 40, 40); border-radius: 1rem;">
                 <span class="text-white font-bold uppercase text-sm mr-2">Admin</span>
                 <a
-                    routerLink="/fiftyPlus/admin/stats/weekly"
+                    routerLink="/fiftyPlus/admin/stats"
                     class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-sm font-medium no-underline transition-opacity hover:opacity-80"
                     style="background: rgba(76, 251, 171, 0.15); color: var(--fifty-neon-green); border: 1px solid var(--fifty-neon-green);"
                 >
                     <i class="pi pi-chart-line text-xs"></i>
-                    <span>Quiz Stats</span>
-                </a>
-                <a
-                    routerLink="/fiftyPlus/admin/stats/total"
-                    class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-sm font-medium no-underline transition-opacity hover:opacity-80"
-                    style="background: rgba(76, 251, 171, 0.15); color: var(--fifty-neon-green); border: 1px solid var(--fifty-neon-green);"
-                >
-                    <i class="pi pi-chart-line text-xs"></i>
-                    <span>Location Stats</span>
+                    <span>Stats</span>
                 </a>
                 <a
                     routerLink="/fiftyPlus/admin/quizTags"

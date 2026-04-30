@@ -1,7 +1,7 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuizzesService } from '@/shared/services/quizzes.service';
-import { QuizStatsService } from '@/shared/services/quiz-stats.service';
+import { QuizStatsService, QuizLocationStats } from '@/shared/services/quiz-stats.service';
 import { Quiz } from '@/shared/models/quiz.model';
 import { Firestore, collection, collectionData, query, where } from '@angular/fire/firestore';
 import { firstValueFrom, Subscription } from 'rxjs';
@@ -13,17 +13,48 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { SelectModule } from 'primeng/select';
 import { QuizResultsService } from '@/shared/services/quiz-result.service';
 
-import type { TooltipItem } from 'chart.js';
+import { Chart, registerables, type TooltipItem } from 'chart.js';
+import { ChoroplethController, BubbleMapController, GeoFeature, ColorScale, ProjectionScale, SizeScale } from 'chartjs-chart-geo';
 import { DatePickerModule } from 'primeng/datepicker';
 import { TooltipModule } from 'primeng/tooltip';
 
+Chart.register(...registerables, ChoroplethController, BubbleMapController, GeoFeature, ColorScale, ProjectionScale, SizeScale);
+
 declare const google: any;
+
+interface WeeklyQuizStat {
+    quizId: string;
+    completedCount: number;
+    averageScore: number;
+}
 
 @Component({
     standalone: true,
     selector: 'app-quiz-stats-summary',
     imports: [CommonModule, FormsModule, ChartModule, SelectModule, ProgressBarModule, DatePickerModule, TooltipModule],
     template: `
+        <!-- WEEKLY QUIZ PERFORMANCE (cross-quiz overview) -->
+        <div class="card mb-4 p-4 fiftyBorder w-full">
+            <div class="flex justify-between items-center mb-2">
+                <span class="block text-surface-0 font-medium text-xl">Weekly Quiz Performance</span>
+            </div>
+
+            <ng-container *ngIf="loadingWeeklyOverview; else overviewChart">
+                <div class="flex justify-center items-center h-72">
+                    <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
+                </div>
+            </ng-container>
+
+            <ng-template #overviewChart>
+                <ng-container *ngIf="weeklyStats.length > 0; else noOverview">
+                    <p-chart type="bar" [data]="weeklyChartData" [options]="weeklyChartOptions" class="w-full h-96"></p-chart>
+                </ng-container>
+                <ng-template #noOverview>
+                    <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-72">No weekly quiz data available.</div>
+                </ng-template>
+            </ng-template>
+        </div>
+
         <div class="mb-2 flex items-center">
             <!-- Left spacer -->
             <div class="flex-1 flex justify-start hidden md:flex">
@@ -214,15 +245,117 @@ declare const google: any;
     </ng-container>
   </div>
 </div> -->
+
+        <!-- LOCATION ANALYTICS -->
+        <div class="card mb-4 p-4 fiftyBorder w-full">
+            <div class="mb-4">
+                <span class="block text-surface-0 font-medium text-xl mb-1">Location Analytics</span>
+                <span class="block text-surface-400 text-sm">Geographic breakdown for {{ getQuizName() || 'the selected quiz' }}</span>
+            </div>
+
+            <ng-container *ngIf="loadingLocationStats">
+                <div class="flex justify-center items-center h-72">
+                    <i class="pi pi-spin pi-spinner text-3xl text-gray-400"></i>
+                </div>
+            </ng-container>
+
+            <ng-container *ngIf="!loadingLocationStats && selectedQuizId && locationStats">
+                <ng-container *ngIf="locationStats.totalResults > 0; else noLocationData">
+                    <div class="mb-3 text-surface-600 dark:text-surface-400">
+                        <p class="text-sm">
+                            Total results analyzed: <strong>{{ locationStats.totalResults }}</strong>
+                        </p>
+                        <p class="text-sm">
+                            Countries: <strong>{{ locationStats.countries.length }}</strong> | Cities: <strong>{{ locationStats.cities.length }}</strong>
+                        </p>
+                    </div>
+
+                    <!-- World Map - Countries with Submissions -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Quiz Submissions by Country</h3>
+                        <div class="w-full h-96 relative">
+                            <canvas #worldMapCanvas></canvas>
+                        </div>
+                    </div>
+
+                    <!-- City Distribution -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Top Cities</h3>
+                        <p-chart type="bar" [data]="cityChartData" [options]="cityChartOptions" class="w-full h-80"></p-chart>
+                    </div>
+
+                    <!-- Performance by Location -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Performance by Country</h3>
+                        <p-chart type="bar" [data]="performanceChartData" [options]="performanceChartOptions" class="w-full h-80"></p-chart>
+                    </div>
+
+                    <!-- Map Data (Simple List) -->
+                    <div class="mb-4">
+                        <h3 class="text-lg font-medium text-surface-700 dark:text-surface-200 mb-3">Geographic Distribution</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-surface-100 dark:bg-surface-700">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Country</th>
+                                        <th class="px-4 py-2 text-right">Completions</th>
+                                        <th class="px-4 py-2 text-right">Avg Score</th>
+                                        <th class="px-4 py-2 text-right">Avg Time</th>
+                                        <th class="px-4 py-2 text-center">Coordinates</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let country of locationStats.countries.slice(0, 15); let i = index" [class.bg-surface-50]="i % 2 === 0" [class.dark:bg-surface-800]="i % 2 === 0">
+                                        <td class="px-4 py-2">{{ country.name }}</td>
+                                        <td class="px-4 py-2 text-right">{{ country.count }}</td>
+                                        <td class="px-4 py-2 text-right">{{ country.averageScore.toFixed(2) }}</td>
+                                        <td class="px-4 py-2 text-right">{{ country.averageTime.toFixed(0) }}s</td>
+                                        <td class="px-4 py-2 text-center text-xs text-surface-500">
+                                            <span *ngIf="country.latitude && country.longitude"> {{ country.latitude.toFixed(2) }}, {{ country.longitude.toFixed(2) }} </span>
+                                            <span *ngIf="!country.latitude || !country.longitude">-</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </ng-container>
+
+                <ng-template #noLocationData>
+                    <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-72">No location data available for Quiz #{{ selectedQuizId }}.</div>
+                </ng-template>
+            </ng-container>
+
+            <ng-container *ngIf="!loadingLocationStats && !selectedQuizId">
+                <div class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center h-48">Select a quiz above to view location analytics.</div>
+            </ng-container>
+        </div>
     `
 })
 export class QuizStatsSummaryComponent implements OnInit, OnDestroy {
+    @ViewChild('worldMapCanvas', { static: false }) worldMapCanvas!: ElementRef<HTMLCanvasElement>;
+
     currentQuiz?: Quiz;
     selectedQuizId?: string;
     stats: any;
     loading = true;
     averageTimeHHMMSS = '';
     refreshing = false;
+
+    // Cross-quiz overview
+    weeklyStats: WeeklyQuizStat[] = [];
+    loadingWeeklyOverview = true;
+    weeklyChartData: any;
+    weeklyChartOptions: any;
+
+    // Location analytics
+    locationStats: QuizLocationStats | null = null;
+    loadingLocationStats = false;
+    worldMapChart: Chart | null = null;
+    cityChartData: any;
+    cityChartOptions: any;
+    performanceChartData: any;
+    performanceChartOptions: any;
 
     liveViewerCount = 0;
     private liveSub?: Subscription;
@@ -296,11 +429,17 @@ export class QuizStatsSummaryComponent implements OnInit, OnDestroy {
 
         setTimeout(() => this.drawGeoChart(), 800);
         this.loading = false;
+
+        // Cross-quiz overview + per-quiz location analytics run independently of the
+        // primary stats spinner so the page is interactive while they finish.
+        this.loadWeeklyOverview();
+        if (this.selectedQuizId) this.loadLocationStats(this.selectedQuizId);
     }
 
     ngOnDestroy() {
         this.liveSub?.unsubscribe();
         if (this.liveRefreshTimer) clearInterval(this.liveRefreshTimer);
+        this.worldMapChart?.destroy();
     }
 
     /**
@@ -648,5 +787,287 @@ export class QuizStatsSummaryComponent implements OnInit, OnDestroy {
         this.loadStats(this.selectedQuizId).finally(() => {
             this.refreshing = false;
         });
+        this.loadLocationStats(this.selectedQuizId);
+    }
+
+    private async loadWeeklyOverview() {
+        this.loadingWeeklyOverview = true;
+        try {
+            const sortedIds = (await this.quizStatsService.getAllQuizAggregateIds())
+                .map((id) => parseInt(id, 10))
+                .filter((id) => !isNaN(id))
+                .sort((a, b) => b - a);
+
+            const results = await Promise.all(
+                sortedIds.map(async (quizId) => {
+                    const aggregate = await this.quizStatsService.getQuizAggregatesFirestore(String(quizId));
+                    if (!aggregate) return null;
+                    const completedCount = aggregate.completedCount || 0;
+                    const totalScore = aggregate.totalScore || 0;
+                    return {
+                        quizId: String(quizId),
+                        completedCount,
+                        averageScore: completedCount > 0 ? totalScore / completedCount : 0
+                    } as WeeklyQuizStat;
+                })
+            );
+
+            this.weeklyStats = results.filter((s): s is WeeklyQuizStat => s !== null && s.completedCount > 0).slice(0, 20);
+            this.initWeeklyOverviewChart();
+        } catch (error) {
+            console.error('Error loading weekly overview:', error);
+        } finally {
+            this.loadingWeeklyOverview = false;
+        }
+    }
+
+    private initWeeklyOverviewChart() {
+        const documentStyle = getComputedStyle(document.documentElement);
+        const textColor = documentStyle.getPropertyValue('--text-color');
+        const borderColor = documentStyle.getPropertyValue('--surface-border');
+        const primaryColor = documentStyle.getPropertyValue('--p-primary-500');
+
+        const sortedStats = [...this.weeklyStats].sort((a, b) => parseInt(a.quizId) - parseInt(b.quizId));
+        const labels = sortedStats.map((stat) => `Quiz #${stat.quizId}`);
+
+        this.weeklyChartData = {
+            labels,
+            datasets: [
+                {
+                    label: 'Completed Sessions',
+                    data: sortedStats.map((s) => s.completedCount),
+                    backgroundColor: primaryColor,
+                    borderColor: primaryColor,
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Average Score',
+                    data: sortedStats.map((s) => s.averageScore),
+                    type: 'line',
+                    borderColor: '#fbe2df',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#fbe2df',
+                    yAxisID: 'y1',
+                    tension: 0.3
+                }
+            ]
+        };
+
+        this.weeklyChartOptions = {
+            maintainAspectRatio: false,
+            responsive: true,
+            interaction: { mode: 'index' as const, intersect: false },
+            plugins: {
+                legend: { display: true, labels: { color: textColor } },
+                tooltip: {
+                    callbacks: {
+                        label: (context: any) => (context.datasetIndex === 0 ? `Completed Sessions: ${context.parsed.y}` : `Average Score: ${context.parsed.y.toFixed(2)}`)
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Weekly Quiz', color: textColor },
+                    ticks: { color: textColor },
+                    grid: { color: borderColor }
+                },
+                y: {
+                    type: 'linear' as const,
+                    display: true,
+                    position: 'left' as const,
+                    title: { display: true, text: 'Completed Sessions', color: textColor },
+                    ticks: { color: textColor, beginAtZero: true },
+                    grid: { color: borderColor }
+                },
+                y1: {
+                    type: 'linear' as const,
+                    display: true,
+                    position: 'right' as const,
+                    title: { display: true, text: 'Average Score', color: textColor },
+                    ticks: { color: textColor, beginAtZero: true },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        };
+    }
+
+    async loadLocationStats(quizId: string) {
+        this.loadingLocationStats = true;
+        try {
+            this.locationStats = await this.quizStatsService.getQuizLocationStats(quizId);
+            if (this.locationStats && this.locationStats.totalResults > 0) {
+                this.initLocationCharts();
+            }
+        } catch (error) {
+            console.error('Error loading location stats:', error);
+        } finally {
+            this.loadingLocationStats = false;
+        }
+    }
+
+    private initLocationCharts() {
+        if (!this.locationStats) return;
+
+        const documentStyle = getComputedStyle(document.documentElement);
+        const textColor = documentStyle.getPropertyValue('--text-color');
+        const borderColor = documentStyle.getPropertyValue('--surface-border');
+
+        // World map needs the canvas to be in the DOM after the *ngIf flips.
+        setTimeout(() => this.initWorldMap(), 100);
+
+        const topCities = this.locationStats.cities.slice(0, 10);
+        this.cityChartData = {
+            labels: topCities.map((c) => c.name),
+            datasets: [
+                {
+                    label: 'Completions by City',
+                    data: topCities.map((c) => c.count),
+                    backgroundColor: '#4cfbab',
+                    borderColor: '#4cfbab',
+                    borderWidth: 1
+                }
+            ]
+        };
+
+        this.cityChartOptions = {
+            maintainAspectRatio: false,
+            responsive: true,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (context: any) => `${context.parsed.x} completions`
+                    }
+                }
+            },
+            scales: {
+                x: { ticks: { color: textColor, beginAtZero: true }, grid: { color: borderColor } },
+                y: { ticks: { color: textColor }, grid: { color: borderColor } }
+            }
+        };
+
+        const topPerformance = this.locationStats.countries.slice(0, 8);
+        this.performanceChartData = {
+            labels: topPerformance.map((c) => c.name),
+            datasets: [
+                {
+                    label: 'Average Score',
+                    data: topPerformance.map((c) => c.averageScore.toFixed(2)),
+                    backgroundColor: '#4cfbab',
+                    borderColor: '#4cfbab',
+                    borderWidth: 2,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Avg Time (seconds)',
+                    data: topPerformance.map((c) => c.averageTime.toFixed(0)),
+                    backgroundColor: '#fbe2df',
+                    borderColor: '#fbe2df',
+                    borderWidth: 2,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+
+        this.performanceChartOptions = {
+            maintainAspectRatio: false,
+            responsive: true,
+            interaction: { mode: 'index' as const, intersect: false },
+            plugins: {
+                legend: { display: true, labels: { color: textColor } }
+            },
+            scales: {
+                x: { ticks: { color: textColor }, grid: { color: borderColor } },
+                y: {
+                    type: 'linear' as const,
+                    display: true,
+                    position: 'left' as const,
+                    title: { display: true, text: 'Average Score', color: textColor },
+                    ticks: { color: textColor, beginAtZero: true },
+                    grid: { color: borderColor }
+                },
+                y1: {
+                    type: 'linear' as const,
+                    display: true,
+                    position: 'right' as const,
+                    title: { display: true, text: 'Avg Time (seconds)', color: textColor },
+                    ticks: { color: textColor, beginAtZero: true },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        };
+    }
+
+    private async initWorldMap() {
+        if (!this.worldMapCanvas || !this.locationStats) return;
+
+        if (this.worldMapChart) {
+            this.worldMapChart.destroy();
+        }
+
+        try {
+            const response = await fetch('https://unpkg.com/world-atlas@2/countries-110m.json');
+            const worldData = await response.json();
+
+            const topojson = await import('topojson-client');
+            const countries: any = topojson.feature(worldData, worldData.objects.countries);
+
+            const countryMap = new Map(this.locationStats.countries.map((c) => [c.name.toLowerCase(), c.count]));
+
+            const chartData = countries.features.map((feature: any) => {
+                const countryName = feature.properties.name?.toLowerCase() || '';
+                return { feature, value: countryMap.get(countryName) || 0 };
+            });
+
+            const ctx = this.worldMapCanvas.nativeElement.getContext('2d');
+            if (!ctx) return;
+
+            const neonGreen = getComputedStyle(document.documentElement).getPropertyValue('--p-primary-500') || '#00ff87';
+
+            this.worldMapChart = new Chart(ctx, {
+                type: 'choropleth',
+                data: {
+                    labels: countries.features.map((f: any) => f.properties.name),
+                    datasets: [
+                        {
+                            label: 'Quiz Completions',
+                            outline: countries.features,
+                            data: chartData,
+                            backgroundColor: (context: any) => {
+                                const value = context.raw?.value || 0;
+                                return value > 0 ? neonGreen : 'rgba(200, 200, 200, 0.3)';
+                            },
+                            borderColor: '#666',
+                            borderWidth: 0.5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context: any) => {
+                                    const value = context.raw?.value || 0;
+                                    return value > 0 ? `${value} completions` : 'No submissions';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        projection: { axis: 'x', projection: 'equalEarth' }
+                    }
+                } as any
+            } as any);
+        } catch (error) {
+            console.error('Error initializing world map:', error);
+        }
     }
 }
