@@ -22,6 +22,13 @@ export class StorageService {
         return runInInjectionContext(this.injector, () => getDownloadURL(storageRef));
     }
 
+    async uploadSponsorLogo(file: File, sponsorId: string): Promise<string> {
+        const filePath = `sponsor-logos/${sponsorId}/${Date.now()}_${file.name}`;
+        const storageRef = ref(this.storage, filePath);
+        await uploadBytes(storageRef, file);
+        return runInInjectionContext(this.injector, () => getDownloadURL(storageRef));
+    }
+
     async getVenueLogoImages(): Promise<string[]> {
         const folderRef = ref(this.storage, 'venue-logos');
         const result = await runInInjectionContext(this.injector, () => listAll(folderRef));

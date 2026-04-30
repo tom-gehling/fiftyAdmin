@@ -70,7 +70,9 @@
       "Bash(npm start *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4200/fiftyPlus/stats)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:4200/main.js)",
-      "Bash(xargs sed *)"
+      "Bash(xargs sed *)",
+      "Bash(xargs ls *)",
+      "Bash(grep -n \"currentUserId\\\\|isAdmin\\\\$\" /Users/tomgehling/Desktop/fiftyAdmin/src/app/shared/services/auth.service.ts)"
     ]
   }
 }

@@ -83,6 +83,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Sponsors — public read (rendered on quiz pages), admins can write
+    match /sponsors/{sponsorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Quiz results — any authenticated non-anonymous user can write their own, users/admins can read
     match /quizResults/{resultId} {
       allow create, update: if isAuthenticated()

@@ -15,6 +15,8 @@ import { QuizResultsService } from '@/shared/services/quiz-result.service';
 import { AuthService } from '@/shared/services/auth.service';
 import { QuizPdfService } from '@/shared/services/quiz-pdf.service';
 import { SubmissionFormService } from '@/shared/services/submission-form.service';
+import { SponsorService } from '@/shared/services/sponsor.service';
+import { Sponsor } from '@/shared/models/sponsor.model';
 import { QuizSubmissionService } from '@/shared/services/quiz-submission.service';
 import { SubmissionForm, SubmissionFormField } from '@/shared/models/submissionForm.model';
 import { TaggedUser } from '@/shared/models/quizSubmission.model';
@@ -119,6 +121,12 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 
             <!-- Notes Below -->
             <div *ngIf="quiz.notesBelow" class="notes" [innerHTML]="quiz.notesBelow"></div>
+
+            <!-- Sponsor -->
+            <div *ngIf="sponsor" class="sponsorBlock" [style.--sponsorFont]="sponsor.theme?.fontColor || 'var(--primary)'" [style.--sponsorTertiary]="sponsor.theme?.tertiaryColor || 'var(--tertiary)'">
+                <div *ngIf="sponsor.text" class="sponsorText">{{ sponsor.text }}</div>
+                <img *ngIf="sponsor.imageUrl" [src]="sponsor.imageUrl" [alt]="sponsor.name" class="sponsorImage" />
+            </div>
 
             <!-- Submission Form -->
             <ng-container *ngIf="submissionForm && !submitted">
@@ -434,6 +442,32 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             color: var(--primary);
             text-align: center;
             margin-top: 30px;
+        }
+
+        .sponsorBlock {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            margin: 30px auto 10px;
+            padding: 24px 16px;
+            border-top: 1px solid var(--sponsorTertiary);
+            border-bottom: 1px solid var(--sponsorTertiary);
+            text-align: center;
+        }
+
+        .sponsorText {
+            color: var(--sponsorFont);
+            font-size: 1.25rem;
+            font-weight: 500;
+            line-height: 150%;
+            max-width: 600px;
+        }
+
+        .sponsorImage {
+            max-width: 240px;
+            max-height: 120px;
+            object-fit: contain;
         }
 
         .genericButton {
@@ -783,6 +817,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     // Submission form state
     submissionForm?: SubmissionForm;
     submissionFormGroup?: FormGroup;
+    sponsor?: Sponsor;
     taggedUsers: { [fieldId: string]: TaggedUser[] } = {};
     fileByField: { [fieldId: string]: File } = {};
     submitting = false;
@@ -808,6 +843,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         private notify: NotifyService,
         private quizPdfService: QuizPdfService,
         private submissionFormService: SubmissionFormService,
+        private sponsorService: SponsorService,
         private quizSubmissionService: QuizSubmissionService,
         private fb: FormBuilder,
         private elRef: ElementRef,
@@ -1052,10 +1088,26 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     // SUBMISSION FORM
     // ---------------------------------------------
     private async loadSubmissionForm() {
-        if (!this.quiz?.submissionFormId) return;
         try {
+            if (this.quiz?.sponsorId) {
+                this.sponsor = await this.sponsorService.getSponsorById(this.quiz.sponsorId);
+            }
+
+            if (!this.quiz?.submissionFormId) return;
+
             this.submissionForm = await this.submissionFormService.getFormById(this.quiz.submissionFormId);
             if (this.submissionForm) {
+                if (this.sponsor?.appendedFields?.length) {
+                    const lastOrder = this.submissionForm.fields.reduce((max, f) => Math.max(max, f.order || 0), 0);
+                    const sponsored: SubmissionFormField[] = this.sponsor.appendedFields.map((f, idx) => ({
+                        ...f,
+                        order: lastOrder + idx + 1
+                    }));
+                    this.submissionForm = {
+                        ...this.submissionForm,
+                        fields: [...this.submissionForm.fields, ...sponsored]
+                    };
+                }
                 this.buildSubmissionFormGroup();
             }
         } catch (err) {

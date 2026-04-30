@@ -54,7 +54,7 @@
                         <p-select id="collabId" formControlName="collabId" [options]="availableCollaborators" optionLabel="name" optionValue="id" [showClear]="true" class="w-full"></p-select>
                         <label for="collabId">Collaborator</label>
                     </p-floatlabel>
-                    <button pButton type="button" icon="pi pi-plus" class="p-button-outlined" pTooltip="Add new collaborator" tooltipPosition="top" (click)="showAddCollabDialog()"></button>
+                    <a pButton type="button" icon="pi pi-cog" class="p-button-outlined" pTooltip="Manage collaborators" tooltipPosition="top" routerLink="/fiftyPlus/admin/collaborators" target="_blank"></a>
                 </div>
             </div>
 
@@ -298,6 +298,18 @@
                         <p class="text-sm text-gray-500">Attach a submission form to this quiz. Users can submit their team results after completing the quiz.</p>
                     </div>
 
+                    <!-- Sponsor Section -->
+                    <div class="mb-6 flex flex-col gap-3">
+                        <h3 class="font-semibold mb-2">Sponsor</h3>
+                        <div class="p-field w-full max-w-md">
+                            <p-floatlabel class="w-full" variant="in">
+                                <p-select id="sponsorId" formControlName="sponsorId" [options]="availableSponsors" optionLabel="label" optionValue="value" [showClear]="true" class="w-full"></p-select>
+                                <label for="sponsorId">Sponsor</label>
+                            </p-floatlabel>
+                        </div>
+                        <p class="text-sm text-gray-500">Optional sponsor shown beneath the notes-below content. Sponsor's appended fields are added to the submission form.</p>
+                    </div>
+
                     <!-- Notes Section -->
                     <div class="mb-6 flex flex-col gap-3">
                         <h3 class="font-semibold mb-2">Notes</h3>
@@ -318,14 +330,4 @@
             </p-tabpanels>
         </p-tabs>
     </form>
-    <!-- Add Collaborator Dialog -->
-    <p-dialog [(visible)]="addCollabVisible" header="New Collaborator" [modal]="true" [style]="{width: '320px'}" [draggable]="false">
-        <div class="flex flex-col gap-3 pt-2">
-            <input pInputText placeholder="Collaborator name" [(ngModel)]="newCollabName" (keyup.enter)="addCollaborator()" />
-        </div>
-        <ng-template pTemplate="footer">
-            <button pButton label="Cancel" class="p-button-outlined" (click)="addCollabVisible = false"></button>
-            <button pButton label="Add" (click)="addCollaborator()" [disabled]="!newCollabName.trim()"></button>
-        </ng-template>
-    </p-dialog>
 </p-card>

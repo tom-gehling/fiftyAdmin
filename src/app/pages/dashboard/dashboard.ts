@@ -9,6 +9,7 @@ import { SubmissionsWallWidget } from './components/submissionwallwidget';
 import { AuthService } from '@/shared/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { AsyncPipe } from '@angular/common';
+import { FeelingLuckyComponent } from './components/feelinglucky';
 import { FiftyQuizzesDashboardComponent } from './components/fiftyquizzes';
 import { QuickAccessDashboardComponent } from './components/quickaccess';
 import { QuizStatsWidgetComponent } from './components/quizstatswidget';
@@ -28,6 +29,7 @@ import { VenueCalendarComponent } from './components/venuecalendar';
         NotificationsWidget,
         SubmissionsWallWidget,
         AsyncPipe,
+        FeelingLuckyComponent,
         FiftyQuizzesDashboardComponent,
         QuickAccessDashboardComponent,
         QuizStatsWidgetComponent,
@@ -58,6 +60,7 @@ import { VenueCalendarComponent } from './components/venuecalendar';
                     <app-user-summary-widget *ngIf="auth.isMember$ | async" />
                     <app-quick-access-dashboard />
                     <app-fifty-quizzes-dashboard />
+                    <app-feeling-lucky *ngIf="auth.isMember$ | async" />
                     <!-- <app-quiz-stats-widget *ngIf="auth.isMember$ | async" /> -->
                     <app-user-quiz-history-widget *ngIf="auth.isMember$ | async" />
                     <div class="card p-4 sm:p-6 fiftyBorder flex items-center justify-between gap-4 opacity-60 cursor-not-allowed select-none" style="background: rgb(40, 40, 40); border-radius: 1rem;">

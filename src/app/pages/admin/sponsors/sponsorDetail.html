@@ -1,0 +1,223 @@
+<!-- Full-screen spinner while saving -->
+<div *ngIf="saving" class="fixed inset-0 flex items-center justify-center z-50">
+    <div class="w-16 h-16 border-4 border-t-4 border-gray-200 border-t-green-500 rounded-full animate-spin"></div>
+</div>
+
+<p-card *ngIf="form" class="flex flex-col h-full">
+    <div class="flex items-center justify-between mb-4">
+        <div class="text-2xl font-semibold">{{ id === '0' ? 'New Sponsor' : 'Edit: ' + form.get('name')?.value }}</div>
+        <div class="flex gap-2">
+            <button pButton type="button" label="Save" class="p-button-outlined" [disabled]="!form.get('name')?.value?.trim()" (click)="saveSponsor()"></button>
+            <button pButton type="button" label="Cancel" class="p-button-outlined" (click)="cancel()"></button>
+        </div>
+    </div>
+
+    <form [formGroup]="form" class="w-full">
+        <!-- Core Sponsor Info -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 pt-3">
+            <div class="p-field w-full">
+                <p-floatlabel class="w-full" variant="in">
+                    <input pInputText type="text" id="name" formControlName="name" class="w-full" />
+                    <label for="name">Sponsor Name</label>
+                </p-floatlabel>
+            </div>
+
+            <div class="p-field flex items-center gap-2">
+                <p-checkbox formControlName="isActive" binary="true" id="isActive"></p-checkbox>
+                <label for="isActive" class="font-semibold">Active</label>
+            </div>
+        </div>
+
+        <!-- Image -->
+        <div class="mb-6">
+            <label class="font-semibold mb-2 block">Sponsor Image</label>
+            <div class="flex items-center gap-4">
+                <div *ngIf="imagePreview" class="relative">
+                    <img [src]="imagePreview" alt="Sponsor image" class="w-32 h-32 object-contain rounded border bg-surface-100 dark:bg-surface-800" />
+                    <button pButton type="button" icon="pi pi-times" class="p-button-rounded p-button-danger p-button-sm absolute -top-2 -right-2" (click)="removeImage()"></button>
+                </div>
+                <div *ngIf="!imagePreview" class="w-32 h-32 border border-dashed rounded flex items-center justify-center text-gray-400 cursor-pointer" (click)="imageInput.click()">
+                    <i class="pi pi-image text-3xl"></i>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button pButton type="button" [label]="imagePreview ? 'Change Image' : 'Upload Image'" icon="pi pi-upload" class="p-button-sm p-button-outlined" (click)="imageInput.click()"></button>
+                    <input #imageInput type="file" accept="image/*" class="hidden" (change)="onImageSelected($event)" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Text -->
+        <div class="mb-6">
+            <p-floatlabel class="w-full" variant="on">
+                <textarea pTextarea id="text" formControlName="text" rows="3" class="w-full"></textarea>
+                <label for="text">Sponsor Text (optional, shown above the image)</label>
+            </p-floatlabel>
+        </div>
+
+        <!-- Theme -->
+        <div class="mb-6">
+            <h3 class="font-semibold mb-3">Sponsor Colour Scheme</h3>
+            <div class="flex items-center gap-2 mb-3">
+                <p-checkbox formControlName="useCustomColours" binary="true" id="useCustomColours"></p-checkbox>
+                <label for="useCustomColours" class="font-semibold">Use custom colours</label>
+            </div>
+
+            <div *ngIf="form.get('useCustomColours')?.value" formGroupName="theme" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex flex-col items-center gap-3">
+                    <label class="font-medium text-center">Font Colour</label>
+                    <p-colorPicker [ngModel]="toPickerHex(form.get('theme.fontColor')?.value)" (ngModelChange)="form.get('theme.fontColor')?.setValue(fromPickerHex($event))" [ngModelOptions]="{ standalone: true }"></p-colorPicker>
+                    <div class="flex items-center gap-2 w-full">
+                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0" [style.background-color]="form.get('theme.fontColor')?.value"></div>
+                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm" [value]="form.get('theme.fontColor')?.value || ''" (input)="form.get('theme.fontColor')?.setValue(fromPickerHex($any($event.target).value))" placeholder="inherit quiz colour" />
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm" pTooltip="Inherit quiz colour" (click)="clearColour('theme.fontColor')"></button>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <label class="font-medium text-center">Tertiary Colour</label>
+                    <p-colorPicker [ngModel]="toPickerHex(form.get('theme.tertiaryColor')?.value)" (ngModelChange)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($event))" [ngModelOptions]="{ standalone: true }"></p-colorPicker>
+                    <div class="flex items-center gap-2 w-full">
+                        <div class="w-8 h-8 rounded border border-surface-300 flex-shrink-0" [style.background-color]="form.get('theme.tertiaryColor')?.value"></div>
+                        <input pInputText type="text" class="min-w-0 w-full font-mono text-sm" [value]="form.get('theme.tertiaryColor')?.value || ''" (input)="form.get('theme.tertiaryColor')?.setValue(fromPickerHex($any($event.target).value))" placeholder="inherit quiz colour" />
+                        <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-sm" pTooltip="Inherit quiz colour" (click)="clearColour('theme.tertiaryColor')"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appended Submission Form Fields -->
+        <p-tabs class="mt-6 flex-1 flex flex-col" [(value)]="tabSelected">
+            <p-tablist>
+                <p-tab value="0">Appended Submission Form Fields</p-tab>
+                <p-tab value="1">Preview</p-tab>
+            </p-tablist>
+
+            <p-tabpanels>
+                <p-tabpanel value="0">
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-sm text-gray-500">These fields are appended to the quiz's selected submission form when this sponsor is attached.</p>
+                        <button pButton type="button" label="Add Field" icon="pi pi-plus" (click)="openAddFieldDialog()"></button>
+                    </div>
+
+                    <div formArrayName="appendedFields" cdkDropList (cdkDropListDropped)="drop($event)" class="flex flex-col gap-3">
+                        <div *ngFor="let field of appendedFields.controls; let i = index" [formGroupName]="i" cdkDrag>
+                            <div class="flex flex-row gap-3 items-center p-3 rounded-md shadow hover:shadow-lg transition-shadow bg-surface-0 dark:bg-surface-800" style="border: 1px solid var(--fifty-neon-green)">
+                                <div cdkDragHandle class="w-8 flex justify-center items-center text-gray-400 cursor-move">
+                                    <i class="pi pi-bars"></i>
+                                </div>
+
+                                <div class="flex-1 flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <div class="flex-1">
+                                        <span class="font-semibold">{{ field.get('label')?.value }}</span>
+                                        <span class="text-xs text-gray-500 ml-2">({{ getFieldTypeName(field.get('fieldType')?.value) }})</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <span *ngIf="field.get('required')?.value" class="px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">Required</span>
+                                        <span *ngIf="field.get('placeholder')?.value" class="text-gray-400">"{{ field.get('placeholder')?.value }}"</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-2">
+                                    <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm" (click)="editField(i)"></button>
+                                    <button pButton type="button" icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger" (click)="removeField(i)"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div *ngIf="appendedFields.length === 0" class="text-center text-gray-500 py-8">No appended fields. Click "Add Field" to add a sponsor-specific submission form field.</div>
+                </p-tabpanel>
+
+                <p-tabpanel value="1">
+                    <div class="max-w-md mx-auto p-4 border rounded-lg bg-surface-50 dark:bg-surface-800">
+                        <h3 class="font-semibold mb-4 text-center">{{ form.get('name')?.value || 'Sponsor Preview' }}</h3>
+                        <p *ngIf="form.get('text')?.value" class="text-sm mb-4 text-center">{{ form.get('text')?.value }}</p>
+                        <div *ngIf="imagePreview" class="flex justify-center mb-4">
+                            <img [src]="imagePreview" alt="Sponsor preview" class="max-w-full max-h-32 object-contain" />
+                        </div>
+
+                        <div *ngIf="appendedFields.length > 0" class="border-t pt-4">
+                            <p class="text-xs text-gray-500 mb-2">Appended fields preview:</p>
+                            <div class="flex flex-col gap-3">
+                                <div *ngFor="let field of appendedFields.controls" class="flex flex-col gap-1">
+                                    <label class="font-medium text-sm">
+                                        {{ field.get('label')?.value }}
+                                        <span *ngIf="field.get('required')?.value" class="text-red-500">*</span>
+                                    </label>
+                                    <input *ngIf="field.get('fieldType')?.value === 'text'" pInputText type="text" [placeholder]="field.get('placeholder')?.value" class="w-full" disabled />
+                                    <p-inputNumber *ngIf="field.get('fieldType')?.value === 'number'" [placeholder]="field.get('placeholder')?.value" class="w-full" disabled></p-inputNumber>
+                                    <p-select *ngIf="field.get('fieldType')?.value === 'dropdown'" [options]="field.get('options')?.value || []" [placeholder]="field.get('placeholder')?.value || 'Select...'" class="w-full" disabled></p-select>
+                                    <div *ngIf="field.get('fieldType')?.value === 'file'" class="flex items-center gap-2 p-2 border rounded bg-white dark:bg-surface-700">
+                                        <i class="pi pi-upload text-gray-400"></i>
+                                        <span class="text-gray-500">{{ field.get('placeholder')?.value || 'Click to upload...' }}</span>
+                                    </div>
+                                    <div *ngIf="field.get('fieldType')?.value === 'userTag'" class="flex items-center gap-2 p-2 border rounded bg-white dark:bg-surface-700">
+                                        <i class="pi pi-users text-gray-400"></i>
+                                        <span class="text-gray-500">{{ field.get('placeholder')?.value || 'Search for users...' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </p-tabpanel>
+            </p-tabpanels>
+        </p-tabs>
+    </form>
+</p-card>
+
+<!-- Field Editor Dialog -->
+<p-dialog [(visible)]="fieldDialog" [modal]="true" [style]="{ width: '500px' }" [baseZIndex]="10000">
+    <ng-template #header>
+        <span class="font-bold">{{ editingFieldIndex !== null ? 'Edit Field' : 'Add Field' }}</span>
+    </ng-template>
+
+    <div class="flex flex-col gap-4 pt-2">
+        <div class="p-field">
+            <label for="fieldType" class="font-semibold mb-1 block">Field Type</label>
+            <p-select id="fieldType" [options]="fieldTypes" [(ngModel)]="currentFieldModel.fieldType" optionLabel="label" optionValue="value" placeholder="Select type" class="w-full"></p-select>
+        </div>
+
+        <div class="p-field">
+            <p-floatlabel class="w-full" variant="on">
+                <input pInputText id="fieldLabel" [(ngModel)]="currentFieldModel.label" class="w-full" />
+                <label for="fieldLabel">Label</label>
+            </p-floatlabel>
+        </div>
+
+        <div class="p-field">
+            <p-floatlabel class="w-full" variant="on">
+                <input pInputText id="fieldPlaceholder" [(ngModel)]="currentFieldModel.placeholder" class="w-full" />
+                <label for="fieldPlaceholder">Placeholder</label>
+            </p-floatlabel>
+        </div>
+
+        <div class="p-field flex items-center gap-2">
+            <p-checkbox [(ngModel)]="currentFieldModel.required" binary="true" id="fieldRequired"></p-checkbox>
+            <label for="fieldRequired" class="font-semibold">Required</label>
+        </div>
+
+        <div *ngIf="currentFieldModel.fieldType === 'number'" class="flex gap-4">
+            <div class="p-field flex-1">
+                <p-floatlabel class="w-full" variant="on">
+                    <p-inputNumber id="minVal" [(ngModel)]="currentFieldModel.validation!.min" class="w-full"></p-inputNumber>
+                    <label for="minVal">Min Value</label>
+                </p-floatlabel>
+            </div>
+            <div class="p-field flex-1">
+                <p-floatlabel class="w-full" variant="on">
+                    <p-inputNumber id="maxVal" [(ngModel)]="currentFieldModel.validation!.max" class="w-full"></p-inputNumber>
+                    <label for="maxVal">Max Value</label>
+                </p-floatlabel>
+            </div>
+        </div>
+
+        <div *ngIf="currentFieldModel.fieldType === 'dropdown'" class="p-field">
+            <label class="font-semibold mb-1 block">Options (comma-separated)</label>
+            <textarea pTextarea [ngModel]="getOptionsAsString()" (ngModelChange)="setOptionsFromString($event)" rows="3" class="w-full" placeholder="Option 1, Option 2, Option 3"></textarea>
+        </div>
+    </div>
+
+    <ng-template #footer>
+        <p-button label="Cancel" [text]="true" severity="secondary" (click)="closeFieldDialog()"></p-button>
+        <p-button label="Save" [outlined]="true" severity="secondary" (click)="saveField()"></p-button>
+    </ng-template>
+</p-dialog>

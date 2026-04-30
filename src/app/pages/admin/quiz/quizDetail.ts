@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
@@ -36,6 +36,7 @@ import { QuizTag } from '@/shared/models/quizTags.model';
 import { NotifyService } from '@/shared/services/notify.service';
 import { SubmissionFormService } from '@/shared/services/submission-form.service';
 import { SubmissionForm } from '@/shared/models/submissionForm.model';
+import { SponsorService } from '@/shared/services/sponsor.service';
 import { firstValueFrom, Observable, Subscription } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
 import { MenuItem } from 'primeng/api';
@@ -74,7 +75,8 @@ import { QuizCategoriesService } from '@/shared/services/quiz-categories.service
         MenuModule,
         DividerModule,
         TooltipModule,
-        QuizDisplayComponent
+        QuizDisplayComponent,
+        RouterLink
     ],
     templateUrl: './quizDetail.html'
 })
@@ -86,6 +88,7 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
     availableTags: QuizTag[] = [];
     selectedTags: QuizTag[] = [];
     availableSubmissionForms: { label: string; value: string }[] = [];
+    availableSponsors: { label: string; value: string }[] = [];
     tabSelected: string = '0';
     QuizTypeEnum = QuizTypeEnum;
     saving: boolean = false;
@@ -93,8 +96,6 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
     existingImages: string[] = [];
     loadingImages = false;
     availableCollaborators: Collaborator[] = [];
-    addCollabVisible = false;
-    newCollabName = '';
 
     quizType = [
         { value: QuizTypeEnum.Weekly, viewValue: 'Weekly' },
@@ -157,6 +158,7 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
         private notify: NotifyService,
         private storageService: StorageService,
         private submissionFormService: SubmissionFormService,
+        private sponsorService: SponsorService,
         private collaboratorsService: CollaboratorsService,
         private quizCategoriesService: QuizCategoriesService
     ) {
@@ -189,6 +191,11 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
         // Load submission forms
         this.submissionFormService.getActiveFormsForDropdown().subscribe((forms) => {
             this.availableSubmissionForms = forms;
+        });
+
+        // Load sponsors
+        this.sponsorService.getActiveSponsorsForDropdown().subscribe((sponsors) => {
+            this.availableSponsors = sponsors;
         });
 
         this.loadExistingImages();
@@ -294,7 +301,8 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
             notesAbove: [quiz.notesAbove || ''],
             notesBelow: [quiz.notesBelow || ''],
             imageUrl: [quiz.imageUrl || ''],
-            submissionFormId: [quiz.submissionFormId || null]
+            submissionFormId: [quiz.submissionFormId || null],
+            sponsorId: [quiz.sponsorId || null]
         });
 
         this.form.get('quizType')?.valueChanges.subscribe(async (newType: QuizTypeEnum) => {
@@ -304,6 +312,22 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
             // }
 
             if (newType !== QuizTypeEnum.Collab) this.tabSelected = '0';
+        });
+
+        this.form.get('collabId')?.valueChanges.subscribe((newCollabId: string | null) => {
+            if (!newCollabId) return;
+            const collab = this.collaboratorsService.getById(newCollabId);
+            if (!collab) return;
+            if (collab.slug) {
+                this.form.get('quizSlug')?.setValue(collab.slug);
+            }
+            if (collab.theme) {
+                this.form.get('theme')?.patchValue({
+                    fontColor: collab.theme.fontColor,
+                    backgroundColor: collab.theme.backgroundColor,
+                    tertiaryColor: collab.theme.tertiaryColor
+                });
+            }
         });
 
         this.form.get('questionCount')?.valueChanges.subscribe((count) => {
@@ -484,18 +508,6 @@ export class QuizDetailComponent implements OnInit, OnDestroy {
         } finally {
             this.saving = false;
         }
-    }
-
-    showAddCollabDialog(): void {
-        this.newCollabName = '';
-        this.addCollabVisible = true;
-    }
-
-    async addCollaborator(): Promise<void> {
-        if (!this.newCollabName.trim()) return;
-        const collab = await this.collaboratorsService.create(this.newCollabName);
-        this.form.get('collabId')?.setValue(collab.id);
-        this.addCollabVisible = false;
     }
 
     cancel(): void {

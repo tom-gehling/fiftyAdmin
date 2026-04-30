@@ -238,11 +238,20 @@ export class QuizCollectionComponent implements OnInit, OnChanges {
 
         // Update the URL to reflect the selected quiz
         if (updateUrl) {
-            const baseRoute = this.getBaseRoute();
-            this.router.navigate([`${baseRoute}/${id}`], {
+            const target = this.buildQuizUrl(id);
+            this.router.navigate([target], {
                 replaceUrl: true // Replace current history entry instead of adding new one
             });
         }
+    }
+
+    private buildQuizUrl(id: string): string {
+        if (this.quizType === 'collaborations') {
+            const quiz = this.quizHeaders.find((q) => String(q.quizId) === id);
+            const collab = this.collaborators.find((c) => c.id === quiz?.collabId);
+            return collab?.slug ? `/fiftyPlus/collabs/${collab.slug}/${id}` : `/fiftyPlus/collabs/${id}`;
+        }
+        return `${this.getBaseRoute()}/${id}`;
     }
 
     private getBaseRoute(): string {
