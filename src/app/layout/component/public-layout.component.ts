@@ -8,25 +8,36 @@ import { AppTopbar } from './app.topbar';
     standalone: true,
     imports: [AppTopbar, RouterOutlet],
     template: `
-        <div class="flex flex-col min-h-screen">
-            <app-topbar [showMenuToggle]="false" [bgColor]="topbarColor" />
+        <div class="flex flex-col" [class.min-h-screen]="!isEmbedded">
+            @if (!isEmbedded) {
+                <app-topbar [showMenuToggle]="false" [bgColor]="topbarColor" />
+            }
             <router-outlet />
         </div>
     `,
 })
 export class PublicLayout {
     topbarColor = 'var(--fifty-green)';
+    isEmbedded = false;
 
-    constructor(private router: Router, private activatedRoute: ActivatedRoute) {
+    constructor(
+        private router: Router,
+        private activatedRoute: ActivatedRoute
+    ) {
+        this.resolveLayoutState(this.activatedRoute.snapshot);
         this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
-            this.topbarColor = this.resolveTopbarColor(this.activatedRoute.snapshot);
+            this.resolveLayoutState(this.activatedRoute.snapshot);
         });
     }
 
-    private resolveTopbarColor(snapshot: ActivatedRouteSnapshot): string {
+    private resolveLayoutState(snapshot: ActivatedRouteSnapshot): void {
         let route = snapshot;
         while (route.firstChild) route = route.firstChild;
         const token = route.data['topbarColor'] ?? route.parent?.data['topbarColor'];
-        return token === 'black' ? 'var(--p-surface-900)' : 'var(--fifty-green)';
+        this.topbarColor = token === 'black' ? 'var(--p-surface-900)' : 'var(--fifty-green)';
+
+        const embeddable = route.data['embeddable'] === true;
+        const embedParam = route.queryParamMap.get('embed') === 'true';
+        this.isEmbedded = embeddable && embedParam;
     }
 }
