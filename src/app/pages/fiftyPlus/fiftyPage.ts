@@ -4,6 +4,9 @@ import { AsyncPipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { QuizCollectionComponent } from '../common/quizCollection/quizCollection';
 import { AuthService } from '@/shared/services/auth.service';
+import { QuizzesService } from '@/shared/services/quizzes.service';
+import { CollaboratorsService } from '@/shared/services/collaborators.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
     selector: 'app-fifty-page',
@@ -36,7 +39,9 @@ export class FiftyPageComponent implements OnInit {
     constructor(
         private route: ActivatedRoute,
         public router: Router,
-        public auth: AuthService
+        public auth: AuthService,
+        private quizzesService: QuizzesService,
+        private collaboratorsService: CollaboratorsService
     ) {}
 
     ngOnInit(): void {
@@ -57,6 +62,26 @@ export class FiftyPageComponent implements OnInit {
             const quizId = params.get('quizid');
             this.selectedQuizId = quizId ?? undefined;
         });
+
+        // Soft-redirect legacy collab URLs (/fiftyPlus/collabs/:quizid) to canonical (/fiftyPlus/collabs/:slug/:quizid)
+        if (this.route.snapshot.data['legacy'] && this.quizType === 'collaborations' && this.selectedQuizId) {
+            void this.redirectLegacyCollabUrl(this.selectedQuizId);
+        }
+    }
+
+    private async redirectLegacyCollabUrl(quizId: string): Promise<void> {
+        try {
+            const headers = await firstValueFrom(this.quizzesService.getCollaborations(true));
+            const quiz = headers?.find((q: any) => String(q.quizId) === String(quizId));
+            if (!quiz?.collabId) return;
+            await this.collaboratorsService.whenLoaded();
+            const collab = this.collaboratorsService.getById(quiz.collabId);
+            if (collab?.slug) {
+                this.router.navigate(['/fiftyPlus/collabs', collab.slug, quizId], { replaceUrl: true });
+            }
+        } catch (err) {
+            console.warn('Legacy collab URL redirect failed', err);
+        }
     }
 
     private getDefaultTitle(typeNum: number): string {

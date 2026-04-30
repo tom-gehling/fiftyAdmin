@@ -50,9 +50,17 @@ export class AppMenu implements OnInit {
             label: 'Admin',
             items: [
                 { label: 'Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats'] },
-                { label: 'Quizzes', icon: 'pi pi-fw pi-pencil', routerLink: ['/fiftyPlus/admin/quizzes'] },
-                { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] },
-                { label: 'Quiz Sub Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
+                {
+                    label: 'Quizzes',
+                    icon: 'pi pi-fw pi-pencil',
+                    items: [
+                        { label: 'Quizzes', icon: 'pi pi-fw pi-pencil', routerLink: ['/fiftyPlus/admin/quizzes'] },
+                        { label: 'Quiz Tags', icon: 'pi pi-fw pi-tags', routerLink: ['/fiftyPlus/admin/quizTags'] },
+                        { label: 'Quiz Sub Forms', icon: 'pi pi-fw pi-file-edit', routerLink: ['/fiftyPlus/admin/submissionForms'] },
+                        { label: 'Collaborators', icon: 'pi pi-fw pi-id-card', routerLink: ['/fiftyPlus/admin/collaborators'] },
+                        { label: 'Sponsors', icon: 'pi pi-fw pi-megaphone', routerLink: ['/fiftyPlus/admin/sponsors'] }
+                    ]
+                },
                 { label: 'Users', icon: 'pi pi-fw pi-users', routerLink: ['/fiftyPlus/admin/users'] },
                 { label: 'Venues', icon: 'pi pi-fw pi-shop', routerLink: ['/fiftyPlus/admin/venues'] },
                 { label: 'Form Submissions', icon: 'pi pi-fw pi-envelope', routerLink: ['/fiftyPlus/admin/contactForms'] }

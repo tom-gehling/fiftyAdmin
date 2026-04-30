@@ -85,7 +85,10 @@
       "Bash(grep *)",
       "Bash(lsof -ti:4200 -sTCP:LISTEN)",
       "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:4200/)",
-      "Bash(ps -p 40502 -o command=)"
+      "Bash(ps -p 40502 -o command=)",
+      "Bash(xargs sed *)",
+      "Bash(xargs ls *)",
+      "Bash(grep -n \"currentUserId\\\\|isAdmin\\\\$\" /Users/tomgehling/Desktop/fiftyAdmin/src/app/shared/services/auth.service.ts)"
     ]
   }
 }

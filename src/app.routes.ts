@@ -29,8 +29,11 @@ import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
 import { VenuesComponent } from '@/pages/admin/venues/venues';
+import { CollaboratorsComponent } from '@/pages/admin/collaborators/collaborators';
 import { SubmissionFormTableComponent } from '@/pages/admin/submissionForms/submissionFormTable';
 import { SubmissionFormDetailComponent } from '@/pages/admin/submissionForms/submissionFormDetail';
+import { SponsorTableComponent } from '@/pages/admin/sponsors/sponsorTable';
+import { SponsorDetailComponent } from '@/pages/admin/sponsors/sponsorDetail';
 import { UserTableComponent } from '@/pages/admin/users/userTable';
 import { ContactFormTableComponent } from '@/pages/admin/contactForms/contactFormTable';
 
@@ -92,7 +95,8 @@ export const appRoutes: Routes = [
             { path: 'fiftyPlus/exclusives/:quizid', component: FiftyPageComponent, data: { type: 2, topbarColor: 'black' } },
 
             { path: 'fiftyPlus/collabs', component: FiftyPageComponent, data: { type: 3, title: 'Collaborations', topbarColor: 'black' } },
-            { path: 'fiftyPlus/collabs/:quizid', component: FiftyPageComponent, data: { type: 3, topbarColor: 'black' } },
+            { path: 'fiftyPlus/collabs/:collabSlug/:quizid', component: FiftyPageComponent, data: { type: 3, topbarColor: 'black' } },
+            { path: 'fiftyPlus/collabs/:quizid', component: FiftyPageComponent, data: { type: 3, topbarColor: 'black', legacy: true } },
 
             { path: 'fiftyPlus/questionQuizzes', component: FiftyPageComponent, data: { type: 4, title: 'Question Quizzes', topbarColor: 'black' } },
             { path: 'fiftyPlus/questionQuizzes/:quizid', component: FiftyPageComponent, data: { type: 4, topbarColor: 'black' } },
@@ -119,8 +123,11 @@ export const appRoutes: Routes = [
                     { path: 'quizzes/:id', component: QuizDetailComponent },
                     { path: 'quizTags', component: QuizTagsComponent },
                     { path: 'venues', component: VenuesComponent },
+                    { path: 'collaborators', component: CollaboratorsComponent },
                     { path: 'submissionForms', component: SubmissionFormTableComponent },
                     { path: 'submissionForms/:id', component: SubmissionFormDetailComponent },
+                    { path: 'sponsors', component: SponsorTableComponent },
+                    { path: 'sponsors/:id', component: SponsorDetailComponent },
                     { path: 'users', component: UserTableComponent },
                     { path: 'contactForms', component: ContactFormTableComponent }
                 ]

@@ -3,6 +3,7 @@ import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CommonModule, AsyncPipe, DatePipe } from '@angular/common';
 import { StatsWidget } from './components/statswidget';
+import { FeelingLuckyComponent } from './components/feelinglucky';
 import { FiftyQuizzesDashboardComponent } from './components/fiftyquizzes';
 import { RecentQuizzesWidget } from './components/userrecentquizzes';
 import { VenueCalendarComponent } from './components/venuecalendar';
@@ -14,7 +15,17 @@ import { Quiz } from '@/shared/models/quiz.model';
 @Component({
     selector: 'app-dashboard',
     standalone: true,
-    imports: [CommonModule, AsyncPipe, DatePipe, RouterModule, StatsWidget, FiftyQuizzesDashboardComponent, RecentQuizzesWidget, VenueCalendarComponent, TagInvitesWidget],
+    imports: [
+        CommonModule,
+        StatsWidget,
+        AsyncPipe,
+        FeelingLuckyComponent,
+        FiftyQuizzesDashboardComponent,
+        RecentQuizzesWidget,
+        VenueCalendarComponent,
+        RouterModule,
+        TagInvitesWidget
+    ],
     template: `
         <div class="card px-1 py-3 sm:p-6 fifty-dashboard-lg rounded-none sm:rounded-2xl">
             <!-- Top band: free-user CTA / admin overview -->
@@ -83,6 +94,7 @@ import { Quiz } from '@/shared/models/quiz.model';
 
                 <div class="col-span-12 xl:col-span-6 flex flex-col gap-8">
                     <app-fifty-quizzes-dashboard />
+                    <app-feeling-lucky *ngIf="auth.isMember$ | async" />
                     <app-recent-quizzes-widget />
                 </div>
 

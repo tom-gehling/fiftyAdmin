@@ -51,4 +51,7 @@ export interface Quiz {
 
     /** Reference to SubmissionForm.id for quiz submission form */
     submissionFormId?: string;
+
+    /** Reference to Sponsor.id for the quiz sponsor (rendered beneath notesBelow) */
+    sponsorId?: string;
 }
