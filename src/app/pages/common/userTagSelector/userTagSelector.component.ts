@@ -72,6 +72,9 @@ export class UserTagSelectorComponent implements OnInit {
     @Input() showSuggestions = true;
     @Input() maxUsers = 10;
     @Input() selectedUsers: TaggedUser[] = [];
+    // 'follow-graph' (default): only suggest/find users in the caller's follower+following graph.
+    // 'all-users': fall back to a server-side prefix search across all users when the follow graph turns up no match.
+    @Input() mode: 'follow-graph' | 'all-users' = 'follow-graph';
 
     @Output() selectedUsersChange = new EventEmitter<TaggedUser[]>();
 
@@ -95,9 +98,21 @@ export class UserTagSelectorComponent implements OnInit {
 
     searchUsers(event: AutoCompleteCompleteEvent): void {
         const query = event.query;
+        const selectedUids = new Set(this.selectedUsers.map((u) => u.uid));
+
+        if (this.mode === 'all-users') {
+            // Followers/following aren't wired up yet — go straight to the server-side global search.
+            if (query.trim().length < 2) {
+                this.filteredUsers = [];
+                return;
+            }
+            this.userSearchService.searchAllUsers(query, 10).subscribe((globalUsers) => {
+                this.filteredUsers = globalUsers.filter((u) => u.uid && !selectedUids.has(u.uid)) as AppUser[];
+            });
+            return;
+        }
+
         this.userSearchService.searchFollowersFollowing(query, 10).subscribe((users) => {
-            // Filter out already selected users
-            const selectedUids = new Set(this.selectedUsers.map((u) => u.uid));
             this.filteredUsers = users.filter((u) => !selectedUids.has(u.uid!));
         });
     }

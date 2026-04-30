@@ -67,7 +67,7 @@ import { VenueService } from '@/shared/services/venue.service';
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-2 sm:mt-4 text-white text-xs sm:text-base font-bold">{{ newVenuesLast7Days >= 0 ? '+' : '' }}{{ newVenuesLast7Days }} in last 7 days</div>
+                        <div class="mt-2 sm:mt-4 text-white text-xs sm:text-base font-bold">{{ newVenuesLastMonth >= 0 ? '+' : '' }}{{ newVenuesLastMonth }} in last month</div>
                     </ng-container>
                 </div>
             </a>
@@ -95,45 +95,6 @@ import { VenueService } from '@/shared/services/venue.service';
             </a>
         </div>
 
-        <!-- Admin Quick Links -->
-        <div class="col-span-12">
-            <div class="card mb-0 p-4 fiftyBorder flex flex-wrap items-center gap-2" style="background: rgb(40, 40, 40); border-radius: 1rem;">
-                <span class="text-white font-bold uppercase text-sm mr-2">Admin</span>
-                <a
-                    routerLink="/fiftyPlus/admin/stats"
-                    class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-sm font-medium no-underline transition-opacity hover:opacity-80"
-                    style="background: rgba(76, 251, 171, 0.15); color: var(--fifty-neon-green); border: 1px solid var(--fifty-neon-green);"
-                >
-                    <i class="pi pi-chart-line text-xs"></i>
-                    <span>Stats</span>
-                </a>
-                <a
-                    routerLink="/fiftyPlus/admin/quizTags"
-                    class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-sm font-medium no-underline transition-opacity hover:opacity-80"
-                    style="background: rgba(76, 251, 171, 0.15); color: var(--fifty-neon-green); border: 1px solid var(--fifty-neon-green);"
-                >
-                    <i class="pi pi-tags text-xs"></i>
-                    <span>Quiz Tags</span>
-                </a>
-                <a
-                    routerLink="/fiftyPlus/admin/submissionForms"
-                    class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-sm font-medium no-underline transition-opacity hover:opacity-80"
-                    style="background: rgba(76, 251, 171, 0.15); color: var(--fifty-neon-green); border: 1px solid var(--fifty-neon-green);"
-                >
-                    <i class="pi pi-file-edit text-xs"></i>
-                    <span>Submission Forms</span>
-                </a>
-                <a
-                    routerLink="/fiftyPlus/admin/contactForms"
-                    class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full text-sm font-medium no-underline transition-opacity hover:opacity-80"
-                    style="background: rgba(76, 251, 171, 0.15); color: var(--fifty-neon-green); border: 1px solid var(--fifty-neon-green);"
-                >
-                    <i class="pi pi-envelope text-xs"></i>
-                    <span>Contact Forms</span>
-                </a>
-            </div>
-        </div>
-
         <!-- Spinner Template -->
         <ng-template #loadingSpinner>
             <div class="flex justify-center items-center h-full">
@@ -159,7 +120,7 @@ export class StatsWidget implements OnInit {
     newMembersLast7Days = 0;
 
     activeVenueCount = 0;
-    newVenuesLast7Days = 0;
+    newVenuesLastMonth = 0;
 
     // Loading flags
     loadingActiveQuiz = true;
@@ -182,12 +143,12 @@ export class StatsWidget implements OnInit {
         try {
             const venues = await firstValueFrom(this.venueService.getActiveVenues());
             this.activeVenueCount = venues.length;
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            this.newVenuesLast7Days = venues.filter((v) => {
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            this.newVenuesLastMonth = venues.filter((v) => {
                 if (!v.createdAt) return false;
                 const created = v.createdAt instanceof Date ? v.createdAt : (v.createdAt as any).toDate?.();
-                return created && created >= sevenDaysAgo;
+                return created && created >= oneMonthAgo;
             }).length;
         } catch (error) {
             console.error('Error loading venues:', error);

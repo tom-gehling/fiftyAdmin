@@ -1,45 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QuizTypeBreakdown, QuizTypeKey } from '@/shared/models/userStats.model';
-
-interface TypeStyle {
-    accent: string;
-    glow: string;
-    chip: string;
-    icon: string;
-    badge: string;
-}
-
-const STYLES: Record<QuizTypeKey, TypeStyle> = {
-    weekly: {
-        accent: '#4cfbab',
-        glow: 'rgba(76, 251, 171, 0.35)',
-        chip: 'rgba(76, 251, 171, 0.15)',
-        icon: 'pi-calendar',
-        badge: 'Weekly'
-    },
-    fiftyPlus: {
-        accent: '#fbe2df',
-        glow: 'rgba(251, 226, 223, 0.4)',
-        chip: 'rgba(251, 226, 223, 0.15)',
-        icon: 'pi-star-fill',
-        badge: 'Fifty+'
-    },
-    collab: {
-        accent: '#c4a5ff',
-        glow: 'rgba(196, 165, 255, 0.4)',
-        chip: 'rgba(196, 165, 255, 0.15)',
-        icon: 'pi-users',
-        badge: 'Collab'
-    },
-    questionType: {
-        accent: '#ffc857',
-        glow: 'rgba(255, 200, 87, 0.4)',
-        chip: 'rgba(255, 200, 87, 0.15)',
-        icon: 'pi-list',
-        badge: 'Question'
-    }
-};
+import { QuizTypeStyle, getQuizTypeStyle } from '@/shared/constants/quiz-type-styles';
 
 @Component({
     standalone: true,
@@ -98,15 +60,15 @@ const STYLES: Record<QuizTypeKey, TypeStyle> = {
 export class QuizTypeBreakdownWidget {
     @Input({ required: true }) breakdown: QuizTypeBreakdown[] = [];
 
-    style(type: QuizTypeKey): TypeStyle {
-        return STYLES[type];
+    style(type: QuizTypeKey): QuizTypeStyle {
+        return getQuizTypeStyle(type);
     }
 
     cardBg(type: QuizTypeKey): string {
-        return `linear-gradient(160deg, ${STYLES[type].chip}, rgba(20,20,20,0.95))`;
+        return `linear-gradient(160deg, ${this.style(type).chip}, rgba(20,20,20,0.95))`;
     }
 
     border(type: QuizTypeKey): string {
-        return `1px solid ${STYLES[type].chip}`;
+        return `1px solid ${this.style(type).chip}`;
     }
 }

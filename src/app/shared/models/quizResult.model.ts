@@ -27,6 +27,8 @@ export interface QuizResult {
     geo?: GeoLocation; // Geolocation data from IP lookup
     retro?: boolean; // true if manually recorded (backwards compatibility)
     taggedUsers?: TaggedUser[]; // users who took the quiz together
+    taggedUserIdsPending?: string[]; // denormalised: uids with status='pending' (Firestore array-contains query field)
+    taggedUserIdsAccepted?: string[]; // denormalised: uids with status='accepted' or legacy retro tags
     userHidden?: boolean; // true when user has opted out of stats tracking; result still stored for admin use
     lastActivityAt?: Date; // updated on answer clicks, visibility changes, and periodic heartbeats while tab is visible
     closedAt?: Date | null; // set when the user closes the tab mid-quiz; cleared if they resume

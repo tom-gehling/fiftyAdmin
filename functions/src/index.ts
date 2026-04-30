@@ -1678,3 +1678,190 @@ async function assertAdmin(uid?: string) {
     const userSnap = await db.collection('users').doc(uid).get();
     if (!userSnap.data()?.['isAdmin']) throw new HttpsError('permission-denied', 'Admin only');
 }
+
+// -----------------------------------------------
+// Tag Teammates: tag/respond/remove callables
+// -----------------------------------------------
+const MAX_TAGGED_TEAMMATES = 20;
+
+// Server-side user search by displayName OR email prefix. Only returns uid + displayName —
+// email is used as a search index but never echoed back to keep emails private.
+// Needed because /users/{uid} is private — clients can't run prefix queries themselves.
+export const searchUsers = onCall(async (req) => {
+    const callerUid = req.auth?.uid;
+    if (!callerUid) throw new HttpsError('unauthenticated', 'Must be logged in');
+    const isAnon = req.auth?.token?.firebase?.sign_in_provider === 'anonymous';
+    if (isAnon) throw new HttpsError('permission-denied', 'Anonymous users cannot search');
+
+    const { term, limit } = req.data as { term: string; limit?: number };
+    if (typeof term !== 'string' || term.trim().length < 2) {
+        return { users: [] };
+    }
+    const cap = Math.min(Math.max(limit ?? 10, 1), 25);
+    const prefix = term.trim();
+    const lowerPrefix = prefix.toLowerCase();
+    // High-codepoint sentinel turns the range query into a starts-with prefix match.
+    const end = prefix + '';
+    const lowerEnd = lowerPrefix + '';
+
+    const [byName, byEmail] = await Promise.all([
+        db.collection('users').where('displayName', '>=', prefix).where('displayName', '<=', end).limit(cap).get(),
+        // Emails are stored lowercase in Firebase Auth; query lowercase for case-insensitive match.
+        db.collection('users').where('email', '>=', lowerPrefix).where('email', '<=', lowerEnd).limit(cap).get()
+    ]);
+
+    const dedup = new Map<string, { uid: string; displayName: string | null }>();
+    for (const d of [...byName.docs, ...byEmail.docs]) {
+        if (d.id === callerUid || dedup.has(d.id)) continue;
+        const data = d.data();
+        dedup.set(d.id, { uid: d.id, displayName: data['displayName'] ?? data['email'] ?? null });
+    }
+
+    return { users: Array.from(dedup.values()).slice(0, cap) };
+});
+
+export const tagUsersOnResult = onCall(async (req) => {
+    const callerUid = req.auth?.uid;
+    if (!callerUid) throw new HttpsError('unauthenticated', 'Must be logged in');
+    const isAnon = req.auth?.token?.firebase?.sign_in_provider === 'anonymous';
+    if (isAnon) throw new HttpsError('permission-denied', 'Anonymous users cannot tag');
+
+    const { resultId, taggedUserUids } = req.data as { resultId: string; taggedUserUids: string[] };
+    if (!resultId) throw new HttpsError('invalid-argument', 'resultId required');
+    if (!Array.isArray(taggedUserUids) || taggedUserUids.length === 0) {
+        throw new HttpsError('invalid-argument', 'taggedUserUids must be a non-empty array');
+    }
+
+    const resultRef = db.collection('quizResults').doc(resultId);
+    const resultSnap = await resultRef.get();
+    if (!resultSnap.exists) throw new HttpsError('not-found', 'Result not found');
+    const result = resultSnap.data()!;
+    if (result['userId'] !== callerUid) throw new HttpsError('permission-denied', 'Only the result owner can tag');
+    if (result['status'] !== 'completed') throw new HttpsError('failed-precondition', 'Result must be completed first');
+
+    const existingTagged: any[] = result['taggedUsers'] || [];
+    const existingUids = new Set(existingTagged.map((t) => t.uid));
+    const dedupedNew = Array.from(new Set(taggedUserUids)).filter((uid) => uid !== callerUid && !existingUids.has(uid));
+
+    if (existingTagged.length + dedupedNew.length > MAX_TAGGED_TEAMMATES) {
+        throw new HttpsError('failed-precondition', `Max ${MAX_TAGGED_TEAMMATES} teammates`);
+    }
+    if (dedupedNew.length === 0) return { added: 0 };
+
+    const userDocs = await Promise.all(dedupedNew.map((uid) => db.collection('users').doc(uid).get()));
+    const callerDoc = await db.collection('users').doc(callerUid).get();
+    const caller = callerDoc.data() || {};
+
+    const now = Timestamp.now();
+    const newTagged = userDocs
+        .filter((d) => d.exists)
+        .map((d) => {
+            const u = d.data()!;
+            return {
+                uid: d.id,
+                displayName: u['displayName'] || u['email'] || 'Player',
+                status: 'pending',
+                invitedAt: now
+            };
+        });
+
+    if (newTagged.length === 0) throw new HttpsError('not-found', 'No valid users to tag');
+
+    const batch = db.batch();
+    batch.update(resultRef, {
+        taggedUsers: FieldValue.arrayUnion(...newTagged),
+        taggedUserIdsPending: FieldValue.arrayUnion(...newTagged.map((t) => t.uid))
+    });
+
+    for (const t of newTagged) {
+        const inviteRef = db.collection('tagInvites').doc(`${resultId}_${t.uid}`);
+        batch.set(inviteRef, {
+            resultId,
+            quizId: result['quizId'],
+            invitedUid: t.uid,
+            invitedDisplayName: t.displayName,
+            inviterUid: callerUid,
+            inviterDisplayName: caller['displayName'] || caller['email'] || 'A teammate',
+            score: result['score'] ?? 0,
+            total: result['total'] ?? 0,
+            invitedAt: now
+        });
+    }
+
+    await batch.commit();
+    return { added: newTagged.length };
+});
+
+export const respondToTagInvite = onCall(async (req) => {
+    const callerUid = req.auth?.uid;
+    if (!callerUid) throw new HttpsError('unauthenticated', 'Must be logged in');
+
+    const { resultId, accept } = req.data as { resultId: string; accept: boolean };
+    if (!resultId) throw new HttpsError('invalid-argument', 'resultId required');
+    if (typeof accept !== 'boolean') throw new HttpsError('invalid-argument', 'accept must be boolean');
+
+    const resultRef = db.collection('quizResults').doc(resultId);
+    const inviteRef = db.collection('tagInvites').doc(`${resultId}_${callerUid}`);
+
+    await db.runTransaction(async (tx) => {
+        const resultSnap = await tx.get(resultRef);
+        if (!resultSnap.exists) throw new HttpsError('not-found', 'Result not found');
+        const result = resultSnap.data()!;
+        const pending: string[] = result['taggedUserIdsPending'] || [];
+        if (!pending.includes(callerUid)) throw new HttpsError('failed-precondition', 'No pending invite for this user');
+
+        const tagged: any[] = result['taggedUsers'] || [];
+        const now = Timestamp.now();
+
+        if (accept) {
+            const updated = tagged.map((t) => (t.uid === callerUid ? { ...t, status: 'accepted', respondedAt: now } : t));
+            tx.update(resultRef, {
+                taggedUsers: updated,
+                taggedUserIdsPending: FieldValue.arrayRemove(callerUid),
+                taggedUserIdsAccepted: FieldValue.arrayUnion(callerUid)
+            });
+        } else {
+            const updated = tagged.filter((t) => t.uid !== callerUid);
+            tx.update(resultRef, {
+                taggedUsers: updated,
+                taggedUserIdsPending: FieldValue.arrayRemove(callerUid)
+            });
+        }
+        tx.delete(inviteRef);
+    });
+
+    return { success: true, accepted: accept };
+});
+
+export const removeTagFromResult = onCall(async (req) => {
+    const callerUid = req.auth?.uid;
+    if (!callerUid) throw new HttpsError('unauthenticated', 'Must be logged in');
+
+    const { resultId, uid } = req.data as { resultId: string; uid: string };
+    if (!resultId) throw new HttpsError('invalid-argument', 'resultId required');
+    if (!uid) throw new HttpsError('invalid-argument', 'uid required');
+
+    const resultRef = db.collection('quizResults').doc(resultId);
+    const inviteRef = db.collection('tagInvites').doc(`${resultId}_${uid}`);
+
+    await db.runTransaction(async (tx) => {
+        const resultSnap = await tx.get(resultRef);
+        if (!resultSnap.exists) throw new HttpsError('not-found', 'Result not found');
+        const result = resultSnap.data()!;
+        const isOwner = result['userId'] === callerUid;
+        const isSelf = uid === callerUid;
+        if (!isOwner && !isSelf) throw new HttpsError('permission-denied', 'Only the owner or the tagged user can remove');
+
+        const tagged: any[] = result['taggedUsers'] || [];
+        if (!tagged.some((t) => t.uid === uid)) return;
+
+        tx.update(resultRef, {
+            taggedUsers: tagged.filter((t) => t.uid !== uid),
+            taggedUserIdsPending: FieldValue.arrayRemove(uid),
+            taggedUserIdsAccepted: FieldValue.arrayRemove(uid)
+        });
+        tx.delete(inviteRef);
+    });
+
+    return { success: true };
+});

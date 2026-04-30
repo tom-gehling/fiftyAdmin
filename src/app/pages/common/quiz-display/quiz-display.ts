@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges, isDevMode } from '@angular/core';
+import { Component, ElementRef, HostListener, Input, OnChanges, OnDestroy, OnInit, Optional, SimpleChanges, inject, isDevMode } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom, filter, Subscription, take } from 'rxjs';
 import { environment } from '../../../../environments/environment';
@@ -6,7 +6,15 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { PanelModule } from 'primeng/panel';
+import { TooltipModule } from 'primeng/tooltip';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Functions, httpsCallable } from '@angular/fire/functions';
+import confetti from 'canvas-confetti';
+
+// Score-band phrases — keyed by % of total so they scale to any quiz length.
+// Two bands: bottom 60% gets a neutral acknowledgment, top 40% gets a celebration.
+const SCORE_PHRASES_LOW = ['Well Done', 'Nicely Done', 'Nice One', 'Good Work', 'Solid Effort'];
+const SCORE_PHRASES_HIGH = ['Smashed It', 'Awesome', 'Top Stuff', 'Mate, You Went Off', 'Quiz Royalty'];
 
 import { Quiz } from '@/shared/models/quiz.model';
 import { QuizTypeEnum } from '@/shared/enums/QuizTypeEnum';
@@ -28,7 +36,7 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 @Component({
     selector: 'app-quiz-display',
     standalone: true,
-    imports: [CommonModule, RouterModule, ProgressSpinnerModule, ButtonModule, DialogModule, PanelModule, ReactiveFormsModule, UserTagSelectorComponent],
+    imports: [CommonModule, RouterModule, ProgressSpinnerModule, ButtonModule, DialogModule, PanelModule, ReactiveFormsModule, TooltipModule, UserTagSelectorComponent],
     template: `
         <!-- Loading Spinner -->
         <div *ngIf="loading" class="flex items-center justify-center h-96">
@@ -51,9 +59,22 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
                 <p class="text-center text-gray-300 text-lg font-bold mb-4">Upgrade to Fifty+ and access the full quiz!</p>
             </ng-container>
 
-            <!-- Title row: info | title | download -->
+            <!-- Title row: reset | title | info + download -->
             <div class="quizHeader">
-                <div class="quizHeaderLeft"></div>
+                <div class="quizHeaderLeft">
+                    <p-button
+                        *ngIf="!locked && !previewMode && answeredQuestions > 0"
+                        icon="pi pi-refresh"
+                        [outlined]="false"
+                        (onClick)="resetQuiz()"
+                        class="resetButton"
+                        size="large"
+                        pTooltip="Reset quiz"
+                        tooltipPosition="bottom"
+                        ariaLabel="Reset quiz"
+                    >
+                    </p-button>
+                </div>
                 <div class="quizTitle">{{ getQuizTitle() }}</div>
                 <div class="quizHeaderRight">
                     <p-button icon="pi pi-info-circle" [outlined]="false" (onClick)="showInfoModal = true" class="infoButton" size="large"> </p-button>
@@ -114,7 +135,20 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             <ng-container *ngIf="!locked && !previewMode">
                 <div class="score">Score: {{ score }} / {{ answeredQuestions }}</div>
 
-                <button *ngIf="isQuizCompleted" class="genericButton" (click)="resetQuiz()">Reset Quiz</button>
+                <!-- Re-open the finish modal + show ambient teammate status (visible once completed) -->
+                <ng-container *ngIf="isQuizCompleted">
+                    <div class="teammatesPanel">
+                        <button class="genericButton" (click)="showFinishModal = true"><i class="pi pi-flag-fill"></i>&nbsp;Show results</button>
+
+                        <div *ngIf="tagSummary.length > 0" class="teammatesChips">
+                            <span *ngFor="let t of tagSummary" class="teammateChip" [class.pending]="t.status === 'pending'" [class.declined]="t.status === 'declined'">
+                                {{ t.displayName }}
+                                <span *ngIf="t.status === 'pending'" class="teammateStatus">· yet to reply</span>
+                                <span *ngIf="t.status === 'declined'" class="teammateStatus">· passed</span>
+                            </span>
+                        </div>
+                    </div>
+                </ng-container>
             </ng-container>
 
             <!-- Notes Below -->
@@ -160,11 +194,11 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
                         <p *ngIf="!userId" class="loginNotice">Please log in to submit.</p>
 
                         <div class="formButtonRow">
-                            <button type="submit" class="genericButton" [disabled]="submitting || !userId">
-                                {{ submitting ? 'Submitting...' : 'Submit' }}
+                            <button type="submit" class="genericButton" [disabled]="submitting || !userId || !submissionFormGroup || submissionFormGroup.invalid">
+                                {{ submitting ? 'Submitting...' : 'Submit Score' }}
                             </button>
-                            <button type="button" class="genericButton" [disabled]="generatingPreview" (click)="toggleSharePanel()">
-                                {{ generatingPreview ? 'Loading...' : 'Share' }}
+                            <button type="button" class="genericButton" [disabled]="generatingPreview || !hasTeamPicture" (click)="toggleSharePanel()">
+                                {{ generatingPreview ? 'Loading...' : 'Share Team Pic' }}
                             </button>
                         </div>
                     </form>
@@ -187,6 +221,27 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
                 </div>
             </div>
         </div>
+
+        <!-- Reset Confirm Modal -->
+        <p-dialog
+            [(visible)]="showResetConfirmModal"
+            [modal]="true"
+            [closable]="true"
+            [resizable]="false"
+            [draggable]="false"
+            [header]="pendingResetWasCompleted ? 'Replay this quiz?' : 'Clear your progress?'"
+            [style]="{ width: '90vw', maxWidth: '420px' }"
+        >
+            <div class="resetConfirmContent">
+                <p>
+                    {{ pendingResetWasCompleted ? "Your previous score stays on your record. This replay won't be recorded." : 'Your in-progress answers will be cleared and you can start fresh.' }}
+                </p>
+                <div class="resetConfirmButtons">
+                    <button type="button" class="genericButton" (click)="cancelResetQuiz()">Cancel</button>
+                    <button type="button" class="genericButton" (click)="confirmResetQuiz()">{{ pendingResetWasCompleted ? 'Replay' : 'Clear &amp; restart' }}</button>
+                </div>
+            </div>
+        </p-dialog>
 
         <!-- Info Modal -->
         <p-dialog [(visible)]="showInfoModal" [modal]="true" [closable]="true" [resizable]="false" [draggable]="false" header="Welcome to the Fifty!" [style]="{ width: '90vw', maxWidth: '480px' }">
@@ -227,6 +282,55 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
                         {{ copySuccess ? 'Copied!' : 'Copy' }}
                     </button>
                 </ng-container>
+            </div>
+        </p-dialog>
+
+        <!-- Finish Modal: auto-pops on completion, re-openable via Show results button -->
+        <p-dialog
+            [(visible)]="showFinishModal"
+            [modal]="true"
+            [closable]="!tagging"
+            [resizable]="false"
+            [draggable]="false"
+            [showHeader]="false"
+            [dismissableMask]="true"
+            [style]="{ width: '92vw', maxWidth: '520px' }"
+            [contentStyle]="{ background: quiz?.theme?.backgroundColor || '#677c73', padding: 0, borderRadius: '16px', overflow: 'hidden' }"
+        >
+            <div class="finishModal" [style.background]="quiz?.theme?.backgroundColor || '#677c73'">
+                <button type="button" class="finishClose" (click)="showFinishModal = false" aria-label="Close">×</button>
+
+                <div class="finishWellDone">{{ scorePhrase }}</div>
+                <div class="finishScore">{{ displayedScore }}<span class="finishSlash">/</span>{{ totalQuestions }}</div>
+
+                <ng-container *ngIf="userId && userEmail && !disableStats; else anonNotice">
+                    <p class="finishRecorded">
+                        Quiz score recorded against <strong>{{ userEmail }}</strong>
+                    </p>
+                    <p class="finishPrompt">Quizzing with friends? Tag them so they get the stat.</p>
+                </ng-container>
+                <ng-template #anonNotice>
+                    <p class="finishRecorded finishRecorded--muted">Sign in to have your stats recorded.</p>
+                </ng-template>
+
+                <div *ngIf="userId && resultId && !disableStats" class="finishTagWrap">
+                    <app-user-tag-selector [(selectedUsers)]="pendingTagSelections" mode="all-users" placeholder="Tag teammates by name or email…" [maxUsers]="20" [showSuggestions]="false"></app-user-tag-selector>
+                </div>
+
+                <div *ngIf="tagSummary.length > 0" class="finishTeammates">
+                    <span *ngFor="let t of tagSummary" class="teammateChip" [class.pending]="t.status === 'pending'" [class.declined]="t.status === 'declined'">
+                        {{ t.displayName }}
+                        <span *ngIf="t.status === 'pending'" class="teammateStatus">· yet to reply</span>
+                        <span *ngIf="t.status === 'declined'" class="teammateStatus">· passed</span>
+                    </span>
+                </div>
+
+                <div class="finishActions">
+                    <button class="genericButton finishActionBtn" type="button" (click)="copyShareText()"><i class="pi pi-share-alt"></i>&nbsp;{{ copySuccess ? 'Copied!' : 'Share' }}</button>
+                    <button *ngIf="userId && resultId && !disableStats" class="genericButton finishActionBtn" type="button" [disabled]="tagging || pendingTagSelections.length === 0" (click)="submitTags()">
+                        {{ tagging ? 'Tagging…' : 'Tag teammates' }}
+                    </button>
+                </div>
             </div>
         </p-dialog>
     `,
@@ -325,6 +429,22 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             margin-bottom: 0.5rem;
         }
 
+        .resetConfirmContent {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .resetConfirmContent p {
+            margin: 0 0 1.25rem;
+        }
+
+        .resetConfirmButtons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
         .questionText {
             display: inline;
         }
@@ -387,7 +507,8 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
         }
 
         :host ::ng-deep .infoButton .p-button,
-        :host ::ng-deep .downloadButton .p-button {
+        :host ::ng-deep .downloadButton .p-button,
+        :host ::ng-deep .resetButton .p-button {
             background-color: transparent;
             border: none;
             color: var(--primary);
@@ -397,7 +518,9 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
         :host ::ng-deep .infoButton .p-button i,
         :host ::ng-deep .infoButton .p-button .p-icon,
         :host ::ng-deep .downloadButton .p-button i,
-        :host ::ng-deep .downloadButton .p-button .p-icon {
+        :host ::ng-deep .downloadButton .p-button .p-icon,
+        :host ::ng-deep .resetButton .p-button i,
+        :host ::ng-deep .resetButton .p-button .p-icon {
             font-size: 1.2rem;
             -webkit-text-stroke: 0.4px var(--primary);
         }
@@ -406,14 +529,22 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             :host ::ng-deep .infoButton .p-button i,
             :host ::ng-deep .infoButton .p-button .p-icon,
             :host ::ng-deep .downloadButton .p-button i,
-            :host ::ng-deep .downloadButton .p-button .p-icon {
+            :host ::ng-deep .downloadButton .p-button .p-icon,
+            :host ::ng-deep .resetButton .p-button i,
+            :host ::ng-deep .resetButton .p-button .p-icon {
                 font-size: 1.6rem;
             }
         }
 
         :host ::ng-deep .infoButton .p-button:hover,
-        :host ::ng-deep .downloadButton .p-button:hover {
+        :host ::ng-deep .downloadButton .p-button:hover,
+        :host ::ng-deep .resetButton .p-button:hover {
             filter: brightness(0.8);
+        }
+
+        :host ::ng-deep .resetButton .p-button i,
+        :host ::ng-deep .resetButton .p-button .p-icon {
+            transform: scaleX(-1);
         }
 
         :host ::ng-deep .downloadButton .p-button-label {
@@ -744,6 +875,192 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
             object-fit: cover;
             border-radius: 12px;
         }
+
+        .teammatesPanel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .teammatesChips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .teammateChip {
+            font-size: 14px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--primary);
+        }
+        .teammateChip.pending {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px dashed rgba(255, 255, 255, 0.4);
+        }
+        .teammateChip.declined {
+            opacity: 0.45;
+            text-decoration: line-through;
+        }
+        .teammateStatus {
+            font-size: 12px;
+            opacity: 0.75;
+        }
+
+        /* Finish modal */
+        .finishModal {
+            position: relative;
+            padding: 36px 28px 28px;
+            color: #fff;
+            font-family: var(--font);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-items: stretch;
+            text-align: center;
+        }
+        .finishClose {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            background: none;
+            border: 0;
+            font-size: 28px;
+            line-height: 1;
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+        .finishClose:hover {
+            color: #fff;
+        }
+        .finishWellDone {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1;
+            margin: 0;
+            color: var(--primary);
+        }
+        @media (max-width: 480px) {
+            .finishWellDone {
+                font-size: 34px;
+            }
+        }
+        .finishScore {
+            font-size: 84px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1;
+            margin: 4px 0 0;
+            color: var(--primary);
+            text-shadow: 0 2px 18px rgba(0, 0, 0, 0.18);
+            animation: finishScorePop 720ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            transform-origin: 50% 60%;
+        }
+        @media (max-width: 480px) {
+            .finishScore {
+                font-size: 64px;
+            }
+        }
+        @keyframes finishScorePop {
+            0% {
+                transform: scale(0.45);
+                opacity: 0;
+            }
+            55% {
+                transform: scale(1.1);
+            }
+            80% {
+                transform: scale(0.97);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .finishScore {
+                animation: none;
+            }
+        }
+        .finishSlash {
+            font-weight: 400;
+            opacity: 0.7;
+            margin: 0 4px;
+        }
+        .finishRecorded {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.92;
+            text-align: center;
+        }
+        .finishRecorded strong {
+            font-weight: 700;
+        }
+        .finishRecorded--muted {
+            opacity: 0.7;
+            font-style: italic;
+        }
+        .finishPrompt {
+            margin: 0;
+            font-size: 17px; /* 20% bigger than the recorded line */
+            font-weight: 700;
+            opacity: 0.95;
+            text-align: center;
+        }
+
+        /* Tag picker — matches the submission-form fieldInput pink/tertiary rounded look */
+        .finishTagWrap {
+            width: 90%;
+            align-self: center;
+            background-color: var(--tertiary);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: #282828;
+        }
+        .finishTagWrap :host ::ng-deep .p-autocomplete,
+        .finishTagWrap ::ng-deep .p-autocomplete,
+        .finishTagWrap ::ng-deep .p-autocomplete-input,
+        .finishTagWrap ::ng-deep input.p-autocomplete-input {
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            color: #282828 !important;
+            font-weight: 600;
+            width: 100%;
+        }
+        .finishTagWrap ::ng-deep .p-autocomplete-input::placeholder {
+            color: rgba(40, 40, 40, 0.55);
+            font-weight: 500;
+        }
+
+        .finishTeammates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .finishActions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        /* ~50% smaller than the standard genericButton (15px padding / 22px font / 3px border) */
+        .finishActionBtn.genericButton {
+            margin: 0;
+            padding: 8px 14px;
+            font-size: 14px;
+            border-radius: 10px;
+            border-width: 2px;
+            min-width: 110px;
+        }
     `
 })
 export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
@@ -770,6 +1087,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
 
     // Quiz state
     score = 0;
+    displayedScore = 0; // mirrors `score` outside the celebration; tweens 0→score on first auto-open of the finish modal
     totalQuestions = 0;
 
     answers: { correct: boolean | null; percentCorrect?: number }[] = [];
@@ -779,6 +1097,15 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     userEmail?: string;
     disableStats = false;
     resultId?: string;
+
+    // True when the user has restarted a previously-completed quiz. Subsequent
+    // answers and completion are kept local-only (the original completed
+    // Firestore doc is preserved). Cleared on next quiz load.
+    private unrecordedAttempt = false;
+
+    // Reset-confirmation modal state.
+    showResetConfirmModal = false;
+    pendingResetWasCompleted = false;
 
     // Submission form state
     submissionForm?: SubmissionForm;
@@ -798,6 +1125,18 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     showInfoModal = false;
     sharePreviewDataUrl?: string;
     generatingPreview = false;
+
+    // Finish modal + tag teammates state (live-quiz finish flow)
+    showFinishModal = false;
+    private hasAutoShownFinishModal = false; // ensures the modal only auto-pops on first completion, not on resume
+    pendingTagSelections: TaggedUser[] = [];
+    tagSummary: TaggedUser[] = []; // already-invited teammates on this result, for chips
+    tagging = false;
+    private functions = inject(Functions);
+
+    // Admin-only cheat: type "tommyg" while on a quiz page to auto-mark all unanswered questions correct.
+    private cheatBuffer = '';
+    private static readonly CHEAT_CODE = 'tommyg';
 
     constructor(
         private quizService: QuizzesService,
@@ -830,6 +1169,42 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         if (!this.resultId || this.previewMode || this.locked) return;
         if (document.visibilityState === 'visible') {
             this.quizResultsService.heartbeat(this.resultId).catch(() => {});
+        }
+    }
+
+    // Admin-only cheat code: maintain a rolling buffer of the last keypresses; if it ends with the
+    // magic word, auto-complete the quiz. Ignored when typing into form inputs.
+    @HostListener('document:keydown', ['$event'])
+    onCheatKeydown(event: KeyboardEvent) {
+        if (event.key.length !== 1) return;
+        const target = event.target as HTMLElement | null;
+        const tag = target?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
+
+        this.cheatBuffer = (this.cheatBuffer + event.key.toLowerCase()).slice(-QuizDisplayComponent.CHEAT_CODE.length);
+        if (this.cheatBuffer === QuizDisplayComponent.CHEAT_CODE) {
+            this.cheatBuffer = '';
+            this.tryActivateCheat();
+        }
+    }
+
+    private async tryActivateCheat(): Promise<void> {
+        if (this.locked || this.previewMode) return;
+        const isAdmin = this.authService.isAdmin$.getValue();
+        if (!isAdmin) return;
+        if (!this.quiz || !this.resultId || !this.userId) return;
+        if (this.isQuizCompleted) return;
+
+        try {
+            for (let i = 0; i < this.totalQuestions; i++) {
+                if (this.answers[i].correct === null) {
+                    await this.markAnswer(i, true);
+                }
+            }
+            this.notify.info('Cheat activated — quiz auto-completed', 'Admin');
+        } catch (err) {
+            console.error('Cheat completion failed', err);
+            this.notify.error("Couldn't auto-complete — check console");
         }
     }
 
@@ -1025,6 +1400,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
                 if (idx !== -1) this.answers[idx] = { correct: a.correct ?? null };
             });
             this.score = this.answers.filter((a) => a.correct).length;
+            this.displayedScore = this.score;
             if (this.resultId) {
                 this.quizResultsService.markResumed(this.resultId).catch(() => {});
                 this.startHeartbeat();
@@ -1032,7 +1408,9 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
             return;
         }
 
-        const completed = quizResults.filter((r) => r.status === 'completed').sort((a, b) => (b.completedAt?.getTime() ?? 0) - (a.completedAt?.getTime() ?? 0))[0];
+        // completedAt may come back as a Firestore Timestamp (toMillis), a JS Date (getTime), or a plain seconds-shaped object.
+        const completedAtMs = (d: any): number => (!d ? 0 : typeof d.toMillis === 'function' ? d.toMillis() : d instanceof Date ? d.getTime() : typeof d.seconds === 'number' ? d.seconds * 1000 : 0);
+        const completed = quizResults.filter((r) => r.status === 'completed').sort((a, b) => completedAtMs(b.completedAt) - completedAtMs(a.completedAt))[0];
 
         if (completed) {
             this.resultId = completed.resultId;
@@ -1041,6 +1419,9 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
                 if (idx !== -1) this.answers[idx] = { correct: a.correct ?? null };
             });
             this.score = this.answers.filter((a) => a.correct).length;
+            this.displayedScore = this.score;
+            this.tagSummary = completed.taggedUsers ?? [];
+            this.hasAutoShownFinishModal = true; // resumed completed result — don't auto-pop the celebration
             return;
         }
 
@@ -1141,6 +1522,84 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     // ---------------------------------------------
+    // TAG TEAMMATES (live finish flow)
+    // ---------------------------------------------
+    private autoOpenFinishModal(): void {
+        if (this.hasAutoShownFinishModal) return;
+        this.hasAutoShownFinishModal = true;
+        this.showFinishModal = true;
+        this.runScoreCountUp();
+        this.fireConfetti();
+    }
+
+    private fireConfetti(): void {
+        const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) return;
+
+        const theme = this.quiz?.theme;
+        const colors = [theme?.tertiaryColor || '#4cfbab', theme?.fontColor || '#fbe2df', '#ffffff'];
+
+        // Two angled bursts framing the modal, plus a centre pop, for a satisfying overlap.
+        const burst = (origin: { x: number; y: number }, angle: number) =>
+            confetti({
+                particleCount: 70,
+                spread: 65,
+                startVelocity: 45,
+                angle,
+                origin,
+                colors,
+                ticks: 220,
+                scalar: 0.95,
+                zIndex: 11000 // PrimeNG dialogs default to ~1100; sit above
+            });
+
+        burst({ x: 0.15, y: 0.65 }, 60);
+        burst({ x: 0.85, y: 0.65 }, 120);
+        setTimeout(() => burst({ x: 0.5, y: 0.4 }, 90), 180);
+    }
+
+    private runScoreCountUp(): void {
+        const target = this.score;
+        const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (reduced || target <= 0) {
+            this.displayedScore = target;
+            return;
+        }
+        const duration = 900;
+        const start = performance.now();
+        this.displayedScore = 0;
+        const tick = (now: number) => {
+            const t = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - t, 3); // ease-out-cubic
+            this.displayedScore = Math.round(eased * target);
+            if (t < 1) requestAnimationFrame(tick);
+            else this.displayedScore = target;
+        };
+        requestAnimationFrame(tick);
+    }
+
+    async submitTags(): Promise<void> {
+        if (!this.resultId || this.pendingTagSelections.length === 0) return;
+        this.tagging = true;
+        try {
+            const callable = httpsCallable<{ resultId: string; taggedUserUids: string[] }, { added: number }>(this.functions, 'tagUsersOnResult');
+            const uids = this.pendingTagSelections.map((t) => t.uid).filter(Boolean);
+            await callable({ resultId: this.resultId, taggedUserUids: uids });
+            // Optimistically render chips as pending
+            const newPending: TaggedUser[] = this.pendingTagSelections.map((t) => ({ ...t, status: 'pending' }));
+            const existingUids = new Set(this.tagSummary.map((t) => t.uid));
+            this.tagSummary = [...this.tagSummary, ...newPending.filter((t) => !existingUids.has(t.uid))];
+            this.pendingTagSelections = [];
+            this.notify.success("Tagged 'em");
+        } catch (err: any) {
+            console.error('Failed to send tag invites', err);
+            this.notify.error(err?.message || "Couldn't tag — try again?");
+        } finally {
+            this.tagging = false;
+        }
+    }
+
+    // ---------------------------------------------
     // UI HELPERS
     // ---------------------------------------------
     onLogoLoad(event: Event) {
@@ -1175,21 +1634,77 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
         return this.answers.filter((a) => a.correct !== null).length;
     }
 
+    /** True once the user has attached a team photo via any file field on the submission form, or after one has been uploaded. */
+    get hasTeamPicture(): boolean {
+        return Object.values(this.fileByField).length > 0 || !!this.sharePictureUrl;
+    }
+
+    /**
+     * Picks a positive phrase based on the score % of total. Two bands: top 40% (≥ 60%) gets the
+     * celebratory pool, bottom 60% gets the warm/encouraging pool. Scales with quiz length.
+     * Deterministic per (resultId, score) so the phrase is stable across re-opens of the modal.
+     */
+    get scorePhrase(): string {
+        if (!this.totalQuestions) return '';
+        const pct = this.score / this.totalQuestions;
+        const pool = pct >= 0.6 ? SCORE_PHRASES_HIGH : SCORE_PHRASES_LOW;
+        const seed = (this.resultId || '').split('').reduce((a, c) => a + c.charCodeAt(0), this.score || 0);
+        return pool[seed % pool.length];
+    }
+
     // ---------------------------------------------
     // RESET
     // ---------------------------------------------
-    async resetQuiz() {
-        if (!this.quiz || !this.userId || this.locked) return;
+    resetQuiz() {
+        if (!this.quiz || this.locked) return;
+        this.pendingResetWasCompleted = this.isQuizCompleted;
+        this.showResetConfirmModal = true;
+    }
+
+    cancelResetQuiz() {
+        this.showResetConfirmModal = false;
+    }
+
+    async confirmResetQuiz() {
+        if (!this.quiz || this.locked) {
+            this.showResetConfirmModal = false;
+            return;
+        }
+
+        const wasCompleted = this.pendingResetWasCompleted;
+        this.showResetConfirmModal = false;
 
         try {
-            this.resultId = await this.quizResultsService.createResult(this.quiz.quizId.toString(), this.userId, this.totalQuestions, this.disableStats || undefined);
+            if (wasCompleted) {
+                // Case A — ghost replay. Don't touch the completed Firestore doc.
+                this.unrecordedAttempt = true;
+                this.stopHeartbeat();
+            } else if (this.userId && !this.previewMode) {
+                // Case B — wipe the in-progress doc in place (rules don't allow delete).
+                this.unrecordedAttempt = false;
+                if (this.resultId) {
+                    await this.quizResultsService.resetInProgressResult(this.resultId);
+                } else {
+                    this.resultId = await this.quizResultsService.createResult(this.quiz.quizId.toString(), this.userId, this.totalQuestions, this.disableStats || undefined);
+                }
+                this.startHeartbeat();
+            }
 
             this.answers = Array.from({ length: this.totalQuestions }, () => ({ correct: null }));
             this.answerRevealed = Array.from({ length: this.totalQuestions }, () => false);
             this.score = 0;
-            this.startHeartbeat();
+            this.displayedScore = 0;
+            this.tagSummary = [];
+            this.pendingTagSelections = [];
+            this.hasAutoShownFinishModal = false;
+            this.sharePercentile = undefined;
+            this.showFinishModal = false;
+            this.showSharePanel = false;
+            this.sharePreviewDataUrl = undefined;
+            this.copySuccess = false;
         } catch (err) {
             console.error('Failed to reset quiz', err);
+            this.notify.error("Couldn't reset — try again?");
         }
     }
 
@@ -1203,10 +1718,18 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
 
         if (previous === true && !correct) this.score--;
         else if ((previous === null || previous === false) && correct) this.score++;
+        this.displayedScore = this.score;
 
         this.answers[i] = { correct };
 
-        if (this.previewMode || !this.resultId || !this.userId) return;
+        if (this.previewMode || this.unrecordedAttempt || !this.resultId || !this.userId) {
+            // Ghost replay still gets the local celebration on completion — just no Firestore writes.
+            if (this.unrecordedAttempt && this.isQuizCompleted) {
+                this.applyStatsToAnswers();
+                this.autoOpenFinishModal();
+            }
+            return;
+        }
 
         if (this.resultId && this.userId) {
             try {
@@ -1225,6 +1748,7 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
                 await this.quizResultsService.completeResult(this.resultId);
                 this.stopHeartbeat();
                 this.applyStatsToAnswers();
+                this.autoOpenFinishModal();
             } catch (err) {
                 console.error('Failed to complete result', err);
             }
@@ -1281,27 +1805,20 @@ export class QuizDisplayComponent implements OnInit, OnChanges, OnDestroy {
     /** Wordle-style text template (shown when no photo is uploaded) */
     getShareText(): string {
         if (!this.quiz) return '';
-        const teamName = this.submissionFormGroup?.value['teamName'] || this.shareTeamName || '';
-        const location = this.submissionFormGroup?.value['location'] || this.shareLocation || '';
         const lines: string[] = [];
 
-        lines.push(`Fifty Quiz ${this.quiz.quizId}`);
-        if (teamName) lines.push(teamName);
-        lines.push(`Score: ${this.score}/${this.totalQuestions}`);
-        if (this.sharePercentile !== undefined) {
-            lines.push(`Better than ${this.sharePercentile}% of players!`);
-        }
+        lines.push('The Weekly Fifty');
+        lines.push(`Quiz ${this.quiz.quizId}`);
         lines.push('');
 
         // Wordle-style answer grid — 🟩 correct, 🟥 incorrect, ⬜ unanswered
         const emojis = this.answers.map((a) => (a.correct === true ? '🟩' : a.correct === false ? '🟥' : '⬜'));
-        for (let i = 0; i < emojis.length; i += 10) {
-            lines.push(emojis.slice(i, i + 10).join(''));
+        for (let i = 0; i < emojis.length; i += 5) {
+            lines.push(emojis.slice(i, i + 5).join(''));
         }
 
         lines.push('');
-        if (location) lines.push(`📍 ${location}`);
-        lines.push('#FiftyQuiz');
+        lines.push('Have a go at theweeklyfifty.com.au/weekly-quiz');
 
         return lines.join('\n');
     }
