@@ -49,15 +49,7 @@ export class AppMenu implements OnInit {
         const adminMenu: MenuItem = {
             label: 'Admin',
             items: [
-                {
-                    label: 'Stats',
-                    icon: 'pi pi-fw pi-chart-line',
-                    items: [
-                        // { label: 'Total Stats', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/fiftyPlus/admin/stats/total'] },
-                        { label: 'Quiz Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/weekly'] },
-                        { label: 'Location Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats/total'] }
-                    ]
-                },
+                { label: 'Stats', icon: 'pi pi-fw pi-chart-line', routerLink: ['/fiftyPlus/admin/stats'] },
                 {
                     label: 'Quizzes',
                     icon: 'pi pi-fw pi-pencil',

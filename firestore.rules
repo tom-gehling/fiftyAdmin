@@ -89,13 +89,25 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Quiz results — any authenticated non-anonymous user can write their own, users/admins can read
+    // Quiz results — any authenticated non-anonymous user can write their own, users/admins can read.
+    // Tagged users (pending or accepted) can also read, so they can see the score they're being credited for.
+    // Tag mutations (taggedUsers / taggedUserIdsPending / taggedUserIdsAccepted) flow through Cloud
+    // Functions only — clients can't mutate them directly because they need to fan out to tagInvites.
     match /quizResults/{resultId} {
       allow create, update: if isAuthenticated()
                             && request.auth.token.firebase.sign_in_provider != "anonymous"
                             && request.resource.data.userId == request.auth.uid;
       allow read: if isAuthenticated()
-                  && (resource.data.userId == request.auth.uid || isAdmin());
+                  && (resource.data.userId == request.auth.uid
+                      || (resource.data.taggedUserIdsAccepted is list && request.auth.uid in resource.data.taggedUserIdsAccepted)
+                      || (resource.data.taggedUserIdsPending is list && request.auth.uid in resource.data.taggedUserIdsPending)
+                      || isAdmin());
+    }
+
+    // Tag invites — invited user can read theirs; all writes go via Cloud Functions
+    match /tagInvites/{inviteId} {
+      allow read: if isAuthenticated() && resource.data.invitedUid == request.auth.uid;
+      allow write: if false;
     }
 
     match /quizTotalStats/{id} {

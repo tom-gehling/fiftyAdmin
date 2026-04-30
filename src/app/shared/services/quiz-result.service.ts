@@ -81,10 +81,35 @@ export class QuizResultsService {
         await updateDoc(resultDoc, { closedAt: null, lastActivityAt: serverTimestamp() });
     }
 
+    /**
+     * Wipe an in-progress result back to a fresh state without deleting the doc.
+     * Used by the in-quiz reset button to restart a partially-completed quiz —
+     * stays within firestore.rules' update allowance (no delete rule exists).
+     */
+    async resetInProgressResult(resultId: string) {
+        const resultDoc = doc(this.firestore, this.collectionName, resultId);
+        await updateDoc(resultDoc, {
+            answers: [],
+            score: 0,
+            startedAt: new Date(),
+            lastActivityAt: serverTimestamp(),
+            closedAt: null,
+            status: 'in_progress'
+        });
+    }
+
     /** Get all results for a user */
     getUserResults(userId: string): Observable<QuizResult[]> {
         return defer(() => {
             const q = query(collection(this.firestore, this.collectionName), where('userId', '==', userId));
+            return collectionData(q, { idField: 'resultId' }) as Observable<QuizResult[]>;
+        });
+    }
+
+    /** Get results where the user was tagged AND accepted (i.e. team-play credit, but not owner). */
+    getTaggedInResults(userId: string): Observable<QuizResult[]> {
+        return defer(() => {
+            const q = query(collection(this.firestore, this.collectionName), where('taggedUserIdsAccepted', 'array-contains', userId));
             return collectionData(q, { idField: 'resultId' }) as Observable<QuizResult[]>;
         });
     }

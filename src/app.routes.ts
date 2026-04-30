@@ -24,8 +24,7 @@ import { FiftyPageComponent } from '@/pages/fiftyPlus/fiftyPage';
 import { UserStatsComponent } from '@/pages/fiftyPlus/stats/userStats.component';
 
 // Admin pages
-import { TotalStats } from '@/pages/dashboard/totalStats';
-import { WeeklyStats } from '@/pages/dashboard/weeklyStats';
+import { Stats } from '@/pages/dashboard/stats';
 import { QuizTableComponent } from '@/pages/admin/quiz/quizTable';
 import { QuizDetailComponent } from '@/pages/admin/quiz/quizDetail';
 import { QuizTagsComponent } from '@/pages/admin/quizTags/quizTags';
@@ -60,7 +59,7 @@ export const appRoutes: Routes = [
         component: PublicLayout,
         children: [
             { path: 'weekly-quiz', component: WeeklyQuizPage, data: { topbarColor: 'green' } },
-            { path: 'find-a-venue', component: FindAVenuePage, data: { topbarColor: 'green' } },
+            { path: 'find-a-venue', component: FindAVenuePage, data: { topbarColor: 'green', embeddable: true } },
             { path: 'fiftyshop', component: FiftyShopPage, data: { topbarColor: 'green' } },
             { path: 'contact-us', component: ContactUsPage, data: { topbarColor: 'green' } },
             { path: 'join', component: JoinPage, data: { topbarColor: 'black' } },
@@ -115,9 +114,9 @@ export const appRoutes: Routes = [
                     {
                         path: 'stats',
                         children: [
-                            { path: 'total', component: TotalStats },
-                            { path: 'weekly', component: WeeklyStats },
-                            { path: '', redirectTo: 'total', pathMatch: 'full' }
+                            { path: '', component: Stats },
+                            { path: 'weekly', redirectTo: '', pathMatch: 'full' },
+                            { path: 'total', redirectTo: '', pathMatch: 'full' }
                         ]
                     },
                     { path: 'quizzes', component: QuizTableComponent },

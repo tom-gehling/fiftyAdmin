@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, collection, doc, getDoc, getDocs, query, where, documentId } from '@angular/fire/firestore';
+import { Functions, httpsCallable } from '@angular/fire/functions';
 import { Observable, from, of } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { AuthService } from '@/shared/services/auth.service';
@@ -8,6 +9,7 @@ import { AppUser } from '@/shared/models/user.model';
 @Injectable({ providedIn: 'root' })
 export class UserSearchService {
     private firestore = inject(Firestore);
+    private functions = inject(Functions);
     private auth = inject(AuthService);
 
     /**
@@ -132,5 +134,17 @@ export class UserSearchService {
      */
     getSuggestedUsers(limit: number = 5): Observable<AppUser[]> {
         return this.searchFollowersFollowing('', limit);
+    }
+
+    /**
+     * Search across all users by displayName OR email prefix via Cloud Function.
+     * Required because /users/{uid} is private — clients can't run a Firestore prefix query themselves.
+     * Returns uid + displayName only. Email is used as a search index but never echoed back.
+     */
+    searchAllUsers(searchTerm: string, limit: number = 10): Observable<Pick<AppUser, 'uid' | 'displayName'>[]> {
+        const term = searchTerm.trim();
+        if (term.length < 2) return of([]);
+        const callable = httpsCallable<{ term: string; limit: number }, { users: { uid: string; displayName: string | null }[] }>(this.functions, 'searchUsers');
+        return from(callable({ term, limit })).pipe(map((res) => res.data.users));
     }
 }

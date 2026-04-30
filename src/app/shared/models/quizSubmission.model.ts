@@ -1,7 +1,12 @@
+export type TagStatus = 'pending' | 'accepted' | 'declined';
+
 export interface TaggedUser {
     uid: string;
     displayName: string;
     photoUrl?: string;
+    status?: TagStatus; // populated for live-quiz tag invites; absent on legacy retro/submission records (treat as accepted)
+    invitedAt?: Date;
+    respondedAt?: Date;
 }
 
 export interface QuizSubmission {
