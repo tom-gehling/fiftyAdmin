@@ -89,6 +89,49 @@ app.get('/api/getLatestCollabQuiz', async (req: Request, res: Response): Promise
     }
 });
 
+app.get('/api/getLatestCollabQuizByCollaborator', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const collaboratorRaw = req.query.collaborator;
+    const quizSlug = typeof collaboratorRaw === 'string' ? collaboratorRaw.trim() : '';
+
+    if (!quizSlug) {
+      res.status(400).json({ error: 'collaborator query parameter is required' });
+      return;
+    }
+
+    const now = Timestamp.fromDate(new Date());
+    const snapshot = await db.collection('quizzes')
+      .where('quizType', '==', 3)
+      .where('quizSlug', '==', quizSlug)
+      .where('deploymentDate', '<=', now)
+      .orderBy('deploymentDate', 'desc')
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      res.status(404).json({ message: 'No quiz found for collaborator' });
+      return;
+    }
+
+    const quiz = snapshot.docs[0].data();
+    const formattedQuiz = {
+      ...quiz,
+      quiz_id: quiz.quizId,
+      questions: (quiz.questions || []).map((q: any) => ({
+        qNum: q.questionId,
+        qTitle: q.question,
+        qAnswer: q.answer
+      })),
+      deploymentDate: quiz.deploymentDate?.toDate() ?? null
+    };
+
+    res.status(200).json(formattedQuiz);
+  } catch (error) {
+    console.error('Error fetching collab quiz by collaborator:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // ===============================
 // /api/getQuizArchiveHeaders
 // ===============================
@@ -1151,7 +1194,7 @@ export const sweepAbandonedQuizzes = onSchedule(
 const getStripe = (): InstanceType<typeof Stripe> => {
     const key = process.env['STRIPE_SECRET_KEY'];
     if (!key) throw new Error('STRIPE_SECRET_KEY not configured');
-    return new Stripe(key, { apiVersion: '2025-02-24.acacia' });
+    return new Stripe(key, { apiVersion: '2026-03-25.dahlia' });
 };
 
 // -----------------------------------------------
